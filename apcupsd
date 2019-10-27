@@ -270,7 +270,7 @@ def main():
                     aps.suspend()
                     suspend_state = True
                     pass
-            time.sleep(10)
+            time.sleep(30)
 
 
 if __name__ == "__main__":
