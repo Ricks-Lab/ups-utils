@@ -29,9 +29,12 @@ import argparse
 import subprocess
 import shlex
 import sys
+import time
 import shutil
 import re
-from config import ups_IP, snmp_community
+import os
+from datetime import datetime
+from config import ups_IP, snmp_community, suspend_threshold, suspend_script, resume_script, shutdown_script
 
 
 class ApcUpsSnmp:
@@ -129,7 +132,51 @@ class ApcUpsSnmp:
             print('Missing dependency: sudo apt install snmp')
             sys.exit(-1)
 
-    def send_snmp_command(self, command_name):
+        self.suspend_script = suspend_script
+        if suspend_script:
+            if not os.path.isfile(self.suspend_script):
+                print('Missing suspend script: {}'.format(self.suspend_script))
+                sys.exit(-1)
+            print('Suspend script: {}'.format(self.suspend_script))
+
+        self.resume_script = resume_script
+        if resume_script:
+            if not os.path.isfile(self.resume_script):
+                print('Missing resume script: {}'.format(self.resume_script))
+                sys.exit(-1)
+            print('Resume script: {}'.format(self.resume_script))
+
+        self.shutdown_script = shutdown_script
+        if shutdown_script:
+            if not os.path.isfile(self.shutdown_script):
+                print('Missing shutdown script: {}'.format(self.shutdown_script))
+                sys.exit(-1)
+
+    def resume(self):
+        if not self.resume_script:
+            return
+        try:
+            cmd = subprocess.Popen(shlex.split(self.resume_script), shell=False, stdout=subprocess.PIPE)
+            while True:
+                if cmd.poll() is not None:
+                    break
+                time.sleep(1)
+        except:
+            print("Error: could not execute resume script: %s" % resume_script, file=sys.stderr)
+
+    def suspend(self):
+        if not self.suspend_script:
+            return
+        try:
+            cmd = subprocess.Popen(shlex.split(self.suspend_script), shell=False, stdout=subprocess.PIPE)
+            while True:
+                if cmd.poll() is not None:
+                    break
+                time.sleep(1)
+        except:
+            print("Error: could not execute suspend script: %s" % suspend_script, file=sys.stderr)
+
+    def send_snmp_command(self, command_name, display=False):
         cmd_mib = self.mib_commands[command_name]['iso']
         cmd_str = 'snmpget -v2c -c {} {} {}'.format(snmp_community, ups_IP, cmd_mib)
         snmp_output = subprocess.check_output(shlex.split(cmd_str),
@@ -140,12 +187,15 @@ class ApcUpsSnmp:
             if re.match(r'.*=.*:.*', line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()
-            #if re.match(r'.*=.*:.*', line):
-                #value = re.sub(r'.*=.*:[\s]+', '', line)
-                #value = re.sub(r'\"', '', value)
         if self.mib_commands[command_name]['decode']:
             value = self.mib_commands[command_name]['decode'][value]
-        print('{}: {}'.format(self.mib_commands[command_name]['name'], value))
+        if display:
+            print('{}: {}'.format(self.mib_commands[command_name]['name'], value))
+        if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
+            # Create a minute, string tuple
+            value_minute, value_str = re.sub(r'\(', '', value).split(')')
+            value = (int(value_minute)/60/60, value_str)
+        return value
 
     def list_snmp_commands(self):
         for k, v in self.mib_commands.items():
@@ -181,8 +231,46 @@ def main():
     if args.list:
         aps.list_snmp_commands()
 
+    # Display current status of target UPS
     for k, v in aps.mib_commands.items():
-        aps.send_snmp_command(k)
+        aps.send_snmp_command(k, display=True)
+
+    if args.daemon:
+        suspend_state = False
+        while True:
+            time_str = datetime.now().strftime('%c')
+            bat_status = aps.send_snmp_command('mib_battery_status')
+            bat_load = aps.send_snmp_command('mib_output_load')
+            time_on_bat = aps.send_snmp_command('mib_time_on_battery')[0]
+            remain_run_time = aps.send_snmp_command('mib_battery_runtime_remain')[0]
+
+            if time_on_bat == 0.0:
+                print('{}: Battery Status: {}: Load: {}'.format(time_str, bat_status, bat_load))
+            if time_on_bat > 0:
+                print('{}: On UPS Power: {}'.format(time_str, time_on_bat))
+                print('{}: UPS Runtime Remaining: {}'.format(time_str, remain_run_time))
+
+            if bat_status == 'Battery Low':
+                print('{}: Batter Low'.format(time_str))
+                # Call shutdown script
+                pass
+
+            if suspend_state:
+                if time_on_bat < 3:
+                    # Resume
+                    print('{}: Resuming'.format(time_str))
+                    aps.resume()
+                    suspend_state = False
+                    pass
+
+            if not suspend_state:
+                if time_on_bat > 3:
+                    # Suspend
+                    print('{}: Suspending'.format(time_str))
+                    aps.suspend()
+                    suspend_state = True
+                    pass
+            time.sleep(10)
 
 
 if __name__ == "__main__":

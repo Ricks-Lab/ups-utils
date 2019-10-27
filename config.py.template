@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""  Make necesary changes to describe your details and save as *config.py*
+"""  Make necessary changes to describe your details and save as *config.py*
 
-     I suggest making readable only by you.  I sugest creating a read-only
+     I suggest making readable only by you.  I suggest creating a read-only
      client login for your UPS.
 """
 
@@ -10,4 +10,9 @@ ups_IP = ''                  # IP address of target APC UPS
 rsh_cipher_spec = 'aes256-cbc'   # cipher_spec to use
 rsh_login_id = 'client'          # UPS login ID to use
 rsh_password = ''                # UPS password
-snmp_community = 'private'
+snmp_community = 'private'       # SMNP community phrase
+
+
+suspend_script = ''
+resume_script = ''
+shutdown_script = ''
