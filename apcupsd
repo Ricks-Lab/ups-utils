@@ -26,58 +26,103 @@ __maintainer__ = "RueiKe"
 __status__ = "Development"
 
 import argparse
-import re
 import subprocess
-import os
+import shlex
 import sys
-import time
+import shutil
+import re
 from config import ups_IP, snmp_community
 
 
 class ApcUpsSnmp:
     def __init__(self):
-        self.mib_commands = {'mib_ups_type': ['iso.3.6.1.4.1.318.1.1.1.1.1.1.0',
-                                              'General UPS Information'],
-                             'mib_battery_capacity': ['iso.3.6.1.4.1.318.1.1.1.2.2.1.0',
-                                                      'Percentage of Total Capacity'],
-                             'mib_battery_temperature': ['iso.3.6.1.4.1.318.1.1.1.2.2.2.0',
-                                                         'Battery Temperature in C'],
-                             'mib_battery_runtime_remain': ['iso.3.6.1.4.1.318.1.1.1.2.2.3.0',
-                                                            'Runtime Remaining'],
-                             'mib_battery_replace ': ['iso.3.6.1.4.1.318.1.1.1.2.2.4.0',
-                                                      '2 = replace, 1 = ok'],
-                             'mib_input_voltage': ['iso.3.6.1.4.1.318.1.1.1.3.2.1.0',
-                                                   'Input Voltage'],
-                             'mib_input_frequency': ['iso.3.6.1.4.1.318.1.1.1.3.2.4.0',
-                                                     'Input Frequency Hz'],
-                             'mib_reason_for_last_transfer': ['iso.3.6.1.4.1.318.1.1.1.3.2.5.0',
-                                                              ('1=No events, 2=High line voltage, 3=Brownout, ' +
-                                                               '4=Loss of mains power, 5=Small temporary power drop, ' +
-                                                               '6=Large temporary power drop, 7=Small spike, ' +
-                                                               '8=Large spike, 9=UPS self test, ' +
-                                                               '10=Excessive input voltage fluctuation')],
-                             'mib_output_voltage': ['iso.3.6.1.4.1.318.1.1.1.4.2.1.0',
-                                                    'Output Voltage'],
-                             'mib_output_frequency': ['iso.3.6.1.4.1.318.1.1.1.4.2.2.0',
-                                                      'Output Frequency Hz'],
-                             'mib_output_load': ['iso.3.6.1.4.1.318.1.1.1.4.2.3.0',
-                                                 'Output load as % of capacity'],
-                             'mib_output_current': ['iso.3.6.1.4.1.318.1.1.1.4.2.4.0',
-                                                    'Output current in Amps'],
-                             'mib_comms': ['iso.3.6.1.4.1.318.1.1.1.8.1.0',
-                                           'Communicating with UPS Device 1 = yes, 2 = no'],
-                             'mib_last_self_test_result': ['iso.3.6.1.4.1.318.1.1.1.7.2.3.0',
-                                                           'Last Self Test Results'],
-                             'mib_last_self_test_date': ['iso.3.6.1.4.1.318.1.1.1.7.2.4.0',
-                                                         'Date of Last Self Test']}
+        self.mib_commands = {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
+                                              'name': 'General UPS Information',
+                                              'decode': None},
+                             'mib_ups_type': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.1.1.0',
+                                              'name': 'UPS Type',
+                                              'decode': None},
+                             'mib_ups_name': {'iso': 'iso.3.6.1.2.1.33.1.1.5.0',
+                                              'name': 'UPS Name',
+                                              'decode': None},
+                             'mib_battery_capacity': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.1.0',
+                                                      'name': 'Percentage of Total Capacity',
+                                                      'decode': None},
+                             'mib_battery_temperature': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.2.0',
+                                                         'name': 'Battery Temperature in C',
+                                                         'decode': None},
+                             'mib_battery_runtime_remain': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.3.0',
+                                                            'name': 'Runtime Remaining',
+                                                            'decode': None},
+                             'mib_battery_replace ': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.4.0',
+                                                      'name': 'Battery replacement',
+                                                      'decode': {'1': 'OK',
+                                                                 '2': 'Replacement Required'}},
+                             'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.1.0',
+                                                   'name': 'Input Voltage',
+                                                   'decode': None},
+                             'mib_input_frequency': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.4.0',
+                                                     'name': 'Input Frequency Hz',
+                                                     'decode': None},
+                             'mib_reason_for_last_transfer': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.5.0',
+                                                              'name': 'Last Transfer Event',
+                                                              'decode': {'1': 'No Events',
+                                                                         '2': 'High Line Voltage',
+                                                                         '3': 'Brownout',
+                                                                         '4': 'Loss of Main Power',
+                                                                         '5': 'Small Temp Power Drop',
+                                                                         '6': 'Large Temp Power Drop',
+                                                                         '7': 'Small Spike',
+                                                                         '8': 'Large Spike',
+                                                                         '9': 'UPS Self Test',
+                                                                         '10': 'Excessive Input V Fluctuation'}},
+                             'mib_output_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.1.0',
+                                                    'name': 'Output Voltage',
+                                                    'decode': None},
+                             'mib_output_frequency': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.2.0',
+                                                      'name': 'Output Frequency Hz',
+                                                      'decode': None},
+                             'mib_output_load': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.3.0',
+                                                 'name': 'Output load as % of capacity',
+                                                 'decode': None},
+                             'mib_output_current': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.4.0',
+                                                    'name': 'Output current in Amps',
+                                                    'decode': None},
+                             'mib_comms': {'iso': 'iso.3.6.1.4.1.318.1.1.1.8.1.0',
+                                           'name': 'Communicating with UPS Device 1 = yes, 2 = no',
+                                           'decode': {'1': 'Communication OK',
+                                                      '2': 'Communication Error'}},
+                             'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.3.0',
+                                                           'name': 'Last Self Test Results',
+                                                           'decode': None},
+                             'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.4.0',
+                                                         'name': 'Date of Last Self Test',
+                                                         'decode': None}}
+        if not shutil.which('snmpget'):
+            print('Missing dependency: sudo apt install snmp')
+            sys.exit(-1)
 
     def send_snmp_command(self, command_name):
-        pass
+        cmd_mib = self.mib_commands[command_name]['iso']
+        cmd_str = 'snmpget -v2c -c {} {} {}'.format(snmp_community, ups_IP, cmd_mib)
+        snmp_output = subprocess.check_output(shlex.split(cmd_str),
+                                              shell=False,
+                                              stderr=subprocess.DEVNULL).decode().split('\n')
+        value = ''
+        for line in snmp_output:
+            if re.match(r'.*=.*:.*', line):
+                value = re.sub(r'.*=.*:[\s]*', '', line)
+        if self.mib_commands[command_name]['decode']:
+            value = self.mib_commands[command_name]['decode'][value]
+        print('{}: {}'.format(self.mib_commands[command_name]['name'], value))
 
     def list_snmp_commands(self):
         for k, v in self.mib_commands.items():
-            print('{}: Value: {}'.format(k, v[0]))
-            print('Description: {}'.format(v[1]))
+            print('{}: Value: {}'.format(k, v['iso']))
+            print('    Description: {}'.format(v['name']))
+            if v['decode']:
+                for k2, v2 in v['decode'].items():
+                    print('        {}: {}'.format(k2, v2))
 
 
 def main():
@@ -102,7 +147,11 @@ def main():
         sys.exit(0)
 
     aps = ApcUpsSnmp()
-    aps.list_snmp_commands()
+    if args.list:
+        aps.list_snmp_commands()
+
+    for k, v in aps.mib_commands.items():
+        aps.send_snmp_command(k)
 
 
 if __name__ == "__main__":
