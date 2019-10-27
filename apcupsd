@@ -39,9 +39,24 @@ class ApcUpsSnmp:
         self.mib_commands = {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                               'name': 'General UPS Information',
                                               'decode': None},
+                             'mib_bios_serial_number': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.3.0',
+                                                        'name': 'UPS BIOS Serial Number',
+                                                        'decode': None},
+                             'mib_firmware_revision': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.1.0',
+                                                       'name': 'UPS Firmware Revision',
+                                                       'decode': None},
                              'mib_ups_type': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.1.1.0',
                                               'name': 'UPS Type',
                                               'decode': None},
+                             'mib_ups_contact': {'iso': 'iso.3.6.1.2.1.1.4.0',
+                                                 'name': 'UPS Contact',
+                                                 'decode': None},
+                             'mib_ups_location': {'iso': 'iso.3.6.1.2.1.1.6.0',
+                                                  'name': 'UPS Location',
+                                                  'decode': None},
+                             'mib_ups_manufacture_data': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
+                                                          'name': 'UPS Manufacture Date',
+                                                          'decode': None},
                              'mib_ups_name': {'iso': 'iso.3.6.1.2.1.33.1.1.5.0',
                                               'name': 'UPS Name',
                                               'decode': None},
@@ -51,6 +66,15 @@ class ApcUpsSnmp:
                              'mib_battery_temperature': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.2.0',
                                                          'name': 'Battery Temperature in C',
                                                          'decode': None},
+                             'mib_battery_status': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.1.1.0',
+                                                    'name': 'Battery Status',
+                                                    'decode': {'1': 'Unknown',
+                                                               '2': 'Battery Normal',
+                                                               '3': 'Battery Low',
+                                                               '4': 'Battery in Fault Condition'}},
+                             'mib_time_on_battery': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.1.2.0',
+                                                            'name': 'Time on Battery',
+                                                            'decode': None},
                              'mib_battery_runtime_remain': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.3.0',
                                                             'name': 'Runtime Remaining',
                                                             'decode': None},
@@ -66,7 +90,7 @@ class ApcUpsSnmp:
                                                      'decode': None},
                              'mib_reason_for_last_transfer': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.5.0',
                                                               'name': 'Last Transfer Event',
-                                                              'decode': {'1': 'No Events',
+                                                              'decode': {'1': 'No Transfer',
                                                                          '2': 'High Line Voltage',
                                                                          '3': 'Brownout',
                                                                          '4': 'Loss of Main Power',
@@ -89,12 +113,15 @@ class ApcUpsSnmp:
                                                     'name': 'Output current in Amps',
                                                     'decode': None},
                              'mib_comms': {'iso': 'iso.3.6.1.4.1.318.1.1.1.8.1.0',
-                                           'name': 'Communicating with UPS Device 1 = yes, 2 = no',
+                                           'name': 'Communicating with UPS Device',
                                            'decode': {'1': 'Communication OK',
                                                       '2': 'Communication Error'}},
                              'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.3.0',
                                                            'name': 'Last Self Test Results',
-                                                           'decode': None},
+                                                           'decode': {'1': 'OK',
+                                                                      '2': 'Failed',
+                                                                      '3': 'Invalid',
+                                                                      '4': 'In Progress'}},
                              'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.4.0',
                                                          'name': 'Date of Last Self Test',
                                                          'decode': None}}
@@ -111,7 +138,11 @@ class ApcUpsSnmp:
         value = ''
         for line in snmp_output:
             if re.match(r'.*=.*:.*', line):
-                value = re.sub(r'.*=.*:[\s]*', '', line)
+                value = line.split(':', 1)[1]
+                value = re.sub(r'\"', '', value).strip()
+            #if re.match(r'.*=.*:.*', line):
+                #value = re.sub(r'.*=.*:[\s]+', '', line)
+                #value = re.sub(r'\"', '', value)
         if self.mib_commands[command_name]['decode']:
             value = self.mib_commands[command_name]['decode'][value]
         print('{}: {}'.format(self.mib_commands[command_name]['name'], value))
