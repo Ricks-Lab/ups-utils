@@ -6,6 +6,8 @@
 """
 
 ups_IP = ''                  # IP address of target APC UPS
-cipher_spec = 'aes256-cbc'   # cipher_spec to use
-login_id = 'client'          # UPS login ID to use
-password = ''                # UPS password
+
+rsh_cipher_spec = 'aes256-cbc'   # cipher_spec to use
+rsh_login_id = 'client'          # UPS login ID to use
+rsh_password = ''                # UPS password
+snmp_community = 'private'
