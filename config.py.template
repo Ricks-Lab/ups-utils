@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+"""  Make necesary changes to describe your details and save as *config.py*
+
+     I suggest making readable only by you.  I sugest creating a read-only
+     client login for your UPS.
+"""
+
+ups_IP = ''                  # IP address of target APC UPS
+cipher_spec = 'aes256-cbc'   # cipher_spec to use
+login_id = 'client'          # UPS login ID to use
+password = ''                # UPS password
