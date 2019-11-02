@@ -5,7 +5,8 @@
      client login for your UPS.
 """
 
-ups_IP = ''                  # IP address of target APC UPS
+ups_IP = ''                      # IP address of target APC UPS
+ups_type = ''                    # Type of UPS ('apc', 'eaton')
 
 rsh_cipher_spec = 'aes256-cbc'   # cipher_spec to use
 rsh_login_id = 'client'          # UPS login ID to use

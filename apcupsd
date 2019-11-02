@@ -49,6 +49,11 @@ def signal_handler(sig, frame):
 
 class ApcUpsSnmp:
     def __init__(self):
+        DEFAULT_READ_INTERVAL = 30
+        READ_INTERVAL_LIMIT = 10
+        DEFAULT_SUSPEND_THRESHOLD = 5
+        SUSPEND_THRESHOLD_LIMIT = 2
+
         self.mib_commands = {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                               'name': 'General UPS Information',
                                               'decode': None},
@@ -161,9 +166,23 @@ class ApcUpsSnmp:
             if not os.path.isfile(self.shutdown_script):
                 print('Missing shutdown script: {}'.format(self.shutdown_script))
                 sys.exit(-1)
+            print('Shutdown script: {}'.format(self.shutdown_script))
 
-        self.read_interval = read_interval
-        self.suspend_threshold = suspend_threshold
+        self.read_interval = DEFAULT_READ_INTERVAL
+        if isinstance(read_interval, int):
+            if read_interval > READ_INTERVAL_LIMIT:
+                self.read_interval = read_interval
+            else:
+                print('Invalid read interval in config.py.  Using default.')
+        print('Read Interval: {}'.format(self.read_interval))
+
+        self.suspend_threshold = DEFAULT_SUSPEND_THRESHOLD
+        if isinstance(suspend_threshold, int):
+            if suspend_threshold > SUSPEND_THRESHOLD_LIMIT:
+                self.suspend_threshold = suspend_threshold
+            else:
+                print('Invalid suspend threshold in config.py.  Using default.')
+        print('Suspend Threshold: {}'.format(self.suspend_threshold))
 
     def shutdown(self):
         if not self.shutdown_script:
@@ -211,17 +230,22 @@ class ApcUpsSnmp:
                                               shell=False,
                                               stderr=subprocess.DEVNULL).decode().split('\n')
         value = ''
+        value_minute = -1
+        value_str = 'UNK'
         for line in snmp_output:
             if re.match(r'.*=.*:.*', line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()
         if self.mib_commands[command_name]['decode']:
-            value = self.mib_commands[command_name]['decode'][value]
+            if value in self.mib_commands[command_name]['decode'].keys():
+                value = self.mib_commands[command_name]['decode'][value]
         if display:
             print('{}: {}'.format(self.mib_commands[command_name]['name'], value))
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
-            value_minute, value_str = re.sub(r'\(', '', value).split(')')
+            value_items = re.sub(r'\(', '', value).split(')')
+            if len(value_items) >= 2:
+                value_minute, value_str = value_items
             value = (int(value_minute)/60/60, value_str)
         return value
 
@@ -274,6 +298,10 @@ def main():
             time_on_bat = aps.send_snmp_command('mib_time_on_battery')[0]
             remain_run_time = aps.send_snmp_command('mib_battery_runtime_remain')[0]
 
+            if quit_signal:
+                print('{}: Received Quit Signal'.format(time_str))
+                sys.exit(0)
+
             if time_on_bat == 0.0:
                 print('{}: Battery Status: {}: Load: {}'.format(time_str, bat_status, bat_load))
             if time_on_bat > 0:
@@ -281,7 +309,7 @@ def main():
                 print('{}: UPS Runtime Remaining: {}'.format(time_str, remain_run_time))
 
             if bat_status == 'Battery Low':
-                print('{}: Batter Low'.format(time_str))
+                print('{}: Battery Low'.format(time_str))
                 # Call shutdown script
                 pass
 
@@ -300,7 +328,12 @@ def main():
                     aps.suspend()
                     suspend_state = True
                     pass
-            time.sleep(aps.read_interval)
+
+            for sleep_index in range(1, aps.read_interval):
+                time.sleep(1)
+                if quit_signal:
+                    print('{}: Received Quit Signal'.format(time_str))
+                    sys.exit(0)
 
 
 if __name__ == "__main__":
