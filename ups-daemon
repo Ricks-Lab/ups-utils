@@ -26,13 +26,8 @@ __maintainer__ = "RueiKe"
 __status__ = "Development"
 
 import argparse
-import subprocess
-import shlex
 import sys
 import time
-import shutil
-import re
-import os
 import signal
 from datetime import datetime
 from UPSmodules import UPSmodule
