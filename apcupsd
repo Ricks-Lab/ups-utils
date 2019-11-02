@@ -33,8 +33,18 @@ import time
 import shutil
 import re
 import os
+import signal
 from datetime import datetime
-from config import ups_IP, snmp_community, suspend_threshold, suspend_script, resume_script, shutdown_script
+from config import (ups_IP, snmp_community, suspend_threshold, read_interval,
+                    suspend_script, resume_script, shutdown_script)
+
+
+quit_signal = False
+
+
+def signal_handler(sig, frame):
+    global quit_signal
+    quit_signal = True
 
 
 class ApcUpsSnmp:
@@ -152,6 +162,9 @@ class ApcUpsSnmp:
                 print('Missing shutdown script: {}'.format(self.shutdown_script))
                 sys.exit(-1)
 
+        self.read_interval = read_interval
+        self.suspend_threshold = suspend_threshold
+
     def resume(self):
         if not self.resume_script:
             return
@@ -215,6 +228,8 @@ def main():
     parser.add_argument("-d", "--debug", help="Debug output", action="store_true", default=False)
     args = parser.parse_args()
 
+    signal.signal(signal.SIGINT, signal_handler)
+
     # About me
     if args.about:
         print(__doc__)
@@ -256,7 +271,7 @@ def main():
                 pass
 
             if suspend_state:
-                if time_on_bat < 3:
+                if time_on_bat < aps.suspend_threshold:
                     # Resume
                     print('{}: Resuming'.format(time_str))
                     aps.resume()
@@ -264,13 +279,13 @@ def main():
                     pass
 
             if not suspend_state:
-                if time_on_bat > 3:
+                if time_on_bat > aps.suspend_threshold:
                     # Suspend
                     print('{}: Suspending'.format(time_str))
                     aps.suspend()
                     suspend_state = True
                     pass
-            time.sleep(30)
+            time.sleep(aps.read_interval)
 
 
 if __name__ == "__main__":

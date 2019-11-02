@@ -12,7 +12,8 @@ rsh_login_id = 'client'          # UPS login ID to use
 rsh_password = ''                # UPS password
 snmp_community = 'private'       # SMNP community phrase
 
-
+read_interval = 30               # Number of seconds between reads from ups
+suspend_threshold = 3            # Number of minutes on battery till execute suspend script
 suspend_script = ''
 resume_script = ''
 shutdown_script = ''
