@@ -165,8 +165,22 @@ class ApcUpsSnmp:
         self.read_interval = read_interval
         self.suspend_threshold = suspend_threshold
 
+    def shutdown(self):
+        if not self.shutdown_script:
+            print('No shutdown script defined')
+            return
+        try:
+            cmd = subprocess.Popen(shlex.split(self.shutdown_script), shell=False, stdout=subprocess.PIPE)
+            while True:
+                if cmd.poll() is not None:
+                    break
+                time.sleep(1)
+        except:
+            print("Error: could not execute shutdown script: %s" % shutdown_script, file=sys.stderr)
+
     def resume(self):
         if not self.resume_script:
+            print('No resume script defined')
             return
         try:
             cmd = subprocess.Popen(shlex.split(self.resume_script), shell=False, stdout=subprocess.PIPE)
@@ -179,6 +193,7 @@ class ApcUpsSnmp:
 
     def suspend(self):
         if not self.suspend_script:
+            print('No suspend script defined')
             return
         try:
             cmd = subprocess.Popen(shlex.split(self.suspend_script), shell=False, stdout=subprocess.PIPE)
