@@ -1,6 +1,20 @@
 # ups-utils
 A set of utilities to monitor and react to the status of a supported UPS
 
+# Getting Started
+For any of the utilities to function, the config.py files must be customized using config.py.template as 
+a template.
+
+## ups-daemon
+With no options specified, the utility will give the current status of the UPS configured in the config.py file.
+With the *--daemon* option, *ups-daemon* will continuously check the status of the UPS.  When it detects that
+the UPS is sourcing powering from the battery, it will check the amount of time it has been running on battery
+and run the specified suspend script when the specified threshold is exceeded.  It will execute the specified
+resume script when it detects power has resumed.  When the utility detects a Battery Low event from the UPS or
+that time remaining for battery or the battery charge is below specified thresholds, then the shutdown script
+will be executed. With the *--list* option, the utility will list all available SNMP commands for the configured
+UPS.  The *--logfile filename* option is used to specify a logfile, but is not implemented at this time.
+
 ## Under Development
 The utility currently supports:
 * APC UPS with AP9630 NMC 
