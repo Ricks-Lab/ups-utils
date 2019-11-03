@@ -1,10 +1,16 @@
-# apcupsd
-A utility to monitor and react to the status of an APC UPS
+# ups-utils
+A set of utilities to monitor and react to the status of a supported UPS
 
 ## Under Development
+The utility currently supports:
+* APC UPS with AP9630 NMC 
+* EATON UPS with PowerWalker NMC
+It monitors the specified UPS using snmp v2c.  I have not implemented the ability to listen to snmp traps
+yet, as I still have some research to do.  If you have different UPS and would like to extend the dictionary
+in this code to support it, feel free to make a pull request.
 
 ## Reference Material
-* [aps-ups-snmp](https://github.com/phillipsnick/apc-ups-snmp)
+* [apc-ups-snmp](https://github.com/phillipsnick/apc-ups-snmp)
 * [Partial List of OIDs for APC UPS](https://www.opsview.com/resources/monitoring/blog/monitoring-apc-ups-useful-oids)
 * [Another Partial List of OIDs for APC UPS](https://www.itninja.com/blog/view/snmp-oids-for-apc-smart-ups-3000-rm-xl)
 * [Another Partial List of OIDs for APC UPS](https://wiki.netxms.org/wiki/UPS_Monitoring_(APC)_via_SNMP)

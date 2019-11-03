@@ -35,7 +35,8 @@ import datetime
 import subprocess
 try:
     from config import (ups_IP, ups_type, snmp_community, suspend_threshold, read_interval,
-                        suspend_script, resume_script, shutdown_script)
+                        suspend_script, resume_script, shutdown_script,
+                        shutdown_capacity_threshold, shutdown_time_remaining_threshold)
 except ModuleNotFoundError:
     print('The config.py file is missing.  Use config.py.template as a template.')
     print('Use chmod 600 on config.py to protect sensitive information.')
@@ -48,6 +49,8 @@ class ApcUpsSnmp:
         READ_INTERVAL_LIMIT = 10
         DEFAULT_SUSPEND_THRESHOLD = 5
         SUSPEND_THRESHOLD_LIMIT = 2
+        BATTERY_CAPACITY_SHUTDOWN_THRESHOLD = 10
+        BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD = 10
 
         self.all_mib_cmds = {'apc': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                                       'name': 'General UPS Information',
@@ -283,19 +286,35 @@ class ApcUpsSnmp:
 
         self.read_interval = DEFAULT_READ_INTERVAL
         if isinstance(read_interval, int):
-            if read_interval > READ_INTERVAL_LIMIT:
+            if read_interval >= READ_INTERVAL_LIMIT:
                 self.read_interval = read_interval
             else:
                 print('Invalid read interval in config.py.  Using default.')
-        print('Read Interval: {}'.format(self.read_interval))
+        print('Read Interval: {} sec'.format(self.read_interval))
 
         self.suspend_threshold = DEFAULT_SUSPEND_THRESHOLD
         if isinstance(suspend_threshold, int):
-            if suspend_threshold > SUSPEND_THRESHOLD_LIMIT:
+            if suspend_threshold >= SUSPEND_THRESHOLD_LIMIT:
                 self.suspend_threshold = suspend_threshold
             else:
                 print('Invalid suspend threshold in config.py.  Using default.')
-        print('Suspend Threshold: {}'.format(self.suspend_threshold))
+        print('Suspend Threshold: {} min'.format(self.suspend_threshold))
+
+        self.battery_capacity_shutdown_threshold = BATTERY_CAPACITY_SHUTDOWN_THRESHOLD
+        if isinstance(shutdown_capacity_threshold, int):
+            if shutdown_capacity_threshold >= BATTERY_CAPACITY_SHUTDOWN_THRESHOLD:
+                self.battery_capacity_shutdown_threshold = shutdown_capacity_threshold
+            else:
+                print('Invalid battery capacity shutdown threshold in config.py.  Using default.')
+        print('Battery Capacity Shutdown Threshold: {}%'.format(self.battery_capacity_shutdown_threshold))
+
+        self.battery_time_remaining_shutdown_threshold = BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD
+        if isinstance(shutdown_time_remaining_threshold, int):
+            if shutdown_time_remaining_threshold >= BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD:
+                self.battery_time_remaining_shutdown_threshold = shutdown_time_remaining_threshold
+            else:
+                print('Invalid battery time remaining shutdown threshold in config.py.  Using default.')
+        print('Battery time remaining Shutdown Threshold: {} min'.format(self.battery_time_remaining_shutdown_threshold))
 
     def shutdown(self):
         if not self.shutdown_script:

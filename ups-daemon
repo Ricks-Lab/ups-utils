@@ -102,7 +102,7 @@ def main():
                     print('{}: UPS Battery Capacity Remaining: {}%'.format(time_str, bat_capacity))
                     print('{}: Calling Shutdown Script'.format(time_str))
                     aps.shutdown()
-                if bat_capacity < 10 or remain_run_time < 5:
+                if bat_capacity < 80 or remain_run_time < 5:
                     # Call shutdown script
                     print('{}: Battery Nearly Exhausted'.format(time_str))
                     print('{}: UPS Runtime Remaining: {:.3f} min'.format(time_str, remain_run_time))
