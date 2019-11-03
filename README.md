@@ -9,4 +9,6 @@ A utility to monitor and react to the status of an APC UPS
 * [Another Partial List of OIDs for APC UPS](https://www.itninja.com/blog/view/snmp-oids-for-apc-smart-ups-3000-rm-xl)
 * [Another Partial List of OIDs for APC UPS](https://wiki.netxms.org/wiki/UPS_Monitoring_(APC)_via_SNMP)
 * [APC Reference](https://www.apc.com/salestools/LFLG-AFACYW/LFLG-AFACYW_R1_EN.pdf)
-* [snmp utilities](https://www.opsview.com/resources/monitoring/blog/monitoring-apc-ups-useful-oids)
+* [snmp utilities](http://www.net-snmp.org/docs/man/)
+* [MIB Browser](http://www.ireasoning.com/)
+* [Eaton PowerWalker NMC](https://powerwalker.com/?page=nmc&lang=en)
