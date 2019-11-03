@@ -30,6 +30,8 @@ import sys
 import re
 import shutil
 import shlex
+import time
+import datetime
 import subprocess
 try:
     from config import (ups_IP, ups_type, snmp_community, suspend_threshold, read_interval,
@@ -166,9 +168,9 @@ class ApcUpsSnmp:
                                           'mib_battery_capacity': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.4.0',
                                                                    'name': 'Percentage of Total Capacity',
                                                                    'decode': None},
-                                          'mib_battery_temperature': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.8.0',
-                                                                      'name': 'Battery Temperature in C',
-                                                                      'decode': None},
+                                          'mib_system_temperature': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.2.0',
+                                                                     'name': 'System Temperature in C',
+                                                                     'decode': None},
                                           'mib_system_status': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.1.0',
                                                                 'name': 'UPS System Status',
                                                                 'decode': {'1': 'Power On',
@@ -202,10 +204,10 @@ class ApcUpsSnmp:
                                                                    'name': 'Battery replacement',
                                                                    'decode': {'1': 'OK',
                                                                               '2': 'Replacement Required'}},
-                                          'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.1.0',
-                                                                'name': 'Input Voltage',
+                                          'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.16.1.3.1',
+                                                                'name': 'Input Voltage V',
                                                                 'decode': None},
-                                          'mib_input_frequency': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.4.0',
+                                          'mib_input_frequency': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.16.1.2.1',
                                                                   'name': 'Input Frequency Hz',
                                                                   'decode': None},
                                           'mib_reason_for_last_transfer': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.5.0',
@@ -220,29 +222,30 @@ class ApcUpsSnmp:
                                                                                       '8': 'Large Spike',
                                                                                       '9': 'UPS Self Test',
                                                                                       '10': 'Excessive Input V Fluctuation'}},
-                                          'mib_output_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.1.0',
+                                          'mib_output_voltage': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.3.1',
                                                                  'name': 'Output Voltage',
                                                                  'decode': None},
-                                          'mib_output_frequency': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.2.0',
+                                          'mib_output_frequency': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.2.1',
                                                                    'name': 'Output Frequency Hz',
                                                                    'decode': None},
-                                          'mib_output_load': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.3.0',
+                                          'mib_output_load': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.7.1',
                                                               'name': 'Output load as % of capacity',
                                                               'decode': None},
-                                          'mib_output_current': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.4.0',
+                                          'mib_output_current': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.4.1',
                                                                  'name': 'Output current in Amps',
                                                                  'decode': None},
-                                          'mib_comms': {'iso': 'iso.3.6.1.4.1.318.1.1.1.8.1.0',
-                                                        'name': 'Communicating with UPS Device',
-                                                        'decode': {'1': 'Communication OK',
-                                                                   '2': 'Communication Error'}},
-                                          'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.3.0',
+                                          'mib_output_power': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.5.1',
+                                                               'name': 'Output power in W',
+                                                               'decode': None},
+                                          'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.3.0',
                                                                         'name': 'Last Self Test Results',
-                                                                        'decode': {'1': 'OK',
-                                                                                   '2': 'Failed',
-                                                                                   '3': 'Invalid',
-                                                                                   '4': 'In Progress'}},
-                                          'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.4.0',
+                                                                        'decode': {'1': 'Idle',
+                                                                                   '2': 'Processing',
+                                                                                   '3': 'No Failure',
+                                                                                   '4': 'Failure/Warning',
+                                                                                   '5': 'Not Possible',
+                                                                                   '6': 'Test Cancel'}},
+                                          'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.4.0',
                                                                       'name': 'Date of Last Self Test',
                                                                       'decode': None}}}
 
@@ -343,20 +346,41 @@ class ApcUpsSnmp:
         value_minute = -1
         value_str = 'UNK'
         for line in snmp_output:
+            # print('line:  {}'.format(line))
             if re.match(r'.*=.*:.*', line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()
         if self.mib_commands[command_name]['decode']:
             if value in self.mib_commands[command_name]['decode'].keys():
                 value = self.mib_commands[command_name]['decode'][value]
-        if display:
-            print('{}: {}'.format(self.mib_commands[command_name]['name'], value))
+        if self.ups_type == 'eaton-pw':
+            if command_name == 'mib_output_voltage' or command_name == 'mib_output_frequency':
+                value = int(value) / 10.0
+            elif command_name == 'mib_input_voltage' or command_name == 'mib_input_frequency':
+                value = int(value) / 10.0
+            elif command_name == 'mib_system_temperature':
+                value = int(value) / 10.0
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
-            value_items = re.sub(r'\(', '', value).split(')')
-            if len(value_items) >= 2:
-                value_minute, value_str = value_items
-            value = (int(value_minute)/60/60, value_str)
+            if self.ups_type == 'eaton-pw':
+                # Process time for eaton-pw
+                if command_name == 'mib_time_on_battery':
+                    # Measured in seconds.
+                    value = int(value)
+                else:
+                    # Measured in minutes.
+                    value = int(value) * 60
+                value_str = str(datetime.timedelta(seconds=int(value)))
+                value_minute = float(value) / 60.0
+                value = (value_minute, value_str)
+            else:
+                # Process time for apc
+                value_items = re.sub(r'\(', '', value).split(')')
+                if len(value_items) >= 2:
+                    value_minute, value_str = value_items
+                value = (int(value_minute)/60/60, value_str)
+        if display:
+            print('{}: {}'.format(self.mib_commands[command_name]['name'], value))
         return value
 
     def list_snmp_commands(self):
