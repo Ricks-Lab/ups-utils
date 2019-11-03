@@ -1,7 +1,7 @@
 # ups-utils
 A set of utilities to monitor and react to the status of a supported UPS
 
-# Getting Started
+## Getting Started
 For any of the utilities to function, the config.py files must be customized using config.py.template as 
 a template.
 
@@ -19,9 +19,10 @@ UPS.  The *--logfile filename* option is used to specify a logfile, but is not i
 The utility currently supports:
 * APC UPS with AP9630 NMC 
 * EATON UPS with PowerWalker NMC
+
 It monitors the specified UPS using snmp v2c.  I have not implemented the ability to listen to snmp traps
 yet, as I still have some research to do.  If you have different UPS and would like to extend the dictionary
-in this code to support it, feel free to make a pull request.
+in this [code](https://github.com/Ricks-Lab/ups-utils/blob/master/UPSmodules/UPSmodule.py) to support it, feel free to make a pull request.
 
 ## Reference Material
 * [apc-ups-snmp](https://github.com/phillipsnick/apc-ups-snmp)
