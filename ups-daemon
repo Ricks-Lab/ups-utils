@@ -74,23 +74,23 @@ def main():
         print("Status: ", __status__)
         sys.exit(0)
 
-    aps = UPSmodule.ApcUpsSnmp()
+    ups = UPSmodule.UPSsnmp()
     if args.list:
-        aps.list_snmp_commands()
+        ups.list_snmp_commands()
 
     # Display current status of target UPS
-    for k, v in aps.mib_commands.items():
-        aps.send_snmp_command(k, display=True)
+    for k, v in ups.mib_commands.items():
+        ups.send_snmp_command(k, display=True)
 
     if args.daemon:
         suspend_state = False
         while True:
             time_str = datetime.now().strftime('%c')
-            bat_status = aps.send_snmp_command('mib_battery_status')
-            bat_load = aps.send_snmp_command('mib_output_load')
-            bat_capacity = int(aps.send_snmp_command('mib_battery_capacity'))
-            time_on_bat = aps.send_snmp_command('mib_time_on_battery')[0]
-            remain_run_time = aps.send_snmp_command('mib_battery_runtime_remain')[0]
+            bat_status = ups.send_snmp_command('mib_battery_status')
+            bat_load = ups.send_snmp_command('mib_output_load')
+            bat_capacity = int(ups.send_snmp_command('mib_battery_capacity'))
+            time_on_bat = ups.send_snmp_command('mib_time_on_battery')[0]
+            remain_run_time = ups.send_snmp_command('mib_battery_runtime_remain')[0]
 
             if quit_signal:
                 print('{}: Received Quit Signal'.format(time_str))
@@ -110,14 +110,14 @@ def main():
                     print('{}: UPS Runtime Remaining: {:.3f} min'.format(time_str, remain_run_time))
                     print('{}: UPS Battery Capacity Remaining: {}%'.format(time_str, bat_capacity))
                     print('{}: Calling Shutdown Script'.format(time_str))
-                    aps.shutdown()
+                    ups.shutdown()
                 if bat_capacity < 80 or remain_run_time < 5:
                     # Call shutdown script
                     print('{}: Battery Nearly Exhausted'.format(time_str))
                     print('{}: UPS Runtime Remaining: {:.3f} min'.format(time_str, remain_run_time))
                     print('{}: UPS Battery Capacity Remaining: {}%'.format(time_str, bat_capacity))
                     print('{}: Calling Shutdown Script'.format(time_str))
-                    aps.shutdown()
+                    ups.shutdown()
 
             if bat_capacity < 10 or remain_run_time < 5:
                 print('{}: Battery Nearly Exhausted'.format(time_str))
@@ -126,22 +126,22 @@ def main():
                 print('{}: UPS Battery Charging'.format(time_str))
 
             if suspend_state:
-                if time_on_bat < aps.suspend_threshold:
+                if time_on_bat < ups.suspend_threshold:
                     # Resume
                     print('{}: Resuming'.format(time_str))
-                    aps.resume()
+                    ups.resume()
                     suspend_state = False
                     pass
 
             if not suspend_state:
-                if time_on_bat > aps.suspend_threshold:
+                if time_on_bat > ups.suspend_threshold:
                     # Suspend
                     print('{}: Suspending'.format(time_str))
-                    aps.suspend()
+                    ups.suspend()
                     suspend_state = True
                     pass
 
-            for sleep_index in range(1, aps.read_interval):
+            for sleep_index in range(1, ups.read_interval):
                 time.sleep(1)
                 if quit_signal:
                     print('{}: Received Quit Signal'.format(time_str))

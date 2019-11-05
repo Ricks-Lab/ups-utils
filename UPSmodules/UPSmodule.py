@@ -32,6 +32,7 @@ import shutil
 import shlex
 import time
 import datetime
+import json
 import subprocess
 try:
     from config import (ups_IP, ups_type, snmp_community, suspend_threshold, read_interval,
@@ -42,15 +43,19 @@ except ModuleNotFoundError:
     print('Use chmod 600 on config.py to protect sensitive information.')
     sys.exit(-1)
 
+# Constants used by ups-utils
+UPS_LIST_JSON_FILE = 'config.json'
+DEFAULT_READ_INTERVAL = 30
+READ_INTERVAL_LIMIT = 10
+DEFAULT_SUSPEND_THRESHOLD = 5
+SUSPEND_THRESHOLD_LIMIT = 2
+BATTERY_CAPACITY_SHUTDOWN_THRESHOLD = 10
+BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD = 10
 
-class ApcUpsSnmp:
+
+class UPSsnmp:
     def __init__(self):
-        DEFAULT_READ_INTERVAL = 30
-        READ_INTERVAL_LIMIT = 10
-        DEFAULT_SUSPEND_THRESHOLD = 5
-        SUSPEND_THRESHOLD_LIMIT = 2
-        BATTERY_CAPACITY_SHUTDOWN_THRESHOLD = 10
-        BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD = 10
+        self.ups_list = {}
 
         self.all_mib_cmds = {'apc': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                                       'name': 'General UPS Information',
@@ -409,6 +414,14 @@ class ApcUpsSnmp:
             if v['decode']:
                 for k2, v2 in v['decode'].items():
                     print('        {}: {}'.format(k2, v2))
+
+    def read_ups_list(self):
+        if not os.path.isfile(UPS_LIST_JSON_FILE):
+            print('Error: UPS List file not found: {}'.format(UPS_LIST_JSON_FILE))
+            return False
+        with open(UPS_LIST_JSON_FILE, 'r') as ups_list_file:
+            self.ups_list = json.load(ups_list_file)
+        return True
 
 
 def about():
