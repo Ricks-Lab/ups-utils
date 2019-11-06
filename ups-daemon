@@ -82,7 +82,7 @@ def main():
     ups = UPS.UPSsnmp()
     ups.set_daemon_parameters()
     if not ups.check_ups_type(ups.daemon_ups['ups_type']):
-        print('Invalid UPS type: {}, Valid entries: '.format(ups.daemon['ups_type']), ups.list_valid_ups_types())
+        print('Invalid UPS type: {}, Valid entries: '.format(ups.daemon_ups['ups_type']), ups.list_valid_ups_types())
         sys.exit(-1)
 
     if args.list:
@@ -137,7 +137,7 @@ def main():
                 print('{}: UPS Battery Charging'.format(time_str))
 
             if suspend_state:
-                if time_on_bat < ups.suspend_threshold:
+                if time_on_bat < ups.daemon_ups['suspend_threshold']:
                     # Resume
                     print('{}: Resuming'.format(time_str))
                     ups.resume()
@@ -145,14 +145,14 @@ def main():
                     pass
 
             if not suspend_state:
-                if time_on_bat > ups.suspend_threshold:
+                if time_on_bat > ups.daemon_ups['suspend_threshold']:
                     # Suspend
                     print('{}: Suspending'.format(time_str))
                     ups.suspend()
                     suspend_state = True
                     pass
 
-            for sleep_index in range(1, ups.read_interval):
+            for sleep_index in range(1, ups.daemon_ups['read_interval']):
                 time.sleep(1)
                 if quit_signal:
                     print('{}: Received Quit Signal'.format(time_str))
