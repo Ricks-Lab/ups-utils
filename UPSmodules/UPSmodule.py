@@ -28,12 +28,15 @@ __status__ = "Development"
 import os
 import sys
 import re
-import shutil
 import shlex
 import time
 import datetime
 import json
 import subprocess
+try:
+    from UPSmodules import env
+except ModuleNotFoundError:
+    import env
 try:
     from config import (ups_IP, ups_type, snmp_community, suspend_threshold, read_interval,
                         suspend_script, resume_script, shutdown_script,
@@ -43,21 +46,34 @@ except ModuleNotFoundError:
     print('Use chmod 600 on config.py to protect sensitive information.')
     sys.exit(-1)
 
-# Constants used by ups-utils
-UPS_LIST_JSON_FILE = 'config.json'
-DEFAULT_READ_INTERVAL = 30
-READ_INTERVAL_LIMIT = 10
-DEFAULT_SUSPEND_THRESHOLD = 5
-SUSPEND_THRESHOLD_LIMIT = 2
-BATTERY_CAPACITY_SHUTDOWN_THRESHOLD = 10
-BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD = 10
-
 
 class UPSsnmp:
     def __init__(self):
+        # UPS list from config.json for monitor and ls utils.
         self.ups_list = {}
 
-        self.all_mib_cmds = {'apc': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
+        # UPS from config.py for ups-daemon utility.
+        self.daemon_ups = {'ups_IP': '', 'ups_type': '', 'snmp_community': '', 'suspend_threshold': '',
+                           'read_interval': '', 'suspend_script': '', 'resume_script': '', 'shutdown_script': '',
+                           'shutdown_capacity_threshold': '', 'shutdown_time_remaining_threshold': '',
+                           'mib_commands': None}
+
+        # These 2 items are set to determine snmp behavior and should be modified when switching UPS types
+        self.mib_commands = {}
+        self.ups_type = ''
+
+        self.monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
+                                            'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
+                                            'mib_ups_manufacture_date', 'mib_ups_contact'],
+                                 'dynamic': ['mib_battery_capacity', 'mib_battery_status', 'mib_time_on_battery',
+                                             'mib_battery_runtime_remain', 'mib_input_voltage', 'mib_input_frequency',
+                                             'mib_reason_for_last_transfer', 'mib_output_voltage',
+                                             'mib_output_frequency', 'mib_output_load', 'mib_output_current',
+                                             'mib_output_power']}
+
+        self.all_mib_cmds = {
+                             # MiBs for APC UPS with AP9630 NMC
+                             'apc': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                                       'name': 'General UPS Information',
                                                       'decode': None},
                                      'mib_bios_serial_number': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.3.0',
@@ -75,7 +91,7 @@ class UPSsnmp:
                                      'mib_ups_location': {'iso': 'iso.3.6.1.2.1.1.6.0',
                                                           'name': 'UPS Location',
                                                           'decode': None},
-                                     'mib_ups_manufacture_data': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
+                                     'mib_ups_manufacture_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
                                                                   'name': 'UPS Manufacture Date',
                                                                   'decode': None},
                                      'mib_ups_name': {'iso': 'iso.3.6.1.2.1.33.1.1.5.0',
@@ -146,6 +162,7 @@ class UPSsnmp:
                                      'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.4.0',
                                                                  'name': 'Date of Last Self Test',
                                                                  'decode': None}},
+                             # MiBs for Eaton UPS with PowerWalker NMC
                              'eaton-pw': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                                            'name': 'General UPS Information',
                                                            'decode': None},
@@ -167,7 +184,7 @@ class UPSsnmp:
                                           'mib_ups_location': {'iso': 'iso.3.6.1.2.1.1.6.0',
                                                                'name': 'UPS Location',
                                                                'decode': None},
-                                          'mib_ups_manufacture_data': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
+                                          'mib_ups_manufacture_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
                                                                        'name': 'UPS Manufacture Date',
                                                                        'decode': None},
                                           'mib_ups_name': {'iso': 'iso.3.6.1.2.1.33.1.1.5.0',
@@ -257,108 +274,113 @@ class UPSsnmp:
                                                                       'name': 'Date of Last Self Test',
                                                                       'decode': None}}}
 
-        if ups_type not in self.all_mib_cmds.keys():
-            print('Invalid UPS type: {}, Valid entries: '.format(ups_type),  list(self.all_mib_cmds.keys()))
-            sys.exit(-1)
+    def set_mib_commands(self, target_ups_type):
+        if self.check_ups_type(target_ups_type):
+            self.mib_commands = self.all_mib_cmds[target_ups_type]
+            self.ups_type = target_ups_type
+            return True
+        return False
 
-        self.ups_type = ups_type
-        self.mib_commands = self.all_mib_cmds[ups_type]
+    def set_daemon_parameters(self):
+        self.daemon_ups['ups_type'] = ups_type
+        self.daemon_ups['mib_commands'] = self.all_mib_cmds[ups_type]
+        self.set_mib_commands(ups_type)
 
-        if not shutil.which('snmpget'):
-            print('Missing dependency: sudo apt install snmp')
-            sys.exit(-1)
-
-        self.suspend_script = suspend_script
+        self.daemon_ups['suspend_script'] = suspend_script
         if suspend_script:
-            if not os.path.isfile(self.suspend_script):
-                print('Missing suspend script: {}'.format(self.suspend_script))
+            if not os.path.isfile(suspend_script):
+                print('Missing suspend script: {}'.format(suspend_script))
                 sys.exit(-1)
-            print('Suspend script: {}'.format(self.suspend_script))
+            print('Suspend script: {}'.format(suspend_script))
 
-        self.resume_script = resume_script
+        self.daemon_ups['resume_script'] = resume_script
         if resume_script:
-            if not os.path.isfile(self.resume_script):
-                print('Missing resume script: {}'.format(self.resume_script))
+            if not os.path.isfile(resume_script):
+                print('Missing resume script: {}'.format(resume_script))
                 sys.exit(-1)
-            print('Resume script: {}'.format(self.resume_script))
+            print('Resume script: {}'.format(resume_script))
 
-        self.shutdown_script = shutdown_script
+        self.daemon_ups['shutdown_script'] = shutdown_script
         if shutdown_script:
-            if not os.path.isfile(self.shutdown_script):
-                print('Missing shutdown script: {}'.format(self.shutdown_script))
+            if not os.path.isfile(shutdown_script):
+                print('Missing shutdown script: {}'.format(shutdown_script))
                 sys.exit(-1)
-            print('Shutdown script: {}'.format(self.shutdown_script))
+            print('Shutdown script: {}'.format(shutdown_script))
 
-        self.read_interval = DEFAULT_READ_INTERVAL
+        self.daemon_ups['read_interval'] = env.ut_const.DEFAULT_READ_INTERVAL
         if isinstance(read_interval, int):
-            if read_interval >= READ_INTERVAL_LIMIT:
-                self.read_interval = read_interval
+            if read_interval >= env.ut_const.READ_INTERVAL_LIMIT:
+                self.daemon_ups['read_interval'] = read_interval
             else:
                 print('Invalid read interval in config.py.  Using default.')
-        print('Read Interval: {} sec'.format(self.read_interval))
+        print('Read Interval: {} sec'.format(self.daemon_ups['read_interval']))
 
-        self.suspend_threshold = DEFAULT_SUSPEND_THRESHOLD
+        self.daemon_ups['suspend_threshold'] = env.ut_const.DEFAULT_SUSPEND_THRESHOLD
         if isinstance(suspend_threshold, int):
-            if suspend_threshold >= SUSPEND_THRESHOLD_LIMIT:
-                self.suspend_threshold = suspend_threshold
+            if suspend_threshold >= env.ut_const.SUSPEND_THRESHOLD_LIMIT:
+                self.daemon_ups['suspend_threshold'] = suspend_threshold
             else:
                 print('Invalid suspend threshold in config.py.  Using default.')
-        print('Suspend Threshold: {} min'.format(self.suspend_threshold))
+        print('Suspend Threshold: {} min'.format(self.daemon_ups['suspend_threshold']))
 
-        self.battery_capacity_shutdown_threshold = BATTERY_CAPACITY_SHUTDOWN_THRESHOLD
+        self.daemon_ups['battery_capacity_shutdown_threshold'] = env.ut_const.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD
         if isinstance(shutdown_capacity_threshold, int):
-            if shutdown_capacity_threshold >= BATTERY_CAPACITY_SHUTDOWN_THRESHOLD:
-                self.battery_capacity_shutdown_threshold = shutdown_capacity_threshold
+            if shutdown_capacity_threshold >= env.ut_const.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD:
+                self.daemon_ups['battery_capacity_shutdown_threshold'] = shutdown_capacity_threshold
             else:
                 print('Invalid battery capacity shutdown threshold in config.py.  Using default.')
-        print('Battery Capacity Shutdown Threshold: {}%'.format(self.battery_capacity_shutdown_threshold))
+        print('Battery Capacity Shutdown Threshold: {}%'.format(self.daemon_ups['battery_capacity_shutdown_threshold']))
 
-        self.battery_time_remaining_shutdown_threshold = BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD
+        self.daemon_ups['battery_time_remaining_shutdown_threshold'] = env.ut_const.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD
         if isinstance(shutdown_time_remaining_threshold, int):
-            if shutdown_time_remaining_threshold >= BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD:
-                self.battery_time_remaining_shutdown_threshold = shutdown_time_remaining_threshold
+            if shutdown_time_remaining_threshold >= env.ut_const.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD:
+                self.daemon_ups['battery_time_remaining_shutdown_threshold'] = shutdown_time_remaining_threshold
             else:
                 print('Invalid battery time remaining shutdown threshold in config.py.  Using default.')
-        print('Battery time remaining Shutdown Threshold: {} min'.format(self.battery_time_remaining_shutdown_threshold))
+        print('Battery time remaining Shutdown Threshold: {} min'.format(
+               self.daemon_ups['battery_time_remaining_shutdown_threshold']))
 
     def shutdown(self):
-        if not self.shutdown_script:
+        if not self.daemon_ups['shutdown_script']:
             print('No shutdown script defined')
             return
         try:
-            cmd = subprocess.Popen(shlex.split(self.shutdown_script), shell=False, stdout=subprocess.PIPE)
+            cmd = subprocess.Popen(shlex.split(self.daemon_ups['shutdown_script']), shell=False, stdout=subprocess.PIPE)
             while True:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
         except:
-            print("Error: could not execute shutdown script: %s" % shutdown_script, file=sys.stderr)
+            print('Error: could not execute shutdown script: {}'.format(self.daemon_ups['shutdown_script']),
+                  file=sys.stderr)
 
     def resume(self):
-        if not self.resume_script:
+        if not self.daemon_ups['resume_script']:
             print('No resume script defined')
             return
         try:
-            cmd = subprocess.Popen(shlex.split(self.resume_script), shell=False, stdout=subprocess.PIPE)
+            cmd = subprocess.Popen(shlex.split(self.daemon_ups['resume_script']), shell=False, stdout=subprocess.PIPE)
             while True:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
         except:
-            print("Error: could not execute resume script: %s" % resume_script, file=sys.stderr)
+            print('Error: could not execute resume script: {}'.format(self.daemon_ups['resume_script']),
+                  file=sys.stderr)
 
     def suspend(self):
-        if not self.suspend_script:
+        if not self.daemon_ups['suspend_script']:
             print('No suspend script defined')
             return
         try:
-            cmd = subprocess.Popen(shlex.split(self.suspend_script), shell=False, stdout=subprocess.PIPE)
+            cmd = subprocess.Popen(shlex.split(self.daemon_ups['suspend_script']), shell=False, stdout=subprocess.PIPE)
             while True:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
         except:
-            print("Error: could not execute suspend script: %s" % suspend_script, file=sys.stderr)
+            print('Error: could not execute suspend script: {}'.format(self.daemon_ups['suspend_script']),
+                  file=sys.stderr)
 
     def send_snmp_command(self, command_name, display=False):
         cmd_mib = self.mib_commands[command_name]['iso']
@@ -416,12 +438,26 @@ class UPSsnmp:
                     print('        {}: {}'.format(k2, v2))
 
     def read_ups_list(self):
-        if not os.path.isfile(UPS_LIST_JSON_FILE):
-            print('Error: UPS List file not found: {}'.format(UPS_LIST_JSON_FILE))
+        if not os.path.isfile(env.ut_const.UPS_LIST_JSON_FILE):
+            print('Error: UPS List file not found: {}'.format(env.ut_const.UPS_LIST_JSON_FILE))
             return False
-        with open(UPS_LIST_JSON_FILE, 'r') as ups_list_file:
+        with open(env.ut_const.UPS_LIST_JSON_FILE, 'r') as ups_list_file:
             self.ups_list = json.load(ups_list_file)
         return True
+
+    def num_ups(self):
+        cnt = 0
+        for k in self.ups_list.keys():
+            cnt += 1
+        return cnt
+
+    def check_ups_type(self, test_ups_type):
+        if test_ups_type not in self.all_mib_cmds.keys():
+            return False
+        return True
+
+    def list_valid_ups_types(self):
+        return list(self.all_mib_cmds.keys())
 
 
 def about():

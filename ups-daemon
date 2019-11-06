@@ -39,7 +39,8 @@ import sys
 import time
 import signal
 from datetime import datetime
-from UPSmodules import UPSmodule
+from UPSmodules import UPSmodule as UPS
+from UPSmodules import env
 
 
 quit_signal = False
@@ -74,9 +75,19 @@ def main():
         print("Status: ", __status__)
         sys.exit(0)
 
-    ups = UPSmodule.UPSsnmp()
+    if env.ut_const.check_env() < 0:
+        print('Error in environment. Exiting...')
+        sys.exit(-1)
+
+    ups = UPS.UPSsnmp()
+    ups.set_daemon_parameters()
+    if not ups.check_ups_type(ups.daemon_ups['ups_type']):
+        print('Invalid UPS type: {}, Valid entries: '.format(ups.daemon['ups_type']), ups.list_valid_ups_types())
+        sys.exit(-1)
+
     if args.list:
         ups.list_snmp_commands()
+        sys.exit(0)
 
     # Display current status of target UPS
     for k, v in ups.mib_commands.items():
