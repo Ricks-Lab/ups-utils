@@ -1,20 +1,7 @@
 #!/usr/bin/env python
 """  Make necessary changes to describe your details and save as *config.py*
 
-     I suggest making readable only by you.  I suggest creating a read-only
-     client login for your UPS.
 """
-
-ups_IP = ''                             # IP address of target APC UPS
-ups_type = ''                           # Type of UPS ('apc', 'eaton-pw')
-
-# rsh fields not required for snmp
-rsh_cipher_spec = 'aes256-cbc'          # cipher_spec to use
-rsh_login_id = 'client'                 # UPS login ID to use
-rsh_password = ''                       # UPS password
-
-# snmp details
-snmp_community = 'private'              # SMNP community phrase
 
 # daemon parameters
 shutdown_capacity_threshold = 10        # Battery percentage shutdown threshold
