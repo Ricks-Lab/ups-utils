@@ -15,6 +15,9 @@ that time remaining for battery or the battery charge is below specified thresho
 will be executed. With the *--list* option, the utility will list all available SNMP commands for the configured
 UPS.  The *--logfile filename* option is used to specify a logfile, but is not implemented at this time.
 
+## ups-ls
+This utility lists most relevant parameters for installed and compatible UPSs listed in the config.json file.
+
 ## Under Development
 The utility currently supports:
 * APC UPS with AP9630 NMC 
