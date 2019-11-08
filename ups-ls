@@ -81,13 +81,19 @@ def main():
         if args.input or args.output:
             if args.input:
                 for oc in ups.input_mib_cmds:
-                    ups.send_snmp_command(oc, display=True)
+                    if ups.send_snmp_command(oc, display=True) == 'UPS Not Responding':
+                        print('Giving up on {}'.format(ups.active_ups_name()))
+                        break
             if args.output:
                 for oc in ups.output_mib_cmds:
-                    ups.send_snmp_command(oc, display=True)
+                    if ups.send_snmp_command(oc, display=True) == 'UPS Not Responding':
+                        print('Giving up on {}'.format(ups.active_ups_name()))
+                        break
         else:
             for k2, v2 in ups.mib_commands(ups.active_ups).items():
-                ups.send_snmp_command(k2, display=True)
+                if ups.send_snmp_command(k2, display=True) == 'UPS Not Responding':
+                    print('Giving up on {}'.format(ups.active_ups_name()))
+                    break
         print('')
 
     sys.exit(0)

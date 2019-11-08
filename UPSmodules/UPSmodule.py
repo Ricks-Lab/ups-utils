@@ -86,6 +86,9 @@ class UPSsnmp:
                                      'mib_ups_type': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.1.1.0',
                                                       'name': 'UPS Type',
                                                       'decode': None},
+                                     'mib_ups_model': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.5.0',
+                                                       'name': 'UPS Model Number',
+                                                       'decode': None},
                                      'mib_ups_contact': {'iso': 'iso.3.6.1.2.1.1.4.0',
                                                          'name': 'UPS Contact',
                                                          'decode': None},
@@ -425,8 +428,13 @@ class UPSsnmp:
         cmd_mib = snmp_mib_commands[command_name]['iso']
         cmd_str = 'snmpget -v2c -c {} {} {}'.format(self.active_ups['snmp_community'],
                                                     self.active_ups['ups_IP'], cmd_mib)
-        snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
-                                              stderr=subprocess.DEVNULL).decode().split('\n')
+        try:
+            snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
+                                                  stderr=subprocess.DEVNULL).decode().split('\n')
+        except:
+            print('Error executing snmp command to {} at {}.'.format(self.active_ups_name(), self.active_ups_ip()))
+            return 'UPS Not Responding'
+
         value = ''
         value_minute = -1
         value_str = 'UNK'
