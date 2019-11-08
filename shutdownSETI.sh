@@ -23,4 +23,4 @@ cd /home/boinc/BOINC/
 echo "`date`: shutting down SETI machine" >> SETI_Power.log
 /home/boinc/BOINC/boinccmd --project http://setiathome.berkeley.edu/ suspend >> SETI_Power.log
 /home/boinc/BOINC/boinccmd --quit >> SETI_Power.log
-shutdown now
+shutdown +2 'UPS battery depleted.  System will shutdown in 2min.'

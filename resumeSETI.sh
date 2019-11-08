@@ -22,3 +22,4 @@
 cd /home/boinc/BOINC/
 echo "`date`: resuming SETI" >> SETI_Power.log
 /home/boinc/BOINC/boinccmd --project http://setiathome.berkeley.edu/ resume >> SETI_Power.log
+shutdown -c
