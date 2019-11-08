@@ -16,7 +16,10 @@ will be executed. With the *--list* option, the utility will list all available 
 UPS.  The *--logfile filename* option is used to specify a logfile, but is not implemented at this time.
 
 ## ups-ls
-This utility lists most relevant parameters for installed and compatible UPSs listed in the config.json file.
+This utility displays most relevant parameters for installed and compatible UPSs
+listed in the config.json file.  By default, all available parameters are displayed.
+The *--input* and *--output* options can be used to get relevant UPS input and output 
+parameters.
 
 ## Under Development
 The utility currently supports:

@@ -80,8 +80,8 @@ def main():
         sys.exit(-1)
 
     ups = UPS.UPSsnmp()
-    ups.read_ups_list()
-    ups.check_ups_list()
+    #ups.read_ups_list()
+    #ups.check_ups_list()
     ups.set_daemon_parameters()
     if not ups.check_ups_type(ups.active_ups['ups_type']):
         print('Invalid UPS type: {}, Valid entries: '.format(ups.active_ups['ups_type']), ups.list_valid_ups_types())

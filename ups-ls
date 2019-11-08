@@ -2,7 +2,9 @@
 """ ups-ls  -  Displays details about installed compatible UPSs
 
     This utility displays most relevant parameters for installed and compatible UPSs
-    listed in the config.json file.
+    listed in the config.json file.  By default, all available parameters are displayed.
+    The --input and --output options can be used to get relevant UPS input and output
+    parameters.
 
     Copyright (C) 2019  RueiKe
 
@@ -38,6 +40,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README',
                         action='store_true', default=False)
+    parser.add_argument('--input', help='Display UPS input parameters',
+                        action='store_true', default=False)
+    parser.add_argument('--output', help='Display UPS output parameters',
+                        action='store_true', default=False)
     parser.add_argument('-d', '--debug', help='Debug output',
                         action='store_true', default=False)
     args = parser.parse_args()
@@ -61,8 +67,6 @@ def main():
         sys.exit(-1)
 
     ups = UPS.UPSsnmp()
-    ups.read_ups_list()
-    ups.check_ups_list()
     num_ups = ups.num_ups()
 
     if num_ups == 0:
@@ -72,9 +76,18 @@ def main():
 
     for k, v in ups.ups_list.items():
         ups.set_active_ups(v)
-        print('UPS IP: {}'.format(v['ups_IP']))
-        for k2, v2 in ups.mib_commands(ups.active_ups).items():
-            ups.send_snmp_command(k2, display=True)
+        print('UPS Name: {}'.format(ups.active_ups_name()))
+        print('UPS IP: {}'.format(ups.active_ups_ip()))
+        if args.input or args.output:
+            if args.input:
+                for oc in ups.input_mib_cmds:
+                    ups.send_snmp_command(oc, display=True)
+            if args.output:
+                for oc in ups.output_mib_cmds:
+                    ups.send_snmp_command(oc, display=True)
+        else:
+            for k2, v2 in ups.mib_commands(ups.active_ups).items():
+                ups.send_snmp_command(k2, display=True)
         print('')
 
     sys.exit(0)
