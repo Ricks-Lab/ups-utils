@@ -65,9 +65,8 @@ class UPSsnmp:
                                             'mib_ups_manufacture_date', 'mib_ups_contact'],
                                  'dynamic': ['mib_battery_capacity', 'mib_battery_status', 'mib_time_on_battery',
                                              'mib_battery_runtime_remain', 'mib_input_voltage', 'mib_input_frequency',
-                                             'mib_reason_for_last_transfer', 'mib_output_voltage',
-                                             'mib_output_frequency', 'mib_output_load', 'mib_output_current',
-                                             'mib_output_power']}
+                                             'mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
+                                             'mib_output_current', 'mib_output_power']}
         self.output_mib_cmds = ['mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
                                 'mib_output_power']
         self.input_mib_cmds = ['mib_input_voltage', 'mib_input_frequency']
@@ -292,6 +291,9 @@ class UPSsnmp:
     def mib_commands(ups_item):
         return ups_item['mib_commands']
 
+    def get_monitor_mib_commands(self, type='dynamic'):
+        return self.monitor_mib_cmds[type]
+
     def active_ups_mib_commands(self):
         return self.active_ups['mib_commands']
 
@@ -484,6 +486,9 @@ class UPSsnmp:
                 for k2, v2 in v['decode'].items():
                     print('        {}: {}'.format(k2, v2))
 
+    def get_ups_list(self):
+        return self.ups_list
+
     def read_ups_list(self):
         if not os.path.isfile(env.ut_const.UPS_LIST_JSON_FILE):
             print('Error: UPS List file not found: {}'.format(env.ut_const.UPS_LIST_JSON_FILE))
@@ -505,6 +510,15 @@ class UPSsnmp:
 
     def list_valid_ups_types(self):
         return list(self.all_mib_cmds.keys())
+
+    def print_log(self, fileptr):
+        pass
+
+    def print_log_header(self, fileptr):
+        pass
+
+    def print_table(self):
+        pass
 
 
 def about():

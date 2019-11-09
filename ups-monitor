@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+""" ups-monitor  -  Displays current status of all active UPSs
+
+    A utility to give the current state of all compatible UPSs. The default behavior
+    is to continuously update a text based table in the current window until Ctrl-C is
+    pressed.  With the *--gui* option, a table of relevant parameters will be updated
+    in a Gtk window.  You can specify the delay between updates with the *--sleep N*
+    option where N is an integer > zero that specifies the number of seconds to sleep
+    between updates.  The *--log* option is used to write all monitor data to a psv log
+    file.  When writing to a log file, the utility will indicate this in red at the top of
+    the window with a message that includes the log file name.
+
+    Copyright (C) 2019  RueiKe
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+__author__ = 'RueiKe'
+__copyright__ = 'Copyright (C) 2019 RueiKe'
+__credits__ = ['']
+__license__ = 'GNU General Public License'
+__program_name__ = 'ups-monitor'
+__version__ = 'v0.0.2'
+__maintainer__ = 'RueiKe'
+__status__ = 'Development'
+
+import argparse
+import subprocess
+import threading
+import os
+import sys
+import shlex
+import time
+from UPSmodules import UPSmodule as UPS
+from UPSmodules import env
+
+try:
+    import gi
+except ModuleNotFoundError as error:
+    print('gi import error: {}'.format(error))
+    print('gi is required for %s', __program_name__)
+    print('   In a venv, first install vext:  pip install --no-cache-dir vext')
+    print('   Then install vext.gi:  pip install --no-cache-dir vext.gi')
+    sys.exit(0)
+gi.require_version('Gtk', '3.0')
+from gi.repository import GLib, Gtk, Gdk
+
+
+class MonitorWindow(Gtk.Window):
+    def __init__(self, gpu_list, devices):
+        self.quit = False
+
+        Gtk.Window.__init__(self, title='ups-monitor')
+        self.set_border_width(1)
+        icon_file = os.path.join(env.ut_const.icon_path, 'ups-monitor.icon.png')
+        if env.ut_const.DEBUG: print('Icon file: [{}]'.format(icon_file))
+        if os.path.isfile(icon_file):
+            self.set_icon_from_file(icon_file)
+        grid = Gtk.Grid()
+        grid.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1, 1, 1, 1))
+        self.add(grid)
+
+        col = 0
+        row = 0
+        num_amd_gpus = gpu_list.num_gpus()
+        if env.ut_const.LOG:
+            log_label = Gtk.Label()
+            log_label.set_markup('<big><b> Logging to:    </b>' + env.ut_const.log_file + '</big>')
+            log_label.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+            lbox = Gtk.Box(spacing=6)
+            lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
+            lbox.set_property('margin-top', 1)
+            lbox.set_property('margin-bottom', 1)
+            lbox.set_property('margin-right', 1)
+            lbox.set_property('margin-left', 1)
+            lbox.pack_start(log_label, True, True, 0)
+            grid.attach(lbox, 0, row, num_amd_gpus+1, 1)
+        row += 1
+        row_start = row
+
+        row = row_start
+        row_labels = {'card_num': Gtk.Label()}
+        row_labels['card_num'].set_markup('<b>Card #</b>')
+        row_labels['card_num'].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+        for k, v in gpu_list.table_param_labels.items():
+            row_labels[k] = Gtk.Label()
+            row_labels[k].set_markup('<b>' + str(v) + '</b>')
+            row_labels[k].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+        for k, v in row_labels.items():
+            lbox = Gtk.Box(spacing=6)
+            lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .40, .60, 1.0))
+            lbox.set_property('margin-top', 1)
+            lbox.set_property('margin-bottom', 1)
+            lbox.set_property('margin-right', 1)
+            lbox.set_property('margin-left', 1)
+            v.set_property('margin-top', 1)
+            v.set_property('margin-bottom', 1)
+            v.set_property('margin-right', 4)
+            v.set_property('margin-left', 4)
+            lbox.pack_start(v, True, True, 0)
+            grid.attach(lbox, col, row, 1, 1)
+            v.set_alignment(0, 0.5)
+            row += 1
+        for k, v in gpu_list.list.items():
+            devices[v.uuid] = {'card_num':  Gtk.Label(label='card' + v.get_params_value('card_num'))}
+            for cv in gpu_list.table_param_labels:
+                devices[v.uuid][cv] = Gtk.Label(label=v.get_params_value(str(cv)))
+                devices[v.uuid][cv].set_width_chars(10)
+
+        for dk, dv in devices.items():
+            col += 1
+            row = row_start
+            for lk, lv in dv.items():
+                lv.set_text('')
+                lbox = Gtk.Box(spacing=6)
+                lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.06, .06, .06, .06))
+                lbox.set_property('margin-top', 1)
+                lbox.set_property('margin-bottom', 1)
+                lbox.set_property('margin-right', 1)
+                lbox.set_property('margin-left', 1)
+                lv.set_property('margin-top', 1)
+                lv.set_property('margin-bottom', 1)
+                lv.set_property('margin-right', 3)
+                lv.set_property('margin-left', 3)
+                lv.set_width_chars(17)
+                lbox.pack_start(lv, True, True, 0)
+                grid.attach(lbox, col, row, 1, 1)
+                row += 1
+
+    def set_quit(self, _arg2, _arg3):
+        self.quit = True
+
+
+def updateData(ups_list, devices):
+    ups_list.read_gpu_sensor_data()
+    ups_list.read_gpu_state_data()
+    if env.ut_const.LOG:
+        ups_list.print_log(env.ut_const.log_file_ptr)
+
+    # update gui
+    for dk, dv in devices.items():
+        for lk, lv in dv.items():
+            data_value = str(gpu_list.list[dk].get_params_value(lk))[:16]
+            if data_value == '-1':
+                data_value = ''
+            lv.set_text(data_value)
+            lv.set_width_chars(17)
+
+    while Gtk.events_pending():
+        Gtk.main_iteration_do(True)
+
+
+def refresh(refreshtime, updateData, ups_list, devices, cmd, umonitor):
+    while True:
+        if umonitor.quit:
+            print('Quitting...')
+            Gtk.main_quit()
+            sys.exit(0)
+        GLib.idle_add(updateData, ups_list, devices, cmd)
+        time.sleep(refreshtime)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--about', help='README', action='store_true', default=False)
+    parser.add_argument('--gui', help='Display GTK Version of Monitor', action='store_true', default=False)
+    parser.add_argument('--log', help='Write all monitor data to logfile', action='store_true', default=False)
+    parser.add_argument('--sleep', help='Number of seconds to sleep between updates', type=int, default=2)
+    parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
+    args = parser.parse_args()
+
+    # About me
+    if args.about:
+        print(__doc__)
+        print('Author: ', __author__)
+        print('Copyright: ', __copyright__)
+        print('Credits: ', __credits__)
+        print('License: ', __license__)
+        print('Version: ', __version__)
+        print('Maintainer: ', __maintainer__)
+        print('Status: ', __status__)
+        sys.exit(0)
+
+    env.ut_const.DEBUG = args.debug
+
+    if env.ut_const.check_env() < 0:
+        print('Error in environment. Exiting...')
+        sys.exit(-1)
+
+    ups = UPS.UPSsnmp()
+    num_ups = ups.num_ups()
+
+    if num_ups == 0:
+        print('No UPSs specified in config.json, exiting...')
+        sys.exit(-1)
+    print(f'{num_ups} UPSs found in config.json file.')
+
+    if int(args.sleep) > ups.DEFAULT_MONITOR_UPDATE_INTERVAL:
+        env.ut_const.SLEEP = int(args.sleep)
+    else:
+        print('Invalid value for sleep specified.  Must be an integer great than {}'.format(
+              ups.DEFAULT_MONITOR_UPDATE_INTERVAL))
+        sys.exit(-1)
+
+    if args.log:
+        env.ut_const.LOG = True
+        env.ut_const.log_file = './log_monitor_{}.txt'.format(
+            env.ut_const.now(ltz=env.ut_const.USELTZ).strftime('%m%d_%H%M%S'))
+        env.ut_const.log_file_ptr = open(env.ut_const.log_file, 'w', 1)
+        ups.print_log_header(env.ut_const.log_file_ptr)
+
+    ups_list = ups.get_ups_list()
+    command_list = ups.get_monitor_mib_commands()
+
+    if args.gui:
+        # Display Gtk style Monitor
+        devices = {}
+        umonitor = MonitorWindow(ups_list, devices)
+        umonitor.connect('delete-event', umonitor.set_quit)
+        umonitor.show_all()
+
+        # Start thread to update Monitor
+        monthread = threading.Thread(target=refresh, daemon=True, args=[env.ut_const.SLEEP,
+                                     updateData, ups_list, devices, umonitor]).start()
+
+        Gtk.main()
+    else:
+        # Display text style Monitor
+        try:
+            while True:
+                if not env.ut_const.DEBUG: os.system('clear')
+                if env.ut_const.LOG:
+                    print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.ut_const.log_file, '\033[0m'))
+                    ups.print_log(env.ut_const.log_file_ptr)
+                ups.print_table()
+                time.sleep(env.ut_const.SLEEP)
+        except KeyboardInterrupt:
+            if env.ut_const.LOG:
+                env.ut_const.log_file_ptr.close()
+            sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
