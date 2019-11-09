@@ -297,6 +297,10 @@ class UPSsnmp:
     def active_ups_mib_commands(self):
         return self.active_ups['mib_commands']
 
+    @staticmethod
+    def ups_name(ups):
+        return ups['display_name']
+
     def active_ups_name(self):
         return self.active_ups['display_name']
 
@@ -425,6 +429,19 @@ class UPSsnmp:
             print('Error: could not execute suspend script: {}'.format(self.daemon_params['suspend_script']),
                   file=sys.stderr)
 
+    def get_allups_list_items(self, command_list):
+        results = {}
+        for ups_name, ups_item in self.get_ups_list().items():
+            self.set_active_ups(ups_item)
+            results[ups_name] = self.get_ups_list_items(command_list)
+        return results
+
+    def get_ups_list_items(self, command_list):
+        results = {}
+        for cmd in command_list:
+            results[cmd] = self.send_snmp_command(cmd)
+        return results
+
     def send_snmp_command(self, command_name, display=False):
         snmp_mib_commands = self.active_ups_mib_commands()
         cmd_mib = snmp_mib_commands[command_name]['iso']
@@ -515,9 +532,6 @@ class UPSsnmp:
         pass
 
     def print_log_header(self, fileptr):
-        pass
-
-    def print_table(self):
         pass
 
 

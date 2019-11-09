@@ -170,6 +170,41 @@ def refresh(refreshtime, updateData, ups_list, devices, cmd, umonitor):
         time.sleep(refreshtime)
 
 
+def print_monitor_table(ups, ups_list_data):
+    num_ups = ups.num_ups()
+    if num_ups < 1:
+        return -1
+    ups_data = ups.get_allups_list_items(ups_list_data)
+
+    print('┌', '─'.ljust(13, '─'), sep='', end='')
+    for _, _ in self.list.items():
+        print('┬', '─'.ljust(16, '─'), sep='', end='')
+    print('┐')
+
+    print('│', '\x1b[1;36m' + 'Card #'.ljust(13, ' ') + '\x1b[0m', sep='', end='')
+    for k, v in self.list.items():
+        print('│', '\x1b[1;36m' + ('card' + v.get_params_value('card_num')).ljust(16, ' ') + '\x1b[0m',
+              sep='', end='')
+    print('│')
+
+    print('├', '─'.ljust(13, '─'), sep='', end='')
+    for _, _ in self.list.items():
+        print('┼', '─'.ljust(16, '─'), sep='', end='')
+    print('┤')
+
+    for table_item in self.table_parameters:
+        print('│', '\x1b[1;36m' + self.table_param_labels[table_item].ljust(13, ' ')[:13] + '\x1b[0m',
+              sep='', end='')
+        for k, v in self.list.items():
+            print('│', str(v.get_params_value(table_item)).ljust(16, ' ')[:16], sep='', end='')
+        print('│')
+
+    print('└', '─'.ljust(13, '─'), sep='', end='')
+    for _, _ in self.list.items():
+        print('┴', '─'.ljust(16, '─'), sep='', end='')
+    print('┘')
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README', action='store_true', default=False)
