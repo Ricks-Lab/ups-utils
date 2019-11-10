@@ -63,10 +63,10 @@ class UPSsnmp:
         self.monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
                                             'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
                                             'mib_ups_uptime', 'mib_ups_contact'],
-                                 'dynamic': ['mib_battery_capacity', 'mib_battery_status', 'mib_time_on_battery',
-                                             'mib_battery_runtime_remain', 'mib_input_voltage', 'mib_input_frequency',
-                                             'mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
-                                             'mib_output_current', 'mib_output_power']}
+                                 'dynamic': ['mib_battery_capacity', 'mib_system_status', 'mib_battery_status',
+                                             'mib_time_on_battery', 'mib_battery_runtime_remain', 'mib_input_voltage',
+                                             'mib_input_frequency', 'mib_output_voltage', 'mib_output_frequency',
+                                             'mib_output_load', 'mib_output_current', 'mib_output_power']}
         self.output_mib_cmds = ['mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
                                 'mib_output_power']
         self.input_mib_cmds = ['mib_input_voltage', 'mib_input_frequency']
@@ -109,6 +109,9 @@ class UPSsnmp:
                                      'mib_battery_temperature': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.2.0',
                                                                  'name': 'Battery Temperature in C',
                                                                  'decode': None},
+                                     'mib_system_status': {'iso': 'iso.3.6.1.4.1.318.1.1.1.11.1.1.0',
+                                                           'name': 'UPS System Status',
+                                                           'decode': None},
                                      'mib_battery_status': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.1.1.0',
                                                             'name': 'Battery Status',
                                                             'decode': {'1': 'Unknown',
@@ -492,6 +495,22 @@ class UPSsnmp:
                 value = int(value) / 10.0
             elif command_name == 'mib_system_temperature':
                 value = int(value) / 10.0
+        if command_name == 'mib_system_status' and self.active_ups['ups_type'] == 'apc-ap9630':
+            # TODO decode more bits
+            value_str = ''
+            if int(value[0]):
+                value_str = 'Abnormal'
+            if int(value[1]):
+                value_str = value_str + 'OnBattery'
+            if int(value[2]):
+                value_str = value_str + 'LowBattery'
+            if int(value[3]):
+                value_str = value_str + 'OnLine'
+            if int(value[4]):
+                value_str = value_str + 'ReplaceBattery'
+            if int(value[8]):
+                value_str = value_str + 'OverLoad'
+            value = value_str
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
             if self.active_ups['ups_type'] == 'eaton-pw':
