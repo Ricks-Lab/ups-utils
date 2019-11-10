@@ -21,6 +21,18 @@ listed in the config.json file.  By default, all available parameters are displa
 The *--input* and *--output* options can be used to get relevant UPS input and output 
 parameters.
 
+## ups-monitor
+A utility to give the current state of all compatible UPSs. The default behavior
+is to continuously update a text based table in the current window until Ctrl-C is
+pressed.  With the *--gui* option, a table of relevant parameters will be updated
+in a Gtk window.  You can specify the delay between updates with the *--sleep N*
+option where N is an integer > 10 that specifies the number of seconds to sleep
+between updates.  The *--log* option is used to write all monitor data to a psv log
+file.  When writing to a log file, the utility will indicate this in red at the top of
+the window with a message that includes the log file name.  The *--status* option will
+output a table of the current status.  The *--long* option will include additional
+informational parameters.
+
 ## Under Development
 The utility currently supports:
 * APC UPS with AP9630 NMC 

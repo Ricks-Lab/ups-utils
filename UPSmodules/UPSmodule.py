@@ -119,7 +119,7 @@ class UPSsnmp:
                                                                     'name': 'Runtime Remaining',
                                                                     'decode': None},
                                      'mib_battery_replace ': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.4.0',
-                                                              'name': 'Battery replacement',
+                                                              'name': 'Battery Replacement',
                                                               'decode': {'1': 'OK',
                                                                          '2': 'Replacement Required'}},
                                      'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.1.0',
@@ -147,13 +147,13 @@ class UPSsnmp:
                                                               'name': 'Output Frequency Hz',
                                                               'decode': None},
                                      'mib_output_load': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.3.0',
-                                                         'name': 'Output load as % of capacity',
+                                                         'name': 'Output Load as % of Capacity',
                                                          'decode': None},
                                      'mib_output_power': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.8.0',
-                                                          'name': 'Output power in W',
+                                                          'name': 'Output Power in W',
                                                           'decode': None},
                                      'mib_output_current': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.4.0',
-                                                            'name': 'Output current in Amps',
+                                                            'name': 'Output Current in Amps',
                                                             'decode': None},
                                      'mib_comms': {'iso': 'iso.3.6.1.4.1.318.1.1.1.8.1.0',
                                                    'name': 'Communicating with UPS Device',
@@ -264,13 +264,13 @@ class UPSsnmp:
                                                             'name': 'Output Frequency Hz',
                                                             'decode': None},
                                    'mib_output_load': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.7.1',
-                                                       'name': 'Output load as % of capacity',
+                                                       'name': 'Output Load as % of Capacity',
                                                        'decode': None},
                                    'mib_output_current': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.4.1',
-                                                          'name': 'Output current in Amps',
+                                                          'name': 'Output Current in Amps',
                                                           'decode': None},
                                    'mib_output_power': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.5.1',
-                                                        'name': 'Output power in W',
+                                                        'name': 'Output Power in W',
                                                         'decode': None},
                                    'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.3.0',
                                                                  'name': 'Last Self Test Results',
@@ -291,8 +291,15 @@ class UPSsnmp:
     def mib_commands(ups_item):
         return ups_item['mib_commands']
 
-    def get_monitor_mib_commands(self, type='dynamic'):
-        return self.monitor_mib_cmds[type]
+    def get_monitor_mib_commands(self, cmd_type='dynamic'):
+        if cmd_type == 'all':
+            return_list = []
+            for cmd_type in ['static', 'dynamic']:
+                for item in self.monitor_mib_cmds[cmd_type]:
+                    return_list.append(item)
+            return return_list
+        else:
+            return self.monitor_mib_cmds[cmd_type]
 
     def active_ups_mib_commands(self):
         return self.active_ups['mib_commands']
@@ -312,6 +319,9 @@ class UPSsnmp:
 
     def set_active_ups(self, ups_item):
         self.active_ups = ups_item
+
+    def get_mib_name(self, ups_type, mib_cmd):
+        return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
     def check_ups_list(self):
         daemon_cnt = 0
@@ -449,6 +459,8 @@ class UPSsnmp:
 
     def send_snmp_command(self, command_name, display=False):
         snmp_mib_commands = self.active_ups_mib_commands()
+        if command_name not in snmp_mib_commands:
+            return 'No data'
         cmd_mib = snmp_mib_commands[command_name]['iso']
         cmd_str = 'snmpget -v2c -c {} {} {}'.format(self.active_ups['snmp_community'],
                                                     self.active_ups['ups_IP'], cmd_mib)
