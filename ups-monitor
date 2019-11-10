@@ -216,38 +216,22 @@ def print_monitor_table(ups, header_list, cmd_list, ups_data):
 
 
 def print_log(fileptr, header_list, command_list, ups_data):
+    time_str = (str(env.ut_const.now(ltz=True).strftime('%c')).strip())
     for k, v in ups_data.items():
-        first = True
+        print('{}'.format(time_str), file=fileptr, end='')
         for item in header_list:
-            if first:
-                print('{}'.format(v[item]), file=fileptr, end='')
-                first = False
-            else:
-                print('|{}'.format(v[item]), file=fileptr, end='')
+            print('|{}'.format(v[item]), file=fileptr, end='')
         for item in command_list:
-            if first:
-                print('{}'.format(v[item]), file=fileptr, end='')
-                first = False
-            else:
-                print('|{}'.format(v[item]), file=fileptr, end='')
+            print('|{}'.format(v[item]), file=fileptr, end='')
         print('', file=fileptr)
 
 
 def print_log_header(fileptr, header_list, command_list):
-    first = True
-    # print('{}'.format(str(env.ut_const.now(ltz=True).strftime('%c')).strip()), file=fileptr, end='')
+    print('time', file=fileptr, end='')
     for item in header_list:
-        if first:
-            print('{}'.format(item), file=fileptr, end='')
-            first = False
-        else:
-            print('|{}'.format(item), file=fileptr, end='')
+        print('|{}'.format(item), file=fileptr, end='')
     for item in command_list:
-        if first:
-            print('{}'.format(item), file=fileptr, end='')
-            first = False
-        else:
-            print('|{}'.format(item), file=fileptr, end='')
+        print('|{}'.format(item), file=fileptr, end='')
     print('', file=fileptr)
 
 
