@@ -172,13 +172,10 @@ def refresh(refreshtime, updateData, ups_list, devices, cmd, umonitor):
         time.sleep(refreshtime)
 
 
-def print_monitor_table(ups, cmd_list, clear=True):
+def print_monitor_table(ups, header_list, cmd_list, ups_data):
     num_ups = ups.num_ups()
     if num_ups < 1:
         return -1
-    ups_data = ups.get_allups_list_items(cmd_list)
-    if clear:
-        if not env.ut_const.DEBUG: os.system('clear')
 
     hrw = 29
     irw = 24
@@ -199,7 +196,7 @@ def print_monitor_table(ups, cmd_list, clear=True):
         print('┼', '─'.ljust(irw, '─'), sep='', end='')
     print('┤')
 
-    for info_item in ['ups_type', 'ups_IP']:
+    for info_item in header_list:
         print('│', '\x1b[1;36m' + info_item.ljust(hrw, ' ')[:hrw] + '\x1b[0m',
               sep='', end='')
         for k, v in ups_data.items():
@@ -216,6 +213,42 @@ def print_monitor_table(ups, cmd_list, clear=True):
     for _, _ in ups_data.items():
         print('┴', '─'.ljust(irw, '─'), sep='', end='')
     print('┘')
+
+
+def print_log(fileptr, header_list, command_list, ups_data):
+    for k, v in ups_data.items():
+        first = True
+        for item in header_list:
+            if first:
+                print('{}'.format(v[item]), file=fileptr, end='')
+                first = False
+            else:
+                print('|{}'.format(v[item]), file=fileptr, end='')
+        for item in command_list:
+            if first:
+                print('{}'.format(v[item]), file=fileptr, end='')
+                first = False
+            else:
+                print('|{}'.format(v[item]), file=fileptr, end='')
+        print('', file=fileptr)
+
+
+def print_log_header(fileptr, header_list, command_list):
+    first = True
+    # print('{}'.format(str(env.ut_const.now(ltz=True).strftime('%c')).strip()), file=fileptr, end='')
+    for item in header_list:
+        if first:
+            print('{}'.format(item), file=fileptr, end='')
+            first = False
+        else:
+            print('|{}'.format(item), file=fileptr, end='')
+    for item in command_list:
+        if first:
+            print('{}'.format(item), file=fileptr, end='')
+            first = False
+        else:
+            print('|{}'.format(item), file=fileptr, end='')
+    print('', file=fileptr)
 
 
 def main():
@@ -262,18 +295,19 @@ def main():
               env.ut_const.DEFAULT_MONITOR_UPDATE_INTERVAL))
         sys.exit(-1)
 
+    ups_list = ups.get_ups_list()
+    header_list = ['ups_type', 'ups_IP']
+    if args.long:
+        command_list = ups.get_monitor_mib_commands('all')
+    else:
+        command_list = ups.get_monitor_mib_commands()
+
     if args.log:
         env.ut_const.LOG = True
         env.ut_const.log_file = './log_monitor_{}.txt'.format(
             env.ut_const.now(ltz=env.ut_const.USELTZ).strftime('%m%d_%H%M%S'))
         env.ut_const.log_file_ptr = open(env.ut_const.log_file, 'w', 1)
-        ups.print_log_header(env.ut_const.log_file_ptr)
-
-    ups_list = ups.get_ups_list()
-    if args.long:
-        command_list = ups.get_monitor_mib_commands('all')
-    else:
-        command_list = ups.get_monitor_mib_commands()
+        print_log_header(env.ut_const.log_file_ptr, header_list, command_list)
 
     if args.gui:
         print("GUI option not implemented yet")
@@ -293,13 +327,15 @@ def main():
         # Display text style Monitor
         try:
             while True:
+                ups_data = ups.get_allups_list_items(command_list)
+                if args.status:
+                    print_monitor_table(ups, header_list, command_list, ups_data)
+                    sys.exit(0)
+                if not env.ut_const.DEBUG: os.system('clear')
                 if env.ut_const.LOG:
                     print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.ut_const.log_file, '\033[0m'))
-                    ups.print_log(env.ut_const.log_file_ptr)
-                if args.status:
-                    print_monitor_table(ups, command_list, clear=False)
-                    sys.exit(0)
-                print_monitor_table(ups, command_list)
+                    print_log(env.ut_const.log_file_ptr, header_list, command_list, ups_data)
+                print_monitor_table(ups, header_list, command_list, ups_data)
                 time.sleep(env.ut_const.SLEEP)
         except KeyboardInterrupt:
             if env.ut_const.LOG:

@@ -548,12 +548,6 @@ class UPSsnmp:
     def list_valid_ups_types(self):
         return list(self.all_mib_cmds.keys())
 
-    def print_log(self, fileptr):
-        pass
-
-    def print_log_header(self, fileptr):
-        pass
-
 
 def about():
     # About me
