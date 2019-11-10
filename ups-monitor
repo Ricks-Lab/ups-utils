@@ -185,7 +185,7 @@ def print_monitor_table(ups, header_list, cmd_list, ups_data):
         print('┬', '─'.ljust(irw, '─'), sep='', end='')
     print('┐')
 
-    print('│', '\x1b[1;36m' + 'UPS'.ljust(hrw, ' ') + '\x1b[0m', sep='', end='')
+    print('│', '\x1b[1;36m' + 'UPS Parameters'.ljust(hrw, ' ') + '\x1b[0m', sep='', end='')
     for k, v in ups_data.items():
         print('│', '\x1b[1;36m' + v['display_name'].ljust(irw, ' ') + '\x1b[0m',
               sep='', end='')

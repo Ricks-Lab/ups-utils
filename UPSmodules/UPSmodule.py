@@ -63,10 +63,11 @@ class UPSsnmp:
         self.monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
                                             'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
                                             'mib_ups_uptime', 'mib_ups_contact'],
-                                 'dynamic': ['mib_battery_capacity', 'mib_system_status', 'mib_battery_status',
-                                             'mib_time_on_battery', 'mib_battery_runtime_remain', 'mib_input_voltage',
+                                 'dynamic': ['mib_battery_capacity', 'mib_time_on_battery',
+                                             'mib_battery_runtime_remain', 'mib_input_voltage',
                                              'mib_input_frequency', 'mib_output_voltage', 'mib_output_frequency',
-                                             'mib_output_load', 'mib_output_current', 'mib_output_power']}
+                                             'mib_output_load', 'mib_output_current', 'mib_output_power',
+                                             'mib_system_status', 'mib_battery_status']}
         self.output_mib_cmds = ['mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
                                 'mib_output_power']
         self.input_mib_cmds = ['mib_input_voltage', 'mib_input_frequency']
@@ -463,6 +464,23 @@ class UPSsnmp:
             results[cmd] = self.send_snmp_command(cmd)
         return results
 
+    def apc_system_status_decode(self, value):
+        # TODO decode more bits
+        value_str = ''
+        if int(value[0]):
+            value_str = 'Abnormal'
+        if int(value[1]):
+            value_str = value_str + 'OnBattery'
+        if int(value[2]):
+            value_str = value_str + 'LowBattery'
+        if int(value[3]):
+            value_str = value_str + 'OnLine'
+        if int(value[4]):
+            value_str = value_str + 'ReplaceBattery'
+        if int(value[8]):
+            value_str = value_str + 'OverLoad'
+        return value_str
+
     def send_snmp_command(self, command_name, display=False):
         snmp_mib_commands = self.active_ups_mib_commands()
         if command_name not in snmp_mib_commands:
@@ -496,21 +514,7 @@ class UPSsnmp:
             elif command_name == 'mib_system_temperature':
                 value = int(value) / 10.0
         if command_name == 'mib_system_status' and self.active_ups['ups_type'] == 'apc-ap9630':
-            # TODO decode more bits
-            value_str = ''
-            if int(value[0]):
-                value_str = 'Abnormal'
-            if int(value[1]):
-                value_str = value_str + 'OnBattery'
-            if int(value[2]):
-                value_str = value_str + 'LowBattery'
-            if int(value[3]):
-                value_str = value_str + 'OnLine'
-            if int(value[4]):
-                value_str = value_str + 'ReplaceBattery'
-            if int(value[8]):
-                value_str = value_str + 'OverLoad'
-            value = value_str
+            value = self.apc_system_status_decode(value)
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
             if self.active_ups['ups_type'] == 'eaton-pw':
