@@ -170,37 +170,44 @@ def refresh(refreshtime, updateData, ups_list, devices, cmd, umonitor):
         time.sleep(refreshtime)
 
 
-def print_monitor_table(ups, ups_list_data):
+def print_monitor_table(ups, cmd_list):
     num_ups = ups.num_ups()
     if num_ups < 1:
         return -1
-    ups_data = ups.get_allups_list_items(ups_list_data)
+    ups_data = ups.get_allups_list_items(cmd_list)
+    if not env.ut_const.DEBUG: os.system('clear')
 
     print('┌', '─'.ljust(13, '─'), sep='', end='')
-    for _, _ in self.list.items():
+    for _, _ in ups_data.items():
         print('┬', '─'.ljust(16, '─'), sep='', end='')
     print('┐')
 
-    print('│', '\x1b[1;36m' + 'Card #'.ljust(13, ' ') + '\x1b[0m', sep='', end='')
-    for k, v in self.list.items():
-        print('│', '\x1b[1;36m' + ('card' + v.get_params_value('card_num')).ljust(16, ' ') + '\x1b[0m',
+    print('│', '\x1b[1;36m' + 'UPS'.ljust(13, ' ') + '\x1b[0m', sep='', end='')
+    for k, v in ups_data.items():
+        print('│', '\x1b[1;36m' + v['display_name'].ljust(16, ' ') + '\x1b[0m',
               sep='', end='')
     print('│')
 
     print('├', '─'.ljust(13, '─'), sep='', end='')
-    for _, _ in self.list.items():
+    for _, _ in ups_data.items():
         print('┼', '─'.ljust(16, '─'), sep='', end='')
     print('┤')
 
-    for table_item in self.table_parameters:
-        print('│', '\x1b[1;36m' + self.table_param_labels[table_item].ljust(13, ' ')[:13] + '\x1b[0m',
+    for info_item in ['ups_type', 'ups_IP']:
+        print('│', '\x1b[1;36m' + info_item.ljust(13, ' ')[:13] + '\x1b[0m',
               sep='', end='')
-        for k, v in self.list.items():
-            print('│', str(v.get_params_value(table_item)).ljust(16, ' ')[:16], sep='', end='')
+        for k, v in ups_data.items():
+            print('│', str(v[info_item]).ljust(16, ' ')[:16], sep='', end='')
+        print('│')
+    for table_item in cmd_list:
+        print('│', '\x1b[1;36m' + table_item.ljust(13, ' ')[:13] + '\x1b[0m',
+              sep='', end='')
+        for k, v in ups_data.items():
+            print('│', str(v[table_item]).ljust(16, ' ')[:16], sep='', end='')
         print('│')
 
     print('└', '─'.ljust(13, '─'), sep='', end='')
-    for _, _ in self.list.items():
+    for _, _ in ups_data.items():
         print('┴', '─'.ljust(16, '─'), sep='', end='')
     print('┘')
 
@@ -210,7 +217,7 @@ def main():
     parser.add_argument('--about', help='README', action='store_true', default=False)
     parser.add_argument('--gui', help='Display GTK Version of Monitor', action='store_true', default=False)
     parser.add_argument('--log', help='Write all monitor data to logfile', action='store_true', default=False)
-    parser.add_argument('--sleep', help='Number of seconds to sleep between updates', type=int, default=2)
+    parser.add_argument('--sleep', help='Number of seconds to sleep between updates', type=int, default=15)
     parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
     args = parser.parse_args()
 
@@ -240,11 +247,11 @@ def main():
         sys.exit(-1)
     print(f'{num_ups} UPSs found in config.json file.')
 
-    if int(args.sleep) > ups.DEFAULT_MONITOR_UPDATE_INTERVAL:
+    if int(args.sleep) > env.ut_const.DEFAULT_MONITOR_UPDATE_INTERVAL:
         env.ut_const.SLEEP = int(args.sleep)
     else:
         print('Invalid value for sleep specified.  Must be an integer great than {}'.format(
-              ups.DEFAULT_MONITOR_UPDATE_INTERVAL))
+              env.ut_const.DEFAULT_MONITOR_UPDATE_INTERVAL))
         sys.exit(-1)
 
     if args.log:
@@ -273,11 +280,11 @@ def main():
         # Display text style Monitor
         try:
             while True:
-                if not env.ut_const.DEBUG: os.system('clear')
+                # if not env.ut_const.DEBUG: os.system('clear')
                 if env.ut_const.LOG:
                     print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.ut_const.log_file, '\033[0m'))
                     ups.print_log(env.ut_const.log_file_ptr)
-                ups.print_table()
+                print_monitor_table(ups, command_list)
                 time.sleep(env.ut_const.SLEEP)
         except KeyboardInterrupt:
             if env.ut_const.LOG:

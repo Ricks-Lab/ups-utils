@@ -304,6 +304,9 @@ class UPSsnmp:
     def active_ups_name(self):
         return self.active_ups['display_name']
 
+    def active_ups_type(self):
+        return self.active_ups['ups_type']
+
     def active_ups_ip(self):
         return self.active_ups['ups_IP']
 
@@ -437,7 +440,9 @@ class UPSsnmp:
         return results
 
     def get_ups_list_items(self, command_list):
-        results = {}
+        results = {'display_name': self.active_ups_name(),
+                   'ups_IP': self.active_ups_ip(),
+                   'ups_type': self.active_ups_type()}
         for cmd in command_list:
             results[cmd] = self.send_snmp_command(cmd)
         return results
@@ -483,14 +488,14 @@ class UPSsnmp:
                     # Measured in minutes.
                     value = int(value) * 60
                 value_str = str(datetime.timedelta(seconds=int(value)))
-                value_minute = float(value) / 60.0
+                value_minute = round(float(value) / 60.0, 2)
                 value = (value_minute, value_str)
             else:
                 # Process time for apc
                 value_items = re.sub(r'\(', '', value).split(')')
                 if len(value_items) >= 2:
                     value_minute, value_str = value_items
-                value = (int(value_minute)/60/60, value_str)
+                value = (round(int(value_minute)/60/60, 2), value_str)
         if display:
             print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
         return value
