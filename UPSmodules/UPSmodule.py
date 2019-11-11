@@ -62,7 +62,7 @@ class UPSsnmp:
 
         self.monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
                                             'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
-                                            'mib_ups_uptime', 'mib_ups_contact'],
+                                            'mib_ups_uptime'],
                                  'dynamic': ['mib_battery_capacity', 'mib_time_on_battery',
                                              'mib_battery_runtime_remain', 'mib_input_voltage',
                                              'mib_input_frequency', 'mib_output_voltage', 'mib_output_frequency',
@@ -330,13 +330,25 @@ class UPSsnmp:
     def get_mib_name(self, ups_type, mib_cmd):
         return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
+    def check_ip(self, v):
+        return True
+
+    def check_snmp(self, v):
+        return True
+
     def check_ups_list(self):
         daemon_cnt = 0
         ups_cnt = 0
         for k, v in self.ups_list.items():
             if self.check_ups_type(v['ups_type']):
-                ups_cnt += 1
                 v['compatible'] = True
+                v['accessible'] = False
+                v['responsive'] = False
+                if self.check_ip(v):
+                    v['accessible'] = True
+                    if self.check_snmp(v):
+                        v['responsive'] = True
+                ups_cnt += 1
                 v['mib_commands'] = self.all_mib_cmds[v['ups_type']]
                 if v['daemon']:
                     daemon_cnt += 1
