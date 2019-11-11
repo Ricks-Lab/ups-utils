@@ -409,9 +409,12 @@ class UPSsnmp:
     # End of set of methods to check if UPS is valid.
 
     # Commands to read from UPS using snmp protocol.
-    def read_all_ups_list_items(self, command_list):
+    def read_all_ups_list_items(self, command_list, errups=True):
         results = {}
         for ups_name, ups_item in self.get_ups_list().items():
+            if not errups:
+                if not self.is_responsive(ups_item):
+                    continue
             self.set_active_ups(ups_item)
             results[ups_name] = self.read_ups_list_items(command_list)
         return results
@@ -516,11 +519,20 @@ class UPSsnmp:
     def get_ups_list(self):
         return self.ups_list
 
-    def num_ups(self):
-        cnt = 0
-        for k in self.ups_list.keys():
-            cnt += 1
-        return cnt
+    def get_num_ups_tuple(self):
+        """ This function will return a tuple of the UPS counts.
+            The tuple represents listed, compatible, accessible, responsive UPSs
+        """
+        cnt = [0, 0, 0, 0]
+        for k, v in self.ups_list.items():
+            cnt[0] += 1
+            if self.is_compatible(v):
+                cnt[1] += 1
+            if self.is_accessible(v):
+                cnt[2] += 1
+            if self.is_responsive(v):
+                cnt[3] += 1
+        return tuple(cnt)
 
     def check_ups_type(self, test_ups_type):
         if test_ups_type not in self.all_mib_cmds.keys():

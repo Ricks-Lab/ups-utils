@@ -3,7 +3,11 @@ A set of utilities to monitor and react to the status of a supported UPS
 
 ## Getting Started
 For any of the utilities to function, the config.py files must be customized using config.py.template as 
-a template.
+a template. This file contains information required for the daemon utility to function.
+
+Also, a UPS list must be specified in the config.json file using config.json.template as a template.  This file
+contains details about each UPS that make snmp communication possible.  The utility required snmp v2c in order
+to communicate with the network accessible UPSs.
 
 ## ups-daemon
 With no options specified, the utility will give the current status of the UPS configured in the config.py file.
@@ -31,7 +35,8 @@ between updates.  The *--log* option is used to write all monitor data to a psv 
 file.  When writing to a log file, the utility will indicate this in red at the top of
 the window with a message that includes the log file name.  The *--status* option will
 output a table of the current status.  The *--long* option will include additional
-informational parameters.
+informational parameters. By default, unresponsive UPSs will not be displayed, but the
+*--show_unresponsive* can be used to force their display.
 
 ## Under Development
 The utility currently supports:

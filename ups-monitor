@@ -10,7 +10,8 @@
     file.  When writing to a log file, the utility will indicate this in red at the top of
     the window with a message that includes the log file name.  The *--status* option will
     output a table of the current status.  The *--long* option will include additional
-    informational parameters.
+    informational parameters. By default, unresponsive UPSs will not be displayed, but the
+    *--show_unresponsive* can be used to force their display.
 
     Copyright (C) 2019  RueiKe
 
@@ -32,7 +33,7 @@ __copyright__ = 'Copyright (C) 2019 RueiKe'
 __credits__ = ['']
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-monitor'
-__version__ = 'v0.0.2'
+__version__ = 'v0.1.0'
 __maintainer__ = 'RueiKe'
 __status__ = 'Development'
 
@@ -173,8 +174,8 @@ def refresh(refreshtime, updateData, ups_list, devices, cmd, umonitor):
 
 
 def print_monitor_table(ups, header_list, cmd_list, ups_data):
-    num_ups = ups.num_ups()
-    if num_ups < 1:
+    num_ups = ups.get_num_ups_tuple()
+    if num_ups[0] < 1:
         return -1
 
     hrw = 29
@@ -252,6 +253,7 @@ def main():
     parser.add_argument('--about', help='README', action='store_true', default=False)
     parser.add_argument('--status', help='Display table of current status of UPSs', action='store_true', default=False)
     parser.add_argument('--long', help='Include static items', action='store_true', default=False)
+    parser.add_argument('--show_unresponsive', help='Display unresponsive UPSs', action='store_true', default=False)
     parser.add_argument('--gui', help='Display GTK Version of Monitor', action='store_true', default=False)
     parser.add_argument('--log', help='Write all monitor data to logfile', action='store_true', default=False)
     parser.add_argument('--sleep', help='Number of seconds to sleep between updates', type=int, default=15)
@@ -276,13 +278,18 @@ def main():
         print('Error in environment. Exiting...')
         sys.exit(-1)
 
+    print('Reading and verifying UPSs listed in config.json')
     ups = UPS.UPSsnmp()
-    num_ups = ups.num_ups()
+    num_ups = ups.get_num_ups_tuple()
 
-    if num_ups == 0:
+    if num_ups[0] == 0:
         print('No UPSs specified in config.json, exiting...')
         sys.exit(-1)
-    print(f'{num_ups} UPSs found in config.json file.')
+    print('{} UPSs listed in config.json file.'.format(num_ups[0]))
+    print('    {} are compatible, {} are accessible, {} are responsive'.format(num_ups[1], num_ups[2], num_ups[3]))
+    if num_ups[1] + num_ups[2] + num_ups[3]:
+        print('    Check the config.json file.')
+    print('')
 
     if int(args.sleep) >= env.ut_const.DEFAULT_MONITOR_UPDATE_INTERVAL:
         env.ut_const.SLEEP = int(args.sleep)
@@ -291,7 +298,6 @@ def main():
               env.ut_const.DEFAULT_MONITOR_UPDATE_INTERVAL))
         sys.exit(-1)
 
-    ups_list = ups.get_ups_list()
     header_list = ['ups_type', 'ups_IP']
     if args.long:
         command_list = ups.get_monitor_mib_commands('all')
@@ -323,7 +329,7 @@ def main():
         # Display text style Monitor
         try:
             while True:
-                ups_data = ups.read_all_ups_list_items(command_list)
+                ups_data = ups.read_all_ups_list_items(command_list, errups=args.show_unresponsive)
                 if args.status:
                     print_monitor_table(ups, header_list, command_list, ups_data)
                     sys.exit(0)
