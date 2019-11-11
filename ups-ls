@@ -76,23 +76,38 @@ def main():
 
     for k, v in ups.ups_list.items():
         ups.set_active_ups(v)
-        print('UPS Name: {}'.format(ups.active_ups_name()))
-        print('UPS IP: {}'.format(ups.active_ups_ip()))
+        if not ups.is_compatible(v):
+            print('ERROR: {} is not compatible type: {}'.format(ups.ups_name(), ups.ups_type()))
+            print('       Check the config.json file.')
+            print('')
+            continue
+        if not ups.is_accessible(v):
+            print('ERROR: {} is not an accessible IP: {}'.format(ups.ups_name(), ups.ups_ip()))
+            print('       Check the config.json file.')
+            print('')
+            continue
+        if not ups.is_responsive(v):
+            print('ERROR: {} is not responsive to snmp IP: {}'.format(ups.ups_name(), ups.ups_ip()))
+            print('       Check the config.json file.')
+            print('')
+            continue
+        print('UPS Name: {}'.format(ups.ups_name()))
+        print('UPS IP: {}'.format(ups.ups_ip()))
         if args.input or args.output:
             if args.input:
                 for oc in ups.input_mib_cmds:
                     if ups.send_snmp_command(oc, display=True) == 'UPS Not Responding':
-                        print('Giving up on {}'.format(ups.active_ups_name()))
+                        print('Giving up on {}'.format(ups.ups_name()))
                         break
             if args.output:
                 for oc in ups.output_mib_cmds:
                     if ups.send_snmp_command(oc, display=True) == 'UPS Not Responding':
-                        print('Giving up on {}'.format(ups.active_ups_name()))
+                        print('Giving up on {}'.format(ups.ups_name()))
                         break
         else:
-            for k2, v2 in ups.mib_commands(ups.active_ups).items():
+            for k2, v2 in ups.ups_mib_commands().items():
                 if ups.send_snmp_command(k2, display=True) == 'UPS Not Responding':
-                    print('Giving up on {}'.format(ups.active_ups_name()))
+                    print('Giving up on {}'.format(ups.ups_name()))
                     break
         print('')
 

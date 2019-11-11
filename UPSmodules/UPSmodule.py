@@ -290,13 +290,44 @@ class UPSsnmp:
                                    'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.4.0',
                                                                'name': 'Date of Last Self Test',
                                                                'decode': None}}}
-        # TODO add error checking here
         self.read_ups_list()
         self.check_ups_list()
 
-    @staticmethod
-    def mib_commands(ups_item):
-        return ups_item['mib_commands']
+    # Read and check the UPS list.
+    def read_ups_list(self):
+        if not os.path.isfile(env.ut_const.UPS_LIST_JSON_FILE):
+            print('Error: UPS List file not found: {}'.format(env.ut_const.UPS_LIST_JSON_FILE))
+            return False
+        with open(env.ut_const.UPS_LIST_JSON_FILE, 'r') as ups_list_file:
+            self.ups_list = json.load(ups_list_file)
+        return True
+
+    def check_ups_list(self):
+        daemon_cnt = 0
+        ups_cnt = 0
+        for k, v in self.ups_list.items():
+            v['accessible'] = False
+            v['responsive'] = False
+            v['mib_commands'] = None
+            if self.check_ups_type(v['ups_type']):
+                v['compatible'] = True
+                if self.check_ip(v):
+                    v['accessible'] = True
+                    if self.check_snmp(v):
+                        v['responsive'] = True
+                        ups_cnt += 1
+                        v['mib_commands'] = self.all_mib_cmds[v['ups_type']]
+                if v['daemon']:
+                    daemon_cnt += 1
+                    self.active_ups = v
+            else:
+                v['compatible'] = False
+                v['mib_commands'] = None
+        print('config.json contains {} total UPSs and {} daemon UPS'.format(ups_cnt, daemon_cnt))
+    # End of read and check the UPS list.
+
+    def get_mib_name(self, ups_type, mib_cmd):
+        return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
     def get_monitor_mib_commands(self, cmd_type='dynamic'):
         if cmd_type == 'all':
@@ -308,56 +339,6 @@ class UPSsnmp:
         else:
             return self.monitor_mib_cmds[cmd_type]
 
-    def active_ups_mib_commands(self):
-        return self.active_ups['mib_commands']
-
-    @staticmethod
-    def ups_name(ups):
-        return ups['display_name']
-
-    def active_ups_name(self):
-        return self.active_ups['display_name']
-
-    def active_ups_type(self):
-        return self.active_ups['ups_type']
-
-    def active_ups_ip(self):
-        return self.active_ups['ups_IP']
-
-    def set_active_ups(self, ups_item):
-        self.active_ups = ups_item
-
-    def get_mib_name(self, ups_type, mib_cmd):
-        return self.all_mib_cmds[ups_type][mib_cmd]['name']
-
-    def check_ip(self, v):
-        return True
-
-    def check_snmp(self, v):
-        return True
-
-    def check_ups_list(self):
-        daemon_cnt = 0
-        ups_cnt = 0
-        for k, v in self.ups_list.items():
-            if self.check_ups_type(v['ups_type']):
-                v['compatible'] = True
-                v['accessible'] = False
-                v['responsive'] = False
-                if self.check_ip(v):
-                    v['accessible'] = True
-                    if self.check_snmp(v):
-                        v['responsive'] = True
-                ups_cnt += 1
-                v['mib_commands'] = self.all_mib_cmds[v['ups_type']]
-                if v['daemon']:
-                    daemon_cnt += 1
-                    self.active_ups = v
-            else:
-                v['compatible'] = False
-                v['mib_commands'] = None
-        print('config.json contains {} total UPSs and {} daemon UPS'.format(ups_cnt, daemon_cnt))
-
     def set_daemon_ups(self):
         for k, v in self.ups_list.items():
             if v['daemon']:
@@ -365,6 +346,191 @@ class UPSsnmp:
                 return True
         return False
 
+    def set_active_ups(self, ups_item):
+        self.active_ups = ups_item
+
+    # Set of methods to return parameters for target UPS.
+    def ups_mib_commands(self, tups=None):
+        if not tups:
+            tups = self.active_ups
+        return tups['mib_commands']
+
+    def ups_name(self, tups=None):
+        if not tups:
+            tups = self.active_ups
+        return tups['display_name']
+
+    def ups_type(self, tups=None):
+        if not tups:
+            tups = self.active_ups
+        return tups['ups_type']
+
+    def ups_ip(self, tups=None):
+        if not tups:
+            tups = self.active_ups
+        return tups['ups_IP']
+    # End of set of methods to return parameters for target UPS.
+
+    # Set of methods to check if UPS is valid.
+    def check_ip(self, tups=None):
+        if not tups:
+            tups = self.active_ups
+        if not os.system('ping -c 1 {} > /dev/null'.format(tups['ups_IP'])):
+            return True
+        return False
+
+    def check_snmp(self, tups=None):
+        if not tups:
+            tups = self.active_ups
+        cmd_str = 'snmpget -v2c -c {} {} {}'.format(tups['snmp_community'], tups['ups_IP'], 'iso.3.6.1.2.1.1.1.0')
+
+        try:
+            snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
+                                                  stderr=subprocess.DEVNULL).decode().split('\n')
+            if env.ut_const.DEBUG: print(snmp_output)
+        except:
+            return False
+        return True
+
+    def is_compatible(self, v=None):
+        if not v:
+            v = self.active_ups
+        return v['compatible']
+
+    def is_responsive(self, v=None):
+        if not v:
+            v = self.active_ups
+        return v['responsive']
+
+    def is_accessible(self, v=None):
+        if not v:
+            v = self.active_ups
+        return v['accessible']
+    # End of set of methods to check if UPS is valid.
+
+    # Commands to read from UPS using snmp protocol.
+    def read_all_ups_list_items(self, command_list):
+        results = {}
+        for ups_name, ups_item in self.get_ups_list().items():
+            self.set_active_ups(ups_item)
+            results[ups_name] = self.read_ups_list_items(command_list)
+        return results
+
+    def read_ups_list_items(self, command_list):
+        results = {'display_name': self.ups_name(),
+                   'ups_IP': self.ups_ip(),
+                   'ups_type': self.ups_type()}
+        for cmd in command_list:
+            results[cmd] = self.send_snmp_command(cmd)
+        return results
+
+    def send_snmp_command(self, command_name, target_ups=None, display=False):
+        if not target_ups:
+            target_ups = self.active_ups
+        if not self.is_responsive(target_ups):
+            return 'Invalid UPS'
+        snmp_mib_commands = self.ups_mib_commands()
+        if command_name not in snmp_mib_commands:
+            return 'No data'
+        cmd_mib = snmp_mib_commands[command_name]['iso']
+        cmd_str = 'snmpget -v2c -c {} {} {}'.format(target_ups['snmp_community'],
+                                                    target_ups['ups_IP'], cmd_mib)
+        try:
+            snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
+                                                  stderr=subprocess.DEVNULL).decode().split('\n')
+        except:
+            print('Error executing snmp command to {} at {}.'.format(self.ups_name(), self.ups_ip()))
+            return 'UPS Not Responding'
+
+        value = ''
+        value_minute = -1
+        value_str = 'UNK'
+        for line in snmp_output:
+            # print('line:  {}'.format(line))
+            if re.match(r'.*=.*:.*', line):
+                value = line.split(':', 1)[1]
+                value = re.sub(r'\"', '', value).strip()
+        if snmp_mib_commands[command_name]['decode']:
+            if value in snmp_mib_commands[command_name]['decode'].keys():
+                value = snmp_mib_commands[command_name]['decode'][value]
+        if target_ups['ups_type'] == 'eaton-pw':
+            if command_name == 'mib_output_voltage' or command_name == 'mib_output_frequency':
+                value = int(value) / 10.0
+            elif command_name == 'mib_input_voltage' or command_name == 'mib_input_frequency':
+                value = int(value) / 10.0
+            elif command_name == 'mib_system_temperature':
+                value = int(value) / 10.0
+        if command_name == 'mib_system_status' and target_ups['ups_type'] == 'apc-ap9630':
+            value = self.apc_system_status_decode(value)
+        if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
+            # Create a minute, string tuple
+            if target_ups['ups_type'] == 'eaton-pw':
+                # Process time for eaton-pw
+                if command_name == 'mib_time_on_battery':
+                    # Measured in seconds.
+                    value = int(value)
+                else:
+                    # Measured in minutes.
+                    value = int(value) * 60
+                value_str = str(datetime.timedelta(seconds=int(value)))
+                value_minute = round(float(value) / 60.0, 2)
+                value = (value_minute, value_str)
+            else:
+                # Process time for apc
+                value_items = re.sub(r'\(', '', value).split(')')
+                if len(value_items) >= 2:
+                    value_minute, value_str = value_items
+                value = (round(int(value_minute)/60/60, 2), value_str)
+        if display:
+            print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
+        return value
+
+    @staticmethod
+    def apc_system_status_decode(value):
+        # TODO decode more bits
+        value_str = ''
+        if int(value[0]):
+            value_str = 'Abnormal'
+        if int(value[1]):
+            value_str = value_str + 'OnBattery'
+        if int(value[2]):
+            value_str = value_str + 'LowBattery'
+        if int(value[3]):
+            value_str = value_str + 'OnLine'
+        if int(value[4]):
+            value_str = value_str + 'ReplaceBattery'
+        if int(value[8]):
+            value_str = value_str + 'OverLoad'
+        return value_str
+    # End of commands to read from UPS using snmp protocol.
+
+    def list_snmp_commands(self):
+        # for k, v in self.mib_commands.items():
+        for k, v in self.ups_mib_commands().items():
+            print('{}: Value: {}'.format(k, v['iso']))
+            print('    Description: {}'.format(v['name']))
+            if v['decode']:
+                for k2, v2 in v['decode'].items():
+                    print('        {}: {}'.format(k2, v2))
+
+    def get_ups_list(self):
+        return self.ups_list
+
+    def num_ups(self):
+        cnt = 0
+        for k in self.ups_list.keys():
+            cnt += 1
+        return cnt
+
+    def check_ups_type(self, test_ups_type):
+        if test_ups_type not in self.all_mib_cmds.keys():
+            return False
+        return True
+
+    def list_valid_ups_types(self):
+        return list(self.all_mib_cmds.keys())
+
+    # Set parameters required for daemon mode.
     def set_daemon_parameters(self):
         self.daemon_params['suspend_script'] = suspend_script
         if suspend_script:
@@ -414,7 +580,7 @@ class UPSsnmp:
             else:
                 print('Invalid battery time remaining shutdown threshold in config.py.  Using default.')
         print('Battery time remaining Shutdown Threshold: {} min'.format(
-               self.daemon_params['battery_time_remaining_shutdown_threshold']))
+            self.daemon_params['battery_time_remaining_shutdown_threshold']))
 
     def shutdown(self):
         if not self.daemon_params['shutdown_script']:
@@ -460,128 +626,7 @@ class UPSsnmp:
         except:
             print('Error: could not execute suspend script: {}'.format(self.daemon_params['suspend_script']),
                   file=sys.stderr)
-
-    def get_allups_list_items(self, command_list):
-        results = {}
-        for ups_name, ups_item in self.get_ups_list().items():
-            self.set_active_ups(ups_item)
-            results[ups_name] = self.get_ups_list_items(command_list)
-        return results
-
-    def get_ups_list_items(self, command_list):
-        results = {'display_name': self.active_ups_name(),
-                   'ups_IP': self.active_ups_ip(),
-                   'ups_type': self.active_ups_type()}
-        for cmd in command_list:
-            results[cmd] = self.send_snmp_command(cmd)
-        return results
-
-    def apc_system_status_decode(self, value):
-        # TODO decode more bits
-        value_str = ''
-        if int(value[0]):
-            value_str = 'Abnormal'
-        if int(value[1]):
-            value_str = value_str + 'OnBattery'
-        if int(value[2]):
-            value_str = value_str + 'LowBattery'
-        if int(value[3]):
-            value_str = value_str + 'OnLine'
-        if int(value[4]):
-            value_str = value_str + 'ReplaceBattery'
-        if int(value[8]):
-            value_str = value_str + 'OverLoad'
-        return value_str
-
-    def send_snmp_command(self, command_name, display=False):
-        snmp_mib_commands = self.active_ups_mib_commands()
-        if command_name not in snmp_mib_commands:
-            return 'No data'
-        cmd_mib = snmp_mib_commands[command_name]['iso']
-        cmd_str = 'snmpget -v2c -c {} {} {}'.format(self.active_ups['snmp_community'],
-                                                    self.active_ups['ups_IP'], cmd_mib)
-        try:
-            snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
-                                                  stderr=subprocess.DEVNULL).decode().split('\n')
-        except:
-            print('Error executing snmp command to {} at {}.'.format(self.active_ups_name(), self.active_ups_ip()))
-            return 'UPS Not Responding'
-
-        value = ''
-        value_minute = -1
-        value_str = 'UNK'
-        for line in snmp_output:
-            # print('line:  {}'.format(line))
-            if re.match(r'.*=.*:.*', line):
-                value = line.split(':', 1)[1]
-                value = re.sub(r'\"', '', value).strip()
-        if snmp_mib_commands[command_name]['decode']:
-            if value in snmp_mib_commands[command_name]['decode'].keys():
-                value = snmp_mib_commands[command_name]['decode'][value]
-        if self.active_ups['ups_type'] == 'eaton-pw':
-            if command_name == 'mib_output_voltage' or command_name == 'mib_output_frequency':
-                value = int(value) / 10.0
-            elif command_name == 'mib_input_voltage' or command_name == 'mib_input_frequency':
-                value = int(value) / 10.0
-            elif command_name == 'mib_system_temperature':
-                value = int(value) / 10.0
-        if command_name == 'mib_system_status' and self.active_ups['ups_type'] == 'apc-ap9630':
-            value = self.apc_system_status_decode(value)
-        if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
-            # Create a minute, string tuple
-            if self.active_ups['ups_type'] == 'eaton-pw':
-                # Process time for eaton-pw
-                if command_name == 'mib_time_on_battery':
-                    # Measured in seconds.
-                    value = int(value)
-                else:
-                    # Measured in minutes.
-                    value = int(value) * 60
-                value_str = str(datetime.timedelta(seconds=int(value)))
-                value_minute = round(float(value) / 60.0, 2)
-                value = (value_minute, value_str)
-            else:
-                # Process time for apc
-                value_items = re.sub(r'\(', '', value).split(')')
-                if len(value_items) >= 2:
-                    value_minute, value_str = value_items
-                value = (round(int(value_minute)/60/60, 2), value_str)
-        if display:
-            print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
-        return value
-
-    def list_snmp_commands(self):
-        for k, v in self.mib_commands.items():
-            print('{}: Value: {}'.format(k, v['iso']))
-            print('    Description: {}'.format(v['name']))
-            if v['decode']:
-                for k2, v2 in v['decode'].items():
-                    print('        {}: {}'.format(k2, v2))
-
-    def get_ups_list(self):
-        return self.ups_list
-
-    def read_ups_list(self):
-        if not os.path.isfile(env.ut_const.UPS_LIST_JSON_FILE):
-            print('Error: UPS List file not found: {}'.format(env.ut_const.UPS_LIST_JSON_FILE))
-            return False
-        with open(env.ut_const.UPS_LIST_JSON_FILE, 'r') as ups_list_file:
-            self.ups_list = json.load(ups_list_file)
-        return True
-
-    def num_ups(self):
-        cnt = 0
-        for k in self.ups_list.keys():
-            cnt += 1
-        return cnt
-
-    def check_ups_type(self, test_ups_type):
-        if test_ups_type not in self.all_mib_cmds.keys():
-            return False
-        return True
-
-    def list_valid_ups_types(self):
-        return list(self.all_mib_cmds.keys())
+    # End of set parameters required for daemon mode.
 
 
 def about():

@@ -323,7 +323,7 @@ def main():
         # Display text style Monitor
         try:
             while True:
-                ups_data = ups.get_allups_list_items(command_list)
+                ups_data = ups.read_all_ups_list_items(command_list)
                 if args.status:
                     print_monitor_table(ups, header_list, command_list, ups_data)
                     sys.exit(0)
