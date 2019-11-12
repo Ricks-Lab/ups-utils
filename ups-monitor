@@ -145,16 +145,15 @@ class MonitorWindow(Gtk.Window):
         self.quit = True
 
 
-def updateData(ups_list, devices):
-    ups_list.read_gpu_sensor_data()
-    ups_list.read_gpu_state_data()
+def updateData(ups, command_list, header_list, devices):
+    ups_data = ups.read_all_ups_list_items(command_list, errups=env.ut_const.show_unresponsive)
     if env.ut_const.LOG:
-        ups_list.print_log(env.ut_const.log_file_ptr)
+        print_log(env.ut_const.log_file_ptr, header_list, command_list, ups_data)
 
     # update gui
     for dk, dv in devices.items():
         for lk, lv in dv.items():
-            data_value = str(gpu_list.list[dk].get_params_value(lk))[:16]
+            data_value = str(ups_data[dk][lk])[:16]
             if data_value == '-1':
                 data_value = ''
             lv.set_text(data_value)
@@ -164,13 +163,13 @@ def updateData(ups_list, devices):
         Gtk.main_iteration_do(True)
 
 
-def refresh(refreshtime, updateData, ups_list, devices, cmd, umonitor):
+def refresh(refreshtime, updateData, ups, command_list, header_list, devices, umonitor):
     while True:
         if umonitor.quit:
             print('Quitting...')
             Gtk.main_quit()
             sys.exit(0)
-        GLib.idle_add(updateData, ups_list, devices, cmd)
+        GLib.idle_add(updateData, ups, command_list, header_list, devices)
         time.sleep(refreshtime)
 
 
@@ -305,6 +304,9 @@ def main():
     else:
         command_list = ups.get_monitor_mib_commands()
 
+    if args.show_unresponsive:
+        env.ut_const.show_unresponsive = True
+
     if args.log:
         env.ut_const.LOG = True
         env.ut_const.log_file = './log_monitor_{}.txt'.format(
@@ -323,7 +325,7 @@ def main():
 
         # Start thread to update Monitor
         monthread = threading.Thread(target=refresh, daemon=True, args=[env.ut_const.SLEEP,
-                                     updateData, ups_list, devices, umonitor]).start()
+                                     updateData, ups, command_list, header_list, devices, umonitor]).start()
 
         Gtk.main()
     else:
