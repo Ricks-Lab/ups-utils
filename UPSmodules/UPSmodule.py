@@ -311,6 +311,10 @@ class UPSsnmp:
 
     # Read and check the UPS list.
     def read_ups_list(self):
+        """Reads the config.json file which contains parameters for UPSs to be used by utility.
+
+        :return: boolean True if no problems reading list
+        """
         if not os.path.isfile(env.ut_const.UPS_LIST_JSON_FILE):
             print('Error: UPS List file not found: {}'.format(env.ut_const.UPS_LIST_JSON_FILE))
             return False
@@ -350,11 +354,15 @@ class UPSsnmp:
 
     # Methods to get, check, and list UPSs
     def get_ups_list(self):
+        """Get the dictionary list of UPSs read at start up.
+
+        :return:  dictionary representing the list of UPSs
+        """
         return self.ups_list
 
     def get_num_ups_tuple(self):
         """ This function will return a tuple of the UPS counts.
-            The tuple represents listed, compatible, accessible, responsive UPSs
+        :return: tuple represents listed, compatible, accessible, responsive UPSs
         """
         cnt = [0, 0, 0, 0]
         for k, v in self.ups_list.items():
