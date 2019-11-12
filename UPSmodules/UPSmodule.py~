@@ -332,35 +332,19 @@ class UPSsnmp:
             print('config.json contains {} total UPSs and {} daemon UPS'.format(ups_cnt, daemon_cnt))
     # End of read and check the UPS list.
 
-    # Methods to get, check, and list UPSs
-    def get_ups_list(self):
-        return self.ups_list
+    def get_mib_name(self, ups_type, mib_cmd):
+        return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
-    def get_num_ups_tuple(self):
-        """ This function will return a tuple of the UPS counts.
-            The tuple represents listed, compatible, accessible, responsive UPSs
-        """
-        cnt = [0, 0, 0, 0]
-        for k, v in self.ups_list.items():
-            cnt[0] += 1
-            if self.is_compatible(v):
-                cnt[1] += 1
-            if self.is_accessible(v):
-                cnt[2] += 1
-            if self.is_responsive(v):
-                cnt[3] += 1
-        return tuple(cnt)
+    def get_monitor_mib_commands(self, cmd_type='dynamic'):
+        if cmd_type == 'all':
+            return_list = []
+            for cmd_type in ['static', 'dynamic']:
+                for item in self.monitor_mib_cmds[cmd_type]:
+                    return_list.append(item)
+            return return_list
+        else:
+            return self.monitor_mib_cmds[cmd_type]
 
-    def check_ups_type(self, test_ups_type):
-        if test_ups_type not in self.all_mib_cmds.keys():
-            return False
-        return True
-
-    def list_valid_ups_types(self):
-        return list(self.all_mib_cmds.keys())
-    # End of methods to get, check, and list UPSs
-
-    # Methods to set daemon and active UPS.
     def set_daemon_ups(self):
         for k, v in self.ups_list.items():
             if v['daemon']:
@@ -370,19 +354,12 @@ class UPSsnmp:
 
     def set_active_ups(self, ups_item):
         self.active_ups = ups_item
-    # End of methods to set daemon and active UPS.
 
     # Set of methods to return parameters for target UPS.
     def ups_mib_commands(self, tups=None):
         if not tups:
             tups = self.active_ups
         return tups['mib_commands']
-
-    # TODO test this and use where command name is needed.
-    def get_mib_name(self, mib_cmd, tups=None):
-        if not tups:
-            tups = self.active_ups
-        return tups['mib_commands'][mib_cmd]['name']
 
     def ups_name(self, tups=None):
         if not tups:
@@ -438,16 +415,6 @@ class UPSsnmp:
     # End of set of methods to check if UPS is valid.
 
     # Commands to read from UPS using snmp protocol.
-    def get_monitor_mib_commands(self, cmd_type='dynamic'):
-        if cmd_type == 'all':
-            return_list = []
-            for cmd_type in ['static', 'dynamic']:
-                for item in self.monitor_mib_cmds[cmd_type]:
-                    return_list.append(item)
-            return return_list
-        else:
-            return self.monitor_mib_cmds[cmd_type]
-
     def read_all_ups_list_items(self, command_list, errups=True):
         results = {}
         for ups_name, ups_item in self.get_ups_list().items():
@@ -544,6 +511,7 @@ class UPSsnmp:
         if int(value[8]):
             value_str = value_str + 'OverLoad'
         return value_str
+    # End of commands to read from UPS using snmp protocol.
 
     def list_snmp_commands(self):
         # for k, v in self.mib_commands.items():
@@ -553,7 +521,32 @@ class UPSsnmp:
             if v['decode']:
                 for k2, v2 in v['decode'].items():
                     print('        {}: {}'.format(k2, v2))
-    # End of commands to read from UPS using snmp protocol.
+
+    def get_ups_list(self):
+        return self.ups_list
+
+    def get_num_ups_tuple(self):
+        """ This function will return a tuple of the UPS counts.
+            The tuple represents listed, compatible, accessible, responsive UPSs
+        """
+        cnt = [0, 0, 0, 0]
+        for k, v in self.ups_list.items():
+            cnt[0] += 1
+            if self.is_compatible(v):
+                cnt[1] += 1
+            if self.is_accessible(v):
+                cnt[2] += 1
+            if self.is_responsive(v):
+                cnt[3] += 1
+        return tuple(cnt)
+
+    def check_ups_type(self, test_ups_type):
+        if test_ups_type not in self.all_mib_cmds.keys():
+            return False
+        return True
+
+    def list_valid_ups_types(self):
+        return list(self.all_mib_cmds.keys())
 
     # Set parameters required for daemon mode.
     def set_daemon_parameters(self):
