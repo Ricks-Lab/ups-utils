@@ -53,6 +53,10 @@ class UPSsnmp:
         self.ups_list = {}
         self.active_ups = {}
 
+        # UPS response bit string decoders
+        self.decoders = {apc_system_status: ['Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
+                                             'OverLoad']}
+
         # UPS from config.py for ups-daemon utility.
         self.daemon_params = {'suspend_script': '', 'resume_script': '', 'shutdown_script': '',
                               'suspend_threshold': env.ut_const.DEFAULT_SUSPEND_THRESHOLD,
@@ -60,6 +64,7 @@ class UPSsnmp:
                               'shutdown_capacity_threshold': env.ut_const.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD,
                               'shutdown_time_remaining_threshold': env.ut_const.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD}
 
+        # UPS MiB Commands
         self.monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
                                             'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
                                             'mib_ups_uptime'],
@@ -373,7 +378,8 @@ class UPSsnmp:
     # End of methods to set daemon and active UPS.
 
     # Set of methods to return parameters for target UPS.
-    def ups_mib_commands(self, tups=None):
+    # TODO test this and use where command name is needed.
+    def get_mib_commands(self, tups=None):
         if not tups:
             tups = self.active_ups
         return tups['mib_commands']
@@ -471,7 +477,7 @@ class UPSsnmp:
             target_ups = self.active_ups
         if not self.is_responsive(target_ups):
             return 'Invalid UPS'
-        snmp_mib_commands = self.ups_mib_commands()
+        snmp_mib_commands = self.get_mib_commands(target_ups)
         if command_name not in snmp_mib_commands:
             return 'No data'
         cmd_mib = snmp_mib_commands[command_name]['iso']
@@ -488,7 +494,7 @@ class UPSsnmp:
         value_minute = -1
         value_str = 'UNK'
         for line in snmp_output:
-            # print('line:  {}'.format(line))
+            if env.ut_const.DEBUG: print('line:  {}'.format(line))
             if re.match(r'.*=.*:.*', line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()
@@ -503,7 +509,7 @@ class UPSsnmp:
             elif command_name == 'mib_system_temperature':
                 value = int(value) / 10.0
         if command_name == 'mib_system_status' and target_ups['ups_type'] == 'apc-ap9630':
-            value = self.apc_system_status_decode(value)
+            value = self.bit_str_decoder(value, self.decoders['apc_system_status'])
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
             if target_ups['ups_type'] == 'eaton-pw':
@@ -528,26 +534,23 @@ class UPSsnmp:
         return value
 
     @staticmethod
-    def apc_system_status_decode(value):
-        # TODO decode more bits
+    def bit_str_decoder(value, decode_key):
+        """ Bit string decoder
+            
+            :param value: A string representing a bit encoded set of flags
+            :param decode: A list representing the meaning of a 1 for each bit field
+            :returns: A string of concatenated bit decode strings 
+        """
         value_str = ''
-        if int(value[0]):
-            value_str = 'Abnormal'
-        if int(value[1]):
-            value_str = value_str + 'OnBattery'
-        if int(value[2]):
-            value_str = value_str + 'LowBattery'
-        if int(value[3]):
-            value_str = value_str + 'OnLine'
-        if int(value[4]):
-            value_str = value_str + 'ReplaceBattery'
-        if int(value[8]):
-            value_str = value_str + 'OverLoad'
+        for index, bit_value in enumerate(value):
+            if bit_value = '1':
+                value_str = value_str + decode_key[index]
         return value_str
 
-    def list_snmp_commands(self):
-        # for k, v in self.mib_commands.items():
-        for k, v in self.ups_mib_commands().items():
+    def print_snmp_commands(self, tups=None):
+        if not tups:
+            tups = self.active_ups
+        for k, v in self.get_mib_commands(tups).items():
             print('{}: Value: {}'.format(k, v['iso']))
             print('    Description: {}'.format(v['name']))
             if v['decode']:
