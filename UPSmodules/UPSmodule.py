@@ -21,7 +21,7 @@ __copyright__ = "Copyright (C) 2019 RueiKe"
 __credits__ = []
 __license__ = "GNU General Public License"
 __program_name__ = "ups-utils"
-__version__ = "v0.0.1"
+__version__ = "v0.1.0"
 __maintainer__ = "RueiKe"
 __status__ = "Development"
 
@@ -54,8 +54,14 @@ class UPSsnmp:
         self.active_ups = {}
 
         # UPS response bit string decoders
-        self.decoders = {apc_system_status: ['Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
-                                             'OverLoad']}
+        self.decoders = {'apc_system_status': ['Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
+                                               'SCE', 'AVR_Boost', 'AVR_Trim', 'OverLoad', 'RT_Calibration',
+                                               'BatteriesDischarged', 'ManualBypass', 'SoftwareBypass',
+                                               'Bypass-InternalFault', 'Bypass-SupplyFailure', 'Bypass-FanFailure',
+                                               'SleepOnTimer', 'SleepNoPower', 'On', 'Rebooting', 'BatterCommLost',
+                                               'ShutdownInitiated', 'Boost/TrimFailure', 'BadOutVoltage',
+                                               'BatteryChargerFail', 'HiBatTemp', 'WarnBatTemp', 'CritBatTemp',
+                                               'SelfTestInProgress', 'LowBat/OnBat']}
 
         # UPS from config.py for ups-daemon utility.
         self.daemon_params = {'suspend_script': '', 'resume_script': '', 'shutdown_script': '',
@@ -312,7 +318,12 @@ class UPSsnmp:
             self.ups_list = json.load(ups_list_file)
         return True
 
-    def check_ups_list(self, quite=True):
+    def check_ups_list(self, quiet=True):
+        """Check the list of UPS for compatibility, accessibility, and responsiveness.
+
+        :param quiet:
+        :return:
+        """
         daemon_cnt = 0
         ups_cnt = 0
         for k, v in self.ups_list.items():
@@ -386,9 +397,25 @@ class UPSsnmp:
 
     # TODO test this and use where command name is needed.
     def get_mib_name(self, mib_cmd, tups=None):
+        """Get the mib command name.
+
+        :param mib_cmd: string representing mib command
+        :param tups: target UPS, active UPS if missing
+        :return: string of mib command name
+        """
         if not tups:
             tups = self.active_ups
+        print(tups)
         return tups['mib_commands'][mib_cmd]['name']
+
+    def get_mib_name_for_type(self, mib_cmd, ups_type):
+        """Get mib command name for a given UPS type.
+
+        :param mib_cmd:
+        :param ups_type:
+        :return: string of mib command name
+        """
+        return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
     def ups_name(self, tups=None):
         if not tups:
@@ -538,13 +565,18 @@ class UPSsnmp:
         """ Bit string decoder
             
             :param value: A string representing a bit encoded set of flags
-            :param decode: A list representing the meaning of a 1 for each bit field
+            :param decode_key: A list representing the meaning of a 1 for each bit field
             :returns: A string of concatenated bit decode strings 
         """
         value_str = ''
         for index, bit_value in enumerate(value):
-            if bit_value = '1':
-                value_str = value_str + decode_key[index]
+            if index > len(decode_key):
+                break
+            if bit_value == '1':
+                if value_str == '':
+                    value_str = decode_key[index]
+                else:
+                    value_str = '{}-{}'.format(value_str, decode_key[index])
         return value_str
 
     def print_snmp_commands(self, tups=None):

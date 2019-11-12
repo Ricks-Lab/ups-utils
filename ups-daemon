@@ -86,11 +86,11 @@ def main():
         sys.exit(-1)
 
     if args.list:
-        ups.list_snmp_commands()
+        ups.print_snmp_commands()
         sys.exit(0)
 
     # Display current status of target UPS
-    for k, v in ups.ups_mib_commands().items():
+    for k, v in ups.get_mib_commands().items():
         ups.send_snmp_command(k, display=True)
 
     if args.daemon:

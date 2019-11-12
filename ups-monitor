@@ -43,6 +43,7 @@ import threading
 import os
 import sys
 import shlex
+import re
 import time
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
@@ -204,16 +205,16 @@ def print_monitor_table(ups, header_list, cmd_list, ups_data):
             print('│', str(v[info_item]).ljust(irw, ' ')[:irw], sep='', end='')
         print('│')
     for table_item in cmd_list:
-        print('│', '\x1b[1;36m' + ups.get_mib_name('apc-ap9630', table_item).ljust(hrw, ' ')[:hrw] + '\x1b[0m',
+        print('│', '\x1b[1;36m' + ups.get_mib_name_for_type(table_item, 'apc-ap9630').ljust(hrw, ' ')[:hrw] + '\x1b[0m',
               sep='', end='')
         for k, v in ups_data.items():
             if table_item == 'mib_system_status':
-                if v[table_item] == 'Standby' or v[table_item] == 'OnLine':
+                if re.match(r'(.*Standby.*)|(.*OnLine.*)', v[table_item]):
                     item_str = '\x1b[1;30;42m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
                 else:
                     item_str = '\x1b[1;37;41m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
             elif table_item == 'mib_battery_status':
-                if v[table_item] == 'Battery Normal':
+                if re.match(r'(.*Battery Normal.*)', v[table_item]):
                     item_str = '\x1b[1;30;42m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
                 else:
                     item_str = '\x1b[1;37;41m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'

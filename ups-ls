@@ -107,7 +107,7 @@ def main():
                         print('Giving up on {}'.format(ups.ups_name()))
                         break
         else:
-            for k2, v2 in ups.ups_mib_commands().items():
+            for k2, v2 in ups.get_mib_commands(v).items():
                 if ups.send_snmp_command(k2, display=True) == 'UPS Not Responding':
                     print('Giving up on {}'.format(ups.ups_name()))
                     break
