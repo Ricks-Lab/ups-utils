@@ -355,6 +355,18 @@ class UPSsnmp:
     # End of read and check the UPS list.
 
     # Methods to get, check, and list UPSs
+    def get_name_for_ups_uuid(self, ups_uuid):
+        for k, v in self.ups_list.items():
+            if v['uuid'] == ups_uuid:
+                return str(k)
+        return 'Error'
+
+    def get_uuid_for_ups_name(self, ups_name):
+        for k, v in self.ups_list.items():
+            if v['display_name'] == ups_name:
+                return v['uuid']
+        return 'Error'
+
     def get_ups_list(self):
         """Get the dictionary list of UPSs read at start up.
 
@@ -399,7 +411,7 @@ class UPSsnmp:
     # End of methods to set daemon and active UPS.
 
     # Set of methods to return parameters for target UPS.
-    def get_ups_parameter(self, param_name, tups):
+    def get_ups_parameter_value(self, param_name, tups):
         if not tups:
             tups = self.active_ups
         if param_name in tups.keys():
@@ -423,8 +435,10 @@ class UPSsnmp:
         """
         if not tups:
             tups = self.active_ups
-        print(tups)
-        return tups['mib_commands'][mib_cmd]['name']
+        if mib_cmd in tups['mib_commands'].keys():
+            return tups['mib_commands'][mib_cmd]['name']
+        else:
+            return mib_cmd
 
     def get_mib_name_for_type(self, mib_cmd, ups_type):
         """Get mib command name for a given UPS type.
@@ -434,6 +448,11 @@ class UPSsnmp:
         :return: string of mib command name
         """
         return self.all_mib_cmds[ups_type][mib_cmd]['name']
+
+    def ups_uuid(self, tups=None):
+        if not tups:
+            tups = self.active_ups
+        return tups['uuid']
 
     def ups_name(self, tups=None):
         if not tups:
@@ -511,6 +530,8 @@ class UPSsnmp:
 
     def read_ups_list_items(self, command_list):
         results = {'display_name': self.ups_name(),
+                   'name': self.ups_name(),
+                   'uuid': self.ups_uuid(),
                    'ups_IP': self.ups_ip(),
                    'ups_type': self.ups_type()}
         for cmd in command_list:

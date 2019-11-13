@@ -38,11 +38,9 @@ __maintainer__ = 'RueiKe'
 __status__ = 'Development'
 
 import argparse
-import subprocess
 import threading
 import os
 import sys
-import shlex
 import re
 import time
 from UPSmodules import UPSmodule as UPS
@@ -128,13 +126,13 @@ class MonitorWindow(Gtk.Window):
 
         # Associate all table items with data source in devices dictionary
         for item_name, item_ups in ups.ups_list.items():
-            devices[item_ups.uuid] = {'display_name':  Gtk.Label(ups.ups_name(item_ups))}
+            devices[item_ups['uuid']] = {'display_name':  Gtk.Label(ups.ups_name(item_ups))}
             for item_hdr in header_items:
-                devices[item_ups.uuid][item_hdr] = Gtk.Label(label=ups.ups_parameter_value(item_hdr, item_ups))
-                devices[item_ups.uuid][item_hdr].set_width_chars(10)
+                devices[item_ups['uuid']][item_hdr] = Gtk.Label(label=ups.get_ups_parameter_value(item_hdr, item_ups))
+                devices[item_ups['uuid']][item_hdr].set_width_chars(10)
             for item_cmd in command_items:
-                devices[item_ups.uuid][item_cmd] = Gtk.Label(label=ups.ups_parameter_value(item_cmd, item_ups))
-                devices[item_ups.uuid][item_cmd].set_width_chars(10)
+                devices[item_ups['uuid']][item_cmd] = Gtk.Label(label=ups.get_ups_parameter_value(item_cmd, item_ups))
+                devices[item_ups['uuid']][item_cmd].set_width_chars(10)
 
         # Set boxes for internal table items
         for dk, dv in devices.items():
@@ -162,18 +160,20 @@ class MonitorWindow(Gtk.Window):
 
 
 def updateData(ups, header_list, command_list, devices):
+    irw = 20
     ups_data = ups.read_all_ups_list_items(command_list, errups=env.ut_const.show_unresponsive)
     if env.ut_const.LOG:
         print_log(env.ut_const.log_file_ptr, header_list, command_list, ups_data)
 
     # update gui
-    for dk, dv in devices.items():
-        for lk, lv in dv.items():
-            data_value = str(ups_data[dk][lk])[:16]
+    for dev_uuid, dev_data in devices.items():
+        ups_name = ups.get_name_for_ups_uuid(dev_uuid)
+        for mib_name, lv in dev_data.items():
+            data_value = str(ups_data[ups_name][mib_name])[:irw]
             if data_value == '-1':
                 data_value = ''
             lv.set_text(data_value)
-            lv.set_width_chars(17)
+            lv.set_width_chars(irw + 1)
 
     while Gtk.events_pending():
         Gtk.main_iteration_do(True)
