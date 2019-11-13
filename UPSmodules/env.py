@@ -22,7 +22,7 @@ __copyright__ = 'Copyright (C) 2019 RueiKe'
 __credits__ = []
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-utils'
-__version__ = 'v0.0.2'
+__version__ = 'v0.1.0'
 __maintainer__ = 'RueiKe'
 __status__ = 'Development'
 
@@ -54,6 +54,7 @@ class UT_CONST:
         self.SUSPEND_THRESHOLD_LIMIT = 2
         self.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD = 10
         self.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD = 10
+        self.show_unresponsive = False
         self.DEBUG = False
         self.LOG = False
         self.log_file_ptr = ''
