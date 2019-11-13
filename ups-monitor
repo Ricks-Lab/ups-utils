@@ -33,9 +33,9 @@ __copyright__ = 'Copyright (C) 2019 RueiKe'
 __credits__ = ['']
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-monitor'
-__version__ = 'v0.1.0'
+__version__ = 'v0.9.0'
 __maintainer__ = 'RueiKe'
-__status__ = 'Development'
+__status__ = 'Beta Release'
 
 import argparse
 import threading
@@ -45,6 +45,8 @@ import re
 import time
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
+from config import (threshold_battery_load_red, threshold_battery_load_yellow,
+                    threshold_battery_capacity_red, threshold_battery_capacity_yellow)
 
 try:
     import gi
@@ -74,7 +76,10 @@ class MonitorWindow(Gtk.Window):
 
         col = 0
         row = 0
-        num_ups = ups.get_num_ups_tuple()[0]
+        if env.ut_const.show_unresponsive:
+            num_ups = ups.get_num_ups_tuple()[0]
+        else:
+            num_ups = ups.get_num_ups_tuple()[3]
 
         # Set logging details at top of table if logging enabled
         if env.ut_const.LOG:
@@ -88,7 +93,7 @@ class MonitorWindow(Gtk.Window):
             lbox.set_property('margin-right', 1)
             lbox.set_property('margin-left', 1)
             lbox.pack_start(log_label, True, True, 0)
-            grid.attach(lbox, 0, row, num_amd_gpus+1, 1)
+            grid.attach(lbox, 0, row, num_ups + 1, 1)
         row += 1
         row_start = row
 
@@ -125,7 +130,7 @@ class MonitorWindow(Gtk.Window):
             row += 1
 
         # Associate all table items with data source in devices dictionary
-        for item_name, item_ups in ups.ups_list.items():
+        for item_name, item_ups in ups.get_ups_list(errups=env.ut_const.show_unresponsive).items():
             devices[item_ups['uuid']] = {'display_name':  Gtk.Label(ups.ups_name(item_ups))}
             for item_hdr in header_items:
                 devices[item_ups['uuid']][item_hdr] = Gtk.Label(label=ups.get_ups_parameter_value(item_hdr, item_ups))
@@ -141,7 +146,10 @@ class MonitorWindow(Gtk.Window):
             for lk, lv in dv.items():
                 lv.set_text('')
                 lbox = Gtk.Box(spacing=6)
-                lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.06, .06, .06, .06))
+                if row == row_start:
+                    lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .40, .60, 1.0))
+                else:
+                    lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.06, .06, .06, .06))
                 lbox.set_property('margin-top', 1)
                 lbox.set_property('margin-bottom', 1)
                 lbox.set_property('margin-right', 1)
@@ -172,7 +180,46 @@ def updateData(ups, header_list, command_list, devices):
             data_value = str(ups_data[ups_name][mib_name])[:irw]
             if data_value == '-1':
                 data_value = ''
-            lv.set_text(data_value)
+            if mib_name == 'mib_battery_capacity' and data_value.isnumeric():
+                if int(data_value) <= threshold_battery_capacity_red:
+                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.70, .20, .20, 1.0))
+                    lv.set_markup('<b>{}</b>'.format(data_value))
+                elif int(data_value) >= threshold_battery_capacity_yellow:
+                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.90, .50, .00, 1.0))
+                    lv.set_markup('<b>{}</b>'.format(data_value))
+                else:
+                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.3, 0.3, 0.3, 1.0))
+                    lv.set_text(data_value)
+            if mib_name == 'mib_output_load' and data_value.isnumeric():
+                if int(data_value) >= threshold_battery_load_red:
+                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.70, .20, .20, 1.0))
+                    lv.set_markup('<b>{}</b>'.format(data_value))
+                elif int(data_value) >= threshold_battery_load_yellow:
+                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.90, .50, .00, 1.0))
+                    lv.set_markup('<b>{}</b>'.format(data_value))
+                else:
+                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.3, 0.3, 0.3, 1.0))
+                    lv.set_text(data_value)
+            elif mib_name == 'mib_battery_status':
+                lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+                lv.set_markup('<b>{}</b>'.format(data_value))
+                if re.match(r'(.*Battery Normal.*)', data_value):
+                    lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .60, .40, 1.0))
+                else:
+                    lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
+            elif mib_name == 'mib_system_status':
+                lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+                lv.set_markup('<b>{}</b>'.format(data_value))
+                if re.match(r'(.*Standby.*)|(.*OnLine.*)', data_value):
+                    lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .60, .40, 1.0))
+                else:
+                    lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
+            elif mib_name == 'display_name':
+                lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+                lv.set_markup('<b>{}</b>'.format(data_value))
+            else:
+                lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.3, 0.3, 0.3, 1.0))
+                lv.set_text(data_value)
             lv.set_width_chars(irw + 1)
 
     while Gtk.events_pending():
@@ -322,6 +369,8 @@ def main():
 
     if args.show_unresponsive:
         env.ut_const.show_unresponsive = True
+    else:
+        env.ut_const.show_unresponsive = False
 
     if args.log:
         env.ut_const.LOG = True

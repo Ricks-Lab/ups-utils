@@ -21,9 +21,9 @@ __copyright__ = "Copyright (C) 2019 RueiKe"
 __credits__ = []
 __license__ = "GNU General Public License"
 __program_name__ = "ups-utils"
-__version__ = "v0.1.0"
+__version__ = "v0.9.0"
 __maintainer__ = "RueiKe"
-__status__ = "Development"
+__status__ = "Beta Release"
 
 import os
 import sys
@@ -367,12 +367,18 @@ class UPSsnmp:
                 return v['uuid']
         return 'Error'
 
-    def get_ups_list(self):
+    def get_ups_list(self, errups=True):
         """Get the dictionary list of UPSs read at start up.
 
         :return:  dictionary representing the list of UPSs
         """
-        return self.ups_list
+        return_list = {}
+        for ups_name, ups_item in self.ups_list.items():
+            if not errups:
+                if not self.is_responsive(ups_item):
+                    continue
+            return_list[ups_name] = ups_item
+        return return_list
 
     def get_num_ups_tuple(self):
         """ This function will return a tuple of the UPS counts.

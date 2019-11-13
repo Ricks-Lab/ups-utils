@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """  Make necessary changes to describe your details and save as *config.py*
+     Deleting an entry will cause an error in execution.
 
 """
 
@@ -11,3 +12,7 @@ suspend_threshold = 3                   # Number of minutes on battery till exec
 suspend_script = ''
 resume_script = ''
 shutdown_script = ''
+threshold_battery_load_red = 90
+threshold_battery_load_yellow = 80
+threshold_battery_capacity_red = 10
+threshold_battery_capacity_yellow = 50
