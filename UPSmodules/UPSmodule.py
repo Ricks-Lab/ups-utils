@@ -397,6 +397,14 @@ class UPSsnmp:
     # End of methods to set daemon and active UPS.
 
     # Set of methods to return parameters for target UPS.
+    def get_ups_parameter(self, param_name, tups):
+        if not tups:
+            tups = self.active_ups
+        if param_name in tups.keys():
+            return tups[param_name]
+        else:
+            return None
+
     # TODO test this and use where command name is needed.
     def get_mib_commands(self, tups=None):
         if not tups:

@@ -9,3 +9,10 @@
 UPSmodules/.UPSmodule.py.swp
 UPSmodules/.UPSmodule.py.un~
 UPSmodules/UPSmodule.py~
+.idea/
+UPSmodules/__pycache__/
+__pycache__/
+config.json
+config.py
+config.py.apc
+config.py.eaton

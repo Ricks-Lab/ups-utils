@@ -61,7 +61,7 @@ from gi.repository import GLib, Gtk, Gdk
 
 
 class MonitorWindow(Gtk.Window):
-    def __init__(self, ups, devices):
+    def __init__(self, ups, header_items, command_items, devices):
         self.quit = False
 
         Gtk.Window.__init__(self, title='ups-monitor')
@@ -127,15 +127,14 @@ class MonitorWindow(Gtk.Window):
             row += 1
 
         # Associate all table items with data source in devices dictionary
-        # TODO write method ups_parameter_value
         # TODO set a uuid field in ups list
         for k, v in ups.ups_list.items():
-            devices[v.uuid] = {'display_name':  Gtk.Label(ups.ups_name(v)}
+            devices[v.uuid] = {'display_name':  Gtk.Label(ups.ups_name(v))}
             for cv in header_items:
-                devices[v.uuid][cv] = Gtk.Label(label=ups.ups_parameter_value(cv, v)
+                devices[v.uuid][cv] = Gtk.Label(label=ups.ups_parameter_value(cv, v))
                 devices[v.uuid][cv].set_width_chars(10)
             for cv in command_items:
-                devices[v.uuid][cv] = Gtk.Label(label=ups.ups_parameter_value(cv, v)
+                devices[v.uuid][cv] = Gtk.Label(label=ups.ups_parameter_value(cv, v))
                 devices[v.uuid][cv].set_width_chars(10)
 
         # Set boxes for internal table items
@@ -163,7 +162,7 @@ class MonitorWindow(Gtk.Window):
         self.quit = True
 
 
-def updateData(ups, command_list, header_list, devices):
+def updateData(ups, header_list, command_list, devices):
     ups_data = ups.read_all_ups_list_items(command_list, errups=env.ut_const.show_unresponsive)
     if env.ut_const.LOG:
         print_log(env.ut_const.log_file_ptr, header_list, command_list, ups_data)
@@ -181,13 +180,13 @@ def updateData(ups, command_list, header_list, devices):
         Gtk.main_iteration_do(True)
 
 
-def refresh(refreshtime, updateData, ups, command_list, header_list, devices, umonitor):
+def refresh(refreshtime, updateData, ups, header_list, command_list, devices, umonitor):
     while True:
         if umonitor.quit:
             print('Quitting...')
             Gtk.main_quit()
             sys.exit(0)
-        GLib.idle_add(updateData, ups, command_list, header_list, devices)
+        GLib.idle_add(updateData, ups, header_list, command_list, devices)
         time.sleep(refreshtime)
 
 
@@ -333,8 +332,8 @@ def main():
         print_log_header(env.ut_const.log_file_ptr, header_list, command_list)
 
     if args.gui:
-        print("GUI option not implemented yet")
-        sys.exit(0)
+        # print("GUI option not implemented yet")
+        # sys.exit(0)
         # Display Gtk style Monitor
         devices = {}
         umonitor = MonitorWindow(ups, header_list, command_list, devices)
@@ -343,7 +342,7 @@ def main():
 
         # Start thread to update Monitor
         monthread = threading.Thread(target=refresh, daemon=True, args=[env.ut_const.SLEEP,
-                                     updateData, ups, command_list, header_list, devices, umonitor]).start()
+                                     updateData, ups, header_list, command_list, devices, umonitor]).start()
 
         Gtk.main()
     else:
