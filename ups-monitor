@@ -100,15 +100,15 @@ class MonitorWindow(Gtk.Window):
         row_labels['display_name'].set_markup('<b>UPS Parameters</b>')
         row_labels['display_name'].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
         # Set row labels for header items
-        for k, v in header_items:
-            row_labels[k] = Gtk.Label()
-            row_labels[k].set_markup('<b>' + str(v) + '</b>')
-            row_labels[k].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+        for v in header_items:
+            row_labels[v] = Gtk.Label()
+            row_labels[v].set_markup('<b>' + str(ups.get_mib_name(v)) + '</b>')
+            row_labels[v].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
         # Set row labels for command items
-        for k, v in command_items:
-            row_labels[k] = Gtk.Label()
-            row_labels[k].set_markup('<b>' + str(v) + '</b>')
-            row_labels[k].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+        for v in command_items:
+            row_labels[v] = Gtk.Label()
+            row_labels[v].set_markup('<b>' + str(ups.get_mib_name(v)) + '</b>')
+            row_labels[v].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
         # Set boxes for each row label
         for k, v in row_labels.items():
             lbox = Gtk.Box(spacing=6)
@@ -127,15 +127,14 @@ class MonitorWindow(Gtk.Window):
             row += 1
 
         # Associate all table items with data source in devices dictionary
-        # TODO set a uuid field in ups list
-        for k, v in ups.ups_list.items():
-            devices[v.uuid] = {'display_name':  Gtk.Label(ups.ups_name(v))}
-            for cv in header_items:
-                devices[v.uuid][cv] = Gtk.Label(label=ups.ups_parameter_value(cv, v))
-                devices[v.uuid][cv].set_width_chars(10)
-            for cv in command_items:
-                devices[v.uuid][cv] = Gtk.Label(label=ups.ups_parameter_value(cv, v))
-                devices[v.uuid][cv].set_width_chars(10)
+        for item_name, item_ups in ups.ups_list.items():
+            devices[item_ups.uuid] = {'display_name':  Gtk.Label(ups.ups_name(item_ups))}
+            for item_hdr in header_items:
+                devices[item_ups.uuid][item_hdr] = Gtk.Label(label=ups.ups_parameter_value(item_hdr, item_ups))
+                devices[item_ups.uuid][item_hdr].set_width_chars(10)
+            for item_cmd in command_items:
+                devices[item_ups.uuid][item_cmd] = Gtk.Label(label=ups.ups_parameter_value(item_cmd, item_ups))
+                devices[item_ups.uuid][item_cmd].set_width_chars(10)
 
         # Set boxes for internal table items
         for dk, dv in devices.items():

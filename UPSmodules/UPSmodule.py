@@ -33,6 +33,7 @@ import time
 import datetime
 import json
 import subprocess
+from uuid import uuid4
 try:
     from UPSmodules import env
 except ModuleNotFoundError:
@@ -331,6 +332,7 @@ class UPSsnmp:
         daemon_cnt = 0
         ups_cnt = 0
         for k, v in self.ups_list.items():
+            v['uuid'] = uuid4().hex
             v['accessible'] = False
             v['responsive'] = False
             v['mib_commands'] = None
