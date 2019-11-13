@@ -1,0 +1,11 @@
+*~
+*.swp
+*.swo
+*/*~
+*/*.swp
+*/*.swo
+*.un~
+*.py~
+UPSmodules/.UPSmodule.py.swp
+UPSmodules/.UPSmodule.py.un~
+UPSmodules/UPSmodule.py~
