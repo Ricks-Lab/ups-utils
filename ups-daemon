@@ -86,6 +86,7 @@ def main():
     if not ups.check_ups_type(ups.active_ups['ups_type']):
         print('Invalid UPS type: {}, Valid entries: '.format(ups.active_ups['ups_type']), ups.list_valid_ups_types())
         sys.exit(-1)
+    ups.print_daemon_parameters()
 
     if args.list:
         ups.print_snmp_commands()

@@ -643,14 +643,7 @@ class UPSsnmp:
     # End of commands to read from UPS using snmp protocol.
 
     # Set parameters required for daemon mode.
-
-    # TODO implement read of these configuration parameters and check for config errors in all of these methods
-    # 'threshold_battery_load_red': env.ut_const.def_threshold_battery_load_red
-    # 'threshold_battery_load_yellow': env.ut_const.def_threshold_battery_load_yellow
-    # 'threshold_battery_capacity_red': env.ut_const.def_threshold_battery_capacity_red
-    # 'threshold_battery_capacity_yellow': env.ut_const.def_threshold_battery_capacity_yellow
     def set_daemon_parameters(self):
-        # TODO need to make sure parameters default to defaults
         if env.ut_const.ERROR_config:
             print('Error in config.py file.  Using defaults')
             return
@@ -660,57 +653,83 @@ class UPSsnmp:
             if not os.path.isfile(suspend_script):
                 print('Missing suspend script: {}'.format(suspend_script))
                 sys.exit(-1)
-            print('Suspend script: {}'.format(suspend_script))
-
+            # print('Suspend script: {}'.format(suspend_script))
         self.daemon_params['resume_script'] = resume_script
         if resume_script:
             if not os.path.isfile(resume_script):
                 print('Missing resume script: {}'.format(resume_script))
                 sys.exit(-1)
-            print('Resume script: {}'.format(resume_script))
-
+            # print('Resume script: {}'.format(resume_script))
         self.daemon_params['shutdown_script'] = shutdown_script
         if shutdown_script:
             if not os.path.isfile(shutdown_script):
                 print('Missing shutdown script: {}'.format(shutdown_script))
                 sys.exit(-1)
-            print('Shutdown script: {}'.format(shutdown_script))
-
+            # print('Shutdown script: {}'.format(shutdown_script))
+        if isinstance(threshold_battery_capacity_red, int):
+            if 0 < threshold_battery_capacity_red < 100:
+                self.daemon_params['threshold_battery_capacity_red'] = threshold_battery_capacity_red
+            else:
+                print('Invalid threshold_battery_capacity_red in config.py.  Using default.')
+        if isinstance(threshold_battery_capacity_yellow, int):
+            if self.daemon_params['threshold_battery_capacity_red'] < threshold_battery_load_yellow < 100:
+                self.daemon_params['threshold_battery_capacity_yellow'] = threshold_battery_capacity_yellow
+            else:
+                print('Invalid threshold_battery_capacity_yellow in config.py.  Using default.')
+        if isinstance(threshold_battery_load_yellow, int):
+            if 0 < threshold_battery_load_yellow < 100:
+                self.daemon_params['threshold_battery_load_yellow'] = threshold_battery_load_yellow
+            else:
+                print('Invalid threshold_battery_load_yellow in config.py.  Using default.')
+        if isinstance(threshold_battery_load_red, int):
+            if self.daemon_params['threshold_battery_load_yellow'] < threshold_battery_load_red < 100:
+                self.daemon_params['threshold_battery_load_red'] = threshold_battery_load_red
+            else:
+                print('Invalid threshold_battery_load_red in config.py.  Using default.')
         if isinstance(read_interval, int):
             if read_interval >= env.ut_const.READ_INTERVAL_LIMIT:
                 self.daemon_params['read_interval'] = read_interval
             else:
                 print('Invalid read interval in config.py.  Using default.')
-        print('Read Interval: {} sec'.format(self.daemon_params['read_interval']))
-
         if isinstance(read_interval, int):
             if read_interval >= env.ut_const.READ_INTERVAL_LIMIT:
                 self.daemon_params['read_interval'] = read_interval
             else:
                 print('Invalid read interval in config.py.  Using default.')
-        print('Read Interval: {} sec'.format(self.daemon_params['read_interval']))
-
         if isinstance(suspend_threshold, int):
             if suspend_threshold >= env.ut_const.SUSPEND_THRESHOLD_LIMIT:
                 self.daemon_params['suspend_threshold'] = suspend_threshold
             else:
                 print('Invalid suspend threshold in config.py.  Using default.')
-        print('Suspend Threshold: {} min'.format(self.daemon_params['suspend_threshold']))
-
         if isinstance(shutdown_capacity_threshold, int):
             if shutdown_capacity_threshold >= env.ut_const.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD:
                 self.daemon_params['battery_capacity_shutdown_threshold'] = shutdown_capacity_threshold
             else:
                 print('Invalid battery capacity shutdown threshold in config.py.  Using default.')
-        print('Battery Capacity Shutdown Threshold: {}%'.format(self.daemon_params['battery_capacity_shutdown_threshold']))
-
         if isinstance(shutdown_time_remaining_threshold, int):
             if shutdown_time_remaining_threshold >= env.ut_const.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD:
                 self.daemon_params['battery_time_remaining_shutdown_threshold'] = shutdown_time_remaining_threshold
             else:
                 print('Invalid battery time remaining shutdown threshold in config.py.  Using default.')
+
+    def print_daemon_parameters(self):
+
+        print('Suspend script: {}'.format(self.daemon_params['suspend_script']))
+        print('Resume script: {}'.format(self.daemon_params['resume_script']))
+        print('Shutdown script: {}'.format(self.daemon_params['shutdown_script']))
+
+        print('threshold_battery_capacity_red: {}%'.format(self.daemon_params['threshold_battery_capacity_red']))
+        print('threshold_battery_capacity_yellow: {}%'.format(
+            self.daemon_params['threshold_battery_capacity_yellow']))
+        print('threshold_battery_load_yellow: {}%'.format(self.daemon_params['threshold_battery_load_yellow']))
+        print('threshold_battery_load_red: {}%'.format(self.daemon_params['threshold_battery_load_red']))
+        
+        print('Read Interval: {} sec'.format(self.daemon_params['read_interval']))
+        print('Suspend Threshold: {} min'.format(self.daemon_params['suspend_threshold']))
+        print('Battery Capacity Shutdown Threshold: {}%'.format(
+              self.daemon_params['shutdown_capacity_threshold']))
         print('Battery time remaining Shutdown Threshold: {} min'.format(
-            self.daemon_params['battery_time_remaining_shutdown_threshold']))
+              self.daemon_params['shutdown_time_remaining_threshold']))
 
     def shutdown(self):
         if not self.daemon_params['shutdown_script']:
