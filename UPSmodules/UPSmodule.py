@@ -583,6 +583,8 @@ class UPSsnmp:
         if target_ups['ups_type'] == 'eaton-pw':
             if command_name == 'mib_output_voltage' or command_name == 'mib_output_frequency':
                 value = int(value) / 10.0
+            elif command_name == 'mib_output_current':
+                value = int(value) / 10.0
             elif command_name == 'mib_input_voltage' or command_name == 'mib_input_frequency':
                 value = int(value) / 10.0
             elif command_name == 'mib_system_temperature':
