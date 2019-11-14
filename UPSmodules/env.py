@@ -36,6 +36,7 @@ from datetime import datetime
 
 class UT_CONST:
     def __init__(self):
+        # Utility Path Definitions
         self.repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
         self.repository_path = os.path.join(self.repository_module_path, '..')
         self.config_dir = os.path.join(os.getenv('HOME'), '.ups-utils/')
@@ -46,6 +47,9 @@ class UT_CONST:
         else:
             self.icon_path = os.path.join(self.repository_path, 'icons')
 
+        # Configuration Parameters
+        self.ERROR_config = False
+        self.ERROR_json = False
         self.UPS_LIST_JSON_FILE = 'config.json'
         self.DEFAULT_MONITOR_UPDATE_INTERVAL = 10
         self.DEFAULT_READ_INTERVAL = 30
@@ -54,6 +58,12 @@ class UT_CONST:
         self.SUSPEND_THRESHOLD_LIMIT = 2
         self.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD = 10
         self.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD = 10
+        self.def_threshold_battery_load_red = 90
+        self.def_threshold_battery_load_yellow = 80
+        self.def_threshold_battery_capacity_red = 10
+        self.def_threshold_battery_capacity_yellow = 50
+
+        # Utility Execution Flags
         self.show_unresponsive = False
         self.DEBUG = False
         self.LOG = False

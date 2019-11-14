@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""UPSmodule  -  utility for interacting with APC UPS
+"""UPSmodule  -  utility for interacting with compatible UPSs
 
     Copyright (C) 2019  RueiKe
 
@@ -41,11 +41,13 @@ except ModuleNotFoundError:
 try:
     from config import (suspend_threshold, read_interval,
                         suspend_script, resume_script, shutdown_script,
-                        shutdown_capacity_threshold, shutdown_time_remaining_threshold)
+                        shutdown_capacity_threshold, shutdown_time_remaining_threshold,
+                        threshold_battery_load_red, threshold_battery_load_yellow,
+                        threshold_battery_capacity_red, threshold_battery_capacity_yellow)
 except ModuleNotFoundError:
-    print('The config.py file is missing.  Use config.py.template as a template.')
-    print('Use chmod 600 on config.py to protect sensitive information.')
-    sys.exit(-1)
+    print('The config.py file is missing or mis-configured.  Use config.py.template as a template.')
+    print('Using defaults, which will not enable any daemon response scripts.')
+    env.ut_const.ERROR_config = True
 
 
 class UPSsnmp:
@@ -64,12 +66,17 @@ class UPSsnmp:
                                                'BatteryChargerFail', 'HiBatTemp', 'WarnBatTemp', 'CritBatTemp',
                                                'SelfTestInProgress', 'LowBat/OnBat']}
 
-        # UPS from config.py for ups-daemon utility.
+        # UPS from config.py for ups-daemon and monitor utilities.
         self.daemon_params = {'suspend_script': '', 'resume_script': '', 'shutdown_script': '',
                               'suspend_threshold': env.ut_const.DEFAULT_SUSPEND_THRESHOLD,
                               'read_interval': env.ut_const.DEFAULT_READ_INTERVAL,
                               'shutdown_capacity_threshold': env.ut_const.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD,
-                              'shutdown_time_remaining_threshold': env.ut_const.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD}
+                              'shutdown_time_remaining_threshold': env.ut_const.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD,
+                              'threshold_battery_load_red': env.ut_const.def_threshold_battery_load_red
+                              'threshold_battery_load_yellow': env.ut_const.def_threshold_battery_load_yellow
+                              'threshold_battery_capacity_red': env.ut_const.def_threshold_battery_capacity_red
+                              'threshold_battery_capacity_yellow': env.ut_const.def_threshold_battery_capacity_yellow
+                              }
 
         # UPS MiB Commands
         self.monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
@@ -636,7 +643,18 @@ class UPSsnmp:
     # End of commands to read from UPS using snmp protocol.
 
     # Set parameters required for daemon mode.
+
+    # TODO implement read of these configuration parameters and check for config errors in all of these methods
+    # 'threshold_battery_load_red': env.ut_const.def_threshold_battery_load_red
+    # 'threshold_battery_load_yellow': env.ut_const.def_threshold_battery_load_yellow
+    # 'threshold_battery_capacity_red': env.ut_const.def_threshold_battery_capacity_red
+    # 'threshold_battery_capacity_yellow': env.ut_const.def_threshold_battery_capacity_yellow
     def set_daemon_parameters(self):
+        # TODO need to make sure parameters default to defaults
+        if env.ut_const.ERROR_config:
+            print('Error in config.py file.  Using defaults')
+            return
+
         self.daemon_params['suspend_script'] = suspend_script
         if suspend_script:
             if not os.path.isfile(suspend_script):
@@ -657,6 +675,13 @@ class UPSsnmp:
                 print('Missing shutdown script: {}'.format(shutdown_script))
                 sys.exit(-1)
             print('Shutdown script: {}'.format(shutdown_script))
+
+        if isinstance(read_interval, int):
+            if read_interval >= env.ut_const.READ_INTERVAL_LIMIT:
+                self.daemon_params['read_interval'] = read_interval
+            else:
+                print('Invalid read interval in config.py.  Using default.')
+        print('Read Interval: {} sec'.format(self.daemon_params['read_interval']))
 
         if isinstance(read_interval, int):
             if read_interval >= env.ut_const.READ_INTERVAL_LIMIT:
