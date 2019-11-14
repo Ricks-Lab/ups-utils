@@ -233,7 +233,12 @@ def refresh(refreshtime, updateData, ups, header_list, command_list, devices, um
             Gtk.main_quit()
             sys.exit(0)
         GLib.idle_add(updateData, ups, header_list, command_list, devices)
-        time.sleep(refreshtime)
+        for sleep_increment in range(0, refreshtime):
+            if umonitor.quit:
+                print('Quitting...')
+                Gtk.main_quit()
+                sys.exit(0)
+            time.sleep(1)
 
 
 def print_monitor_table(ups, header_list, cmd_list, ups_data):

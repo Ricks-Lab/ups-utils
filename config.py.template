@@ -8,11 +8,11 @@
 shutdown_capacity_threshold = 10        # Battery percentage shutdown threshold
 shutdown_time_remaining_threshold = 10  # Battery time remaining in min shutdown threshold
 read_interval = 30                      # Number of seconds between reads from ups
-suspend_threshold = 3                   # Number of minutes on battery till execute suspend script
+suspend_threshold = 5                   # Number of minutes on battery till execute suspend script
 suspend_script = ''
 resume_script = ''
 shutdown_script = ''
-threshold_battery_load_red = 90
-threshold_battery_load_yellow = 80
-threshold_battery_capacity_red = 10
-threshold_battery_capacity_yellow = 50
+threshold_battery_load_red = 90         # Critical level, trigger suspend by daemon and red in monitor
+threshold_battery_load_yellow = 70      # Warning level, warning in daemon and yellow in monitor
+threshold_battery_capacity_red = 10     # Critical level, trigger suspend by daemon and red in monitor
+threshold_battery_capacity_yellow = 50  # Warning level, warning in daemon and yellow in monitor
