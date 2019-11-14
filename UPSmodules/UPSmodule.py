@@ -72,9 +72,9 @@ class UPSsnmp:
                               'read_interval': env.ut_const.DEFAULT_READ_INTERVAL,
                               'shutdown_capacity_threshold': env.ut_const.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD,
                               'shutdown_time_remaining_threshold': env.ut_const.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD,
-                              'threshold_battery_load_red': env.ut_const.def_threshold_battery_load_red
-                              'threshold_battery_load_yellow': env.ut_const.def_threshold_battery_load_yellow
-                              'threshold_battery_capacity_red': env.ut_const.def_threshold_battery_capacity_red
+                              'threshold_battery_load_red': env.ut_const.def_threshold_battery_load_red,
+                              'threshold_battery_load_yellow': env.ut_const.def_threshold_battery_load_yellow,
+                              'threshold_battery_capacity_red': env.ut_const.def_threshold_battery_capacity_red,
                               'threshold_battery_capacity_yellow': env.ut_const.def_threshold_battery_capacity_yellow
                               }
 
