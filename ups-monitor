@@ -66,7 +66,7 @@ class MonitorWindow(Gtk.Window):
 
         Gtk.Window.__init__(self, title='ups-monitor')
         self.set_border_width(1)
-        icon_file = os.path.join(env.ut_const.icon_path, 'ups-monitor.icon.png')
+        icon_file = os.path.join(env.ut_const.icon_path, 'ups-utils-monitor.icon.png')
         if env.ut_const.DEBUG: print('Icon file: [{}]'.format(icon_file))
         if os.path.isfile(icon_file):
             self.set_icon_from_file(icon_file)
