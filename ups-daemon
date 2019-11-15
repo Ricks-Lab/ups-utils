@@ -103,6 +103,9 @@ def main():
         warn_load_level = ups.daemon_params['threshold_battery_load_yellow']
         overload_fault = False
         suspend_state = False
+        normal_sleep = ups.daemon_params['read_interval']
+        fault_sleep = env.ut_const.READ_INTERVAL_LIMIT
+        active_sleep = normal_sleep
         while True:
             time_str = datetime.now().strftime('%c')
             bat_status = ups.send_snmp_command('mib_battery_status')
@@ -125,6 +128,7 @@ def main():
 
             # Not on Battery
             if time_on_bat == 0.0:
+                active_sleep = normal_sleep
                 print('{}: Battery Status: {}: Load: {}%'.format(time_str, bat_status, bat_load))
                 if bat_capacity < crit_bat_level:
                     print('{}: Battery Nearly Exhausted'.format(time_str))
@@ -138,6 +142,7 @@ def main():
                     print('{}: UPS Battery Charging'.format(time_str))
             # On Battery condition
             elif time_on_bat > 0.0:
+                active_sleep = fault_sleep
                 print('{}: On UPS Power: {:.3f} min'.format(time_str, time_on_bat))
                 print('{}: UPS Runtime Remaining: {:.3f} min'.format(time_str, remain_run_time))
                 print('{}: UPS Battery Capacity Remaining: {}%'.format(time_str, bat_capacity))
@@ -168,7 +173,7 @@ def main():
                     suspend_state = True
                     pass
 
-            for sleep_index in range(1, ups.daemon_params['read_interval']):
+            for sleep_index in range(0, active_sleep):
                 time.sleep(1)
                 if quit_signal:
                     print('{}: Received Quit Signal'.format(time_str))
