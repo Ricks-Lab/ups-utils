@@ -45,9 +45,6 @@ import re
 import time
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
-from config import (threshold_battery_load_red, threshold_battery_load_yellow,
-                    threshold_battery_capacity_red, threshold_battery_capacity_yellow)
-
 try:
     import gi
 except ModuleNotFoundError as error:
@@ -181,20 +178,20 @@ def updateData(ups, header_list, command_list, devices):
             if data_value == '-1':
                 data_value = ''
             if mib_name == 'mib_battery_capacity' and data_value.isnumeric():
-                if int(data_value) <= threshold_battery_capacity_red:
+                if int(data_value) <= ups.daemon_params['threshold_battery_capacity_crit']:
                     lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.70, .20, .20, 1.0))
                     lv.set_markup('<b>{}</b>'.format(data_value))
-                elif int(data_value) >= threshold_battery_capacity_yellow:
+                elif int(data_value) >= ups.daemon_params['threshold_battery_capacity_warn']:
                     lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.90, .50, .00, 1.0))
                     lv.set_markup('<b>{}</b>'.format(data_value))
                 else:
                     lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.3, 0.3, 0.3, 1.0))
                     lv.set_text(data_value)
             if mib_name == 'mib_output_load' and data_value.isnumeric():
-                if int(data_value) >= threshold_battery_load_red:
+                if int(data_value) >= ups.daemon_params['threshold_battery_load_crit']:
                     lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.70, .20, .20, 1.0))
                     lv.set_markup('<b>{}</b>'.format(data_value))
-                elif int(data_value) >= threshold_battery_load_yellow:
+                elif int(data_value) >= ups.daemon_params['threshold_battery_load_warn']:
                     lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.90, .50, .00, 1.0))
                     lv.set_markup('<b>{}</b>'.format(data_value))
                 else:
@@ -324,7 +321,8 @@ def main():
     parser.add_argument('--show_unresponsive', help='Display unresponsive UPSs', action='store_true', default=False)
     parser.add_argument('--gui', help='Display GTK Version of Monitor', action='store_true', default=False)
     parser.add_argument('--log', help='Write all monitor data to logfile', action='store_true', default=False)
-    parser.add_argument('--sleep', help='Number of seconds to sleep between updates', type=int, default=15)
+    parser.add_argument('--sleep', help='Number of seconds to sleep between updates',
+                        type=int, default=env.ut_const.DEFAULT_DAEMON_READ_INTERVAL)
     parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
     args = parser.parse_args()
 
@@ -359,7 +357,7 @@ def main():
         print('    Check the config.json file.')
     print('')
 
-    if int(args.sleep) >= env.ut_const.DEFAULT_MONITOR_UPDATE_INTERVAL:
+    if int(args.sleep) >= env.ut_const.READ_INTERVAL_LIMIT:
         env.ut_const.SLEEP = int(args.sleep)
     else:
         print('Invalid value for sleep specified.  Must be an integer >= {}'.format(

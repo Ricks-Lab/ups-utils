@@ -51,17 +51,15 @@ class UT_CONST:
         self.ERROR_config = False
         self.ERROR_json = False
         self.UPS_LIST_JSON_FILE = 'config.json'
-        self.DEFAULT_MONITOR_UPDATE_INTERVAL = 10
-        self.DEFAULT_READ_INTERVAL = 30
-        self.READ_INTERVAL_LIMIT = 10
-        self.DEFAULT_SUSPEND_THRESHOLD = 5
-        self.SUSPEND_THRESHOLD_LIMIT = 2
-        self.BATTERY_CAPACITY_SHUTDOWN_THRESHOLD = 10
-        self.BATTERY_TIME_REMAINING_SHUTDOWN_THRESHOLD = 10
-        self.def_threshold_battery_load_red = 90
-        self.def_threshold_battery_load_yellow = 80
-        self.def_threshold_battery_capacity_red = 10
-        self.def_threshold_battery_capacity_yellow = 50
+        # Config.py defaults
+        self.DEFAULT_MONITOR_READ_INTERVAL = 10
+        self.DEFAULT_DAEMON_READ_INTERVAL = 30
+        self.READ_INTERVAL_LIMIT = 5
+        # Daemon and Monitor defaults in tuples (critical, warning, limit)
+        self.def_threshold_battery_time_rem = (5, 10, 4)
+        self.def_threshold_time_on_battery = (10, 3, 1)
+        self.def_threshold_battery_load = (90, 80, 10)
+        self.def_threshold_battery_capacity = (10, 50, 5)
 
         # Utility Execution Flags
         self.show_unresponsive = False
