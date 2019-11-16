@@ -16,10 +16,12 @@ UPS.  When it detects that the UPS is sourcing powering from the battery, it wil
 has been running on battery and run the specified suspend script when the specified threshold is exceeded.  It
 will execute the specified resume script when it detects power has resumed.  When the utility detects a Battery
 Low event from the UPS or that time remaining for battery or the battery charge is below specified thresholds,
-then the shutdown script will be executed. With the *--list* option, the utility will list all available SNMP
-commands for the configured UPS.  The *--logfile filename* option is used to specify a logfile, but is not
-implemented at this time.  The threshold and script definitions must be made in the config.py file using 
-config.py.template as a template.
+then the shutdown script will be executed. If *ups-deamon* detects a return to line power has occurred before
+the shutdown has completed, it will execute the cancel shutdown script.  With the *--list_commands* option, the
+utility will list all available SNMP commands for the configured UPS.  With the *--list_params* option, the 
+daemon configuration parameters will be listed. The *--logfile filename* option is used to specify a logfile,
+but is not implemented at this time.  The threshold and script definitions must be made in the config.py file
+using config.py.template as a template.
 
 ## ups-ls
 This utility displays most relevant parameters for installed and compatible UPSs
