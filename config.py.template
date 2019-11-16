@@ -3,16 +3,19 @@
      Deleting an entry will cause an error in execution.
 
 """
-
-# daemon parameters
-shutdown_capacity_threshold = 10        # Battery percentage shutdown threshold
-shutdown_time_remaining_threshold = 10  # Battery time remaining in min shutdown threshold
-read_interval = 30                      # Number of seconds between reads from ups
-suspend_threshold = 5                   # Number of minutes on battery till execute suspend script
-suspend_script = ''
-resume_script = ''
-shutdown_script = ''
-threshold_battery_load_red = 90         # Critical level, trigger suspend by daemon and red in monitor
-threshold_battery_load_yellow = 70      # Warning level, warning in daemon and yellow in monitor
-threshold_battery_capacity_red = 10     # Critical level, trigger suspend by daemon and red in monitor
-threshold_battery_capacity_yellow = 50  # Warning level, warning in daemon and yellow in monitor
+# Daemon/monitor parameter definitions
+# Daemon scripts
+suspend_script = '/home/rick/pydev/ups-utils/pauseSETI.sh'
+resume_script = '/home/rick/pydev/ups-utils/resumeSETI.sh'
+shutdown_script = '/home/rick/pydev/ups-utils/shutdownSETI.sh'
+cancel_shutdown_script = '/home/rick/pydev/ups-utils/cancelShutdownSETI.sh'
+# Daemon parameters
+read_interval = 30                                # Read interval for daemon utility
+threshold_battery_time_rem_crit = 5               # Trigger shutdown script
+threshold_battery_time_rem_warn = 10              # Trigger warning message
+threshold_time_on_battery_crit = 3                # Trigger suspend script
+threshold_time_on_battery_warn = 2                # Trigger warning
+threshold_battery_load_crit = 90                  # Trigger suspend script
+threshold_battery_load_warn = 80                  # Trigger warning
+threshold_battery_capacity_crit = 10              # Trigger shutdown script
+threshold_battery_capacity_warn = 50              # Trigger warning and suspend script

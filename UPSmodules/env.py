@@ -57,7 +57,7 @@ class UT_CONST:
         self.READ_INTERVAL_LIMIT = 5
         # Daemon and Monitor defaults in tuples (critical, warning, limit)
         self.def_threshold_battery_time_rem = (5, 10, 4)
-        self.def_threshold_time_on_battery = (10, 3, 1)
+        self.def_threshold_time_on_battery = (5, 3, 1)
         self.def_threshold_battery_load = (90, 80, 10)
         self.def_threshold_battery_capacity = (10, 50, 5)
 

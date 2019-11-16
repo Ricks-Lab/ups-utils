@@ -109,6 +109,7 @@ def main():
         warn_runtime_rem = ups.daemon_params['threshold_battery_time_rem_warn']
         overload_fault = False
         suspend_state = False
+        shutting_down = False
         normal_sleep = ups.daemon_params['read_interval']
         fault_sleep = env.ut_const.READ_INTERVAL_LIMIT
         active_sleep = normal_sleep
@@ -134,6 +135,10 @@ def main():
 
             # Not on Battery
             if time_on_bat == 0.0:
+                if shutting_down:
+                    ups.cancel_shutdown()
+                    print('{}: Cancelling Shutdown'.format(time_str))
+                    shutting_down = False
                 if active_sleep != normal_sleep:
                     print('{}:WARNING condition has ended: increase update interval from {} to {}'.format(
                           time_str, active_sleep, normal_sleep))
@@ -155,26 +160,29 @@ def main():
                     if remain_run_time < warn_runtime_rem:
                         # Warning Condition
                         print('{}:WARNING runtime below {}: reduce update interval from {} to {}'.format(
-                              time_str, warn_runtime_rem, normal_sleep, active_sleep))
+                              time_str, warn_runtime_rem, normal_sleep, fault_sleep))
                         active_sleep = fault_sleep
                     if bat_capacity < warn_bat_level:
                         # Warning Condition
                         print('{}:WARNING battery capacity below {}: reduce update interval from {} to {}'.format(
-                            time_str, warn_bat_level, normal_sleep, active_sleep))
+                            time_str, warn_bat_level, normal_sleep, fault_sleep))
                         active_sleep = fault_sleep
-                print('{}: On UPS Power: {:.3f} min'.format(time_str, time_on_bat))
+                print('{}: Time on UPS Power: {:.3f} min'.format(time_str, time_on_bat))
                 print('{}: UPS Runtime Remaining: {:.3f} min'.format(time_str, remain_run_time))
                 print('{}: UPS Battery Capacity Remaining: {}%'.format(time_str, bat_capacity))
-                if bat_status == 'Battery Low':
-                    # Call shutdown script
-                    print('{}: Battery Low Signal'.format(time_str))
-                    print('{}: Calling Shutdown Script'.format(time_str))
-                    ups.shutdown()
-                if bat_capacity < crit_bat_level or remain_run_time < crit_runtime_rem:
-                    # Call shutdown script
-                    print('{}: Battery Nearly Exhausted'.format(time_str))
-                    print('{}: Calling Shutdown Script'.format(time_str))
-                    ups.shutdown()
+                if not shutting_down:
+                    if bat_status == 'Battery Low':
+                        # Call shutdown script
+                        print('{}: Battery Low Signal'.format(time_str))
+                        print('{}: Calling Shutdown Script'.format(time_str))
+                        shutting_down = True
+                        ups.shutdown()
+                    if bat_capacity < crit_bat_level or remain_run_time < crit_runtime_rem:
+                        # Call shutdown script
+                        print('{}: Battery Nearly Exhausted'.format(time_str))
+                        print('{}: Calling Shutdown Script'.format(time_str))
+                        shutting_down = True
+                        ups.shutdown()
 
             if suspend_state:
                 if time_on_bat < ups.daemon_params['threshold_time_on_battery_crit'] and not overload_fault:

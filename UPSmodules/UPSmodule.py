@@ -39,7 +39,7 @@ try:
 except ModuleNotFoundError:
     import env
 try:
-    from config import (suspend_script, resume_script, shutdown_script, read_interval, 
+    from config import (suspend_script, resume_script, shutdown_script, cancel_shutdown_script, read_interval,
                         threshold_battery_time_rem_crit, threshold_battery_time_rem_warn,
                         threshold_time_on_battery_crit, threshold_time_on_battery_warn,
                         threshold_battery_load_crit, threshold_battery_load_warn,
@@ -67,7 +67,8 @@ class UPSsnmp:
                                                'SelfTestInProgress', 'LowBat/OnBat']}
 
         # UPS from config.py for ups-daemon and monitor utilities.
-        self.daemon_params = {'suspend_script': '', 'resume_script': '', 'shutdown_script': '',
+        self.daemon_params = {'suspend_script': '', 'resume_script': '',
+                              'shutdown_script': '', 'cancel_shutdown_script': '',
                               'read_interval': env.ut_const.DEFAULT_DAEMON_READ_INTERVAL,
                               'threshold_battery_time_rem_crit': env.ut_const.def_threshold_battery_time_rem[0],
                               'threshold_battery_time_rem_warn': env.ut_const.def_threshold_battery_time_rem[1],
@@ -334,7 +335,8 @@ class UPSsnmp:
     def check_ups_list(self, quiet=True):
         """Check the list of UPS for compatibility, accessibility, and responsiveness.
 
-        :param quiet:
+        :param quiet: flag to specify if method should print results or return quietly
+        :type quiet: bool
         :return:
         """
         daemon_cnt = 0
@@ -364,6 +366,10 @@ class UPSsnmp:
 
     # Methods to get, check, and list UPSs
     def get_name_for_ups_uuid(self, ups_uuid):
+        """ Get the ups name for a given uuid
+        :param ups_uuid: Universally unique identifier for a UPS
+        :type ups_uuid: int
+        """
         for k, v in self.ups_list.items():
             if v['uuid'] == ups_uuid:
                 return str(k)
@@ -377,7 +383,8 @@ class UPSsnmp:
 
     def get_ups_list(self, errups=True):
         """Get the dictionary list of UPSs read at start up.
-
+        :param errups: Flag to indicate if UPSs with errors should be inclduded
+        :type errups: bool
         :return:  dictionary representing the list of UPSs
         """
         return_list = {}
@@ -404,11 +411,19 @@ class UPSsnmp:
         return tuple(cnt)
 
     def check_ups_type(self, test_ups_type):
+        """ Checks if the given UPS type is valid
+        :param test_ups_type:  A string representation of the ups type
+        :type test_ups_type: str
+        :return: bool where True indicates the ups type is valid
+        """
         if test_ups_type not in self.all_mib_cmds.keys():
             return False
         return True
 
     def list_valid_ups_types(self):
+        """ Return a list of valid ups types
+        :return: list of str representing valid ups types
+        """
         return list(self.all_mib_cmds.keys())
     # End of methods to get, check, and list UPSs
 
@@ -651,24 +666,32 @@ class UPSsnmp:
             print('Error in config.py file.  Using defaults')
             return
 
-        self.daemon_params['suspend_script'] = suspend_script
-        if suspend_script:
-            if not os.path.isfile(suspend_script):
-                print('Missing suspend script: {}'.format(suspend_script))
-                sys.exit(-1)
-            # print('Suspend script: {}'.format(suspend_script))
-        self.daemon_params['resume_script'] = resume_script
-        if resume_script:
-            if not os.path.isfile(resume_script):
-                print('Missing resume script: {}'.format(resume_script))
-                sys.exit(-1)
-            # print('Resume script: {}'.format(resume_script))
-        self.daemon_params['shutdown_script'] = shutdown_script
-        if shutdown_script:
-            if not os.path.isfile(shutdown_script):
-                print('Missing shutdown script: {}'.format(shutdown_script))
-                sys.exit(-1)
-            # print('Shutdown script: {}'.format(shutdown_script))
+        # Set script definitions
+        if isinstance(suspend_script, str):
+            self.daemon_params['suspend_script'] = suspend_script
+            if suspend_script:
+                if not os.path.isfile(suspend_script):
+                    print('Missing suspend script: {}'.format(suspend_script))
+                    sys.exit(-1)
+        if isinstance(resume_script, str):
+            self.daemon_params['resume_script'] = resume_script
+            if resume_script:
+                if not os.path.isfile(resume_script):
+                    print('Missing resume script: {}'.format(resume_script))
+                    sys.exit(-1)
+        if isinstance(shutdown_script, str):
+            self.daemon_params['shutdown_script'] = shutdown_script
+            if shutdown_script:
+                if not os.path.isfile(shutdown_script):
+                    print('Missing shutdown script: {}'.format(shutdown_script))
+                    sys.exit(-1)
+        if isinstance(cancel_shutdown_script, str):
+            self.daemon_params['cancel_shutdown_script'] = cancel_shutdown_script
+            if cancel_shutdown_script:
+                if not os.path.isfile(cancel_shutdown_script):
+                    print('Missing cancel shutdown script: {}'.format(cancel_shutdown_script))
+
+        # Set daemon read interval
         if isinstance(read_interval, int):
             if read_interval >= env.ut_const.READ_INTERVAL_LIMIT:
                 self.daemon_params['read_interval'] = read_interval
@@ -688,17 +711,16 @@ class UPSsnmp:
                 print('Invalid threshold_battery_time_rem_warn in config.py.  Using default.')
                 
         # Time on Battery        
-        if isinstance(threshold_time_on_battery_crit, int):
-            if threshold_time_on_battery_crit >= env.ut_const.def_threshold_time_on_battery[2]:
-                self.daemon_params['threshold_time_on_battery_crit'] = threshold_time_on_battery_crit
-            else:
-                print('Invalid threshold_time_battery_crit in config.py.  Using default.')
         if isinstance(threshold_time_on_battery_warn, int):
-            if self.daemon_params['threshold_time_on_battery_crit'] > \
-                                        threshold_time_on_battery_warn >= env.ut_const.def_threshold_time_on_battery[2]:
+            if threshold_time_on_battery_warn >= env.ut_const.def_threshold_time_on_battery[2]:
                 self.daemon_params['threshold_time_on_battery_warn'] = threshold_time_on_battery_warn
             else:
                 print('Invalid threshold_time_battery_warn in config.py.  Using default.')
+        if isinstance(threshold_time_on_battery_crit, int):
+            if threshold_time_on_battery_crit > self.daemon_params['threshold_time_on_battery_warn']:
+                self.daemon_params['threshold_time_on_battery_crit'] = threshold_time_on_battery_crit
+            else:
+                print('Invalid threshold_time_battery_crit in config.py.  Using default.')
 
         # Battery Load
         if isinstance(threshold_battery_load_warn, int):
@@ -715,7 +737,7 @@ class UPSsnmp:
         # Battery Capacity
         if isinstance(threshold_battery_capacity_crit, int):
             if env.ut_const.def_threshold_battery_capacity[2] < threshold_battery_capacity_crit < 100:
-                self.daemon_params['threshold_battery_capacity_warn'] = threshold_battery_capacity_crit
+                self.daemon_params['threshold_battery_capacity_crit'] = threshold_battery_capacity_crit
             else:
                 print('Invalid threshold_battery_capacity_crit in config.py.  Using default.')
         if isinstance(threshold_battery_capacity_warn, int):
@@ -743,6 +765,21 @@ class UPSsnmp:
         except:
             print('Error: could not execute shutdown script: {}'.format(self.daemon_params['shutdown_script']),
                   file=sys.stderr)
+
+    def cancel_shutdown(self):
+        if not self.daemon_params['cancel_shutdown_script']:
+            print('No cancel shutdown script defined')
+            return
+        try:
+            cmd = subprocess.Popen(shlex.split(self.daemon_params['cancel_shutdown_script']),
+                                   shell=False, stdout=subprocess.PIPE)
+            while True:
+                if cmd.poll() is not None:
+                    break
+                time.sleep(1)
+        except:
+            print('Error: could not execute cancel shutdown script: {}'.format(
+                  self.daemon_params['cancel_shutdown_script']), file=sys.stderr)
 
     def resume(self):
         if not self.daemon_params['resume_script']:

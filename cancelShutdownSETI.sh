@@ -2,7 +2,7 @@
 #
 #   ups-utils  -  A set of utilities for the management of UPS from a linux host
 #
-#   resumeSETI.sh  -  A sample resume script for a BOINC client
+#   cancelShutdownSETI.sh  -  A sample shutdown script for a BOINC client
 #
 #   Copyright (C) 2019  RueiKe
 #
@@ -19,6 +19,4 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-cd /home/boinc/BOINC/
-echo "`date`: resuming SETI" >> SETI_Power.log
-/home/boinc/BOINC/boinccmd --project http://setiathome.berkeley.edu/ resume >> SETI_Power.log
+shutdown -c 'System power restored, canceling shutdown'
