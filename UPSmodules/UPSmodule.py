@@ -322,7 +322,6 @@ class UPSsnmp:
     # Read and check the UPS list.
     def read_ups_list(self):
         """Reads the config.json file which contains parameters for UPSs to be used by utility.
-
         :return: boolean True if no problems reading list
         """
         if not os.path.isfile(env.ut_const.UPS_LIST_JSON_FILE):
@@ -334,7 +333,6 @@ class UPSsnmp:
 
     def check_ups_list(self, quiet=True):
         """Check the list of UPS for compatibility, accessibility, and responsiveness.
-
         :param quiet: flag to specify if method should print results or return quietly
         :type quiet: bool
         :return:
@@ -429,6 +427,9 @@ class UPSsnmp:
 
     # Methods to set daemon and active UPS.
     def set_daemon_ups(self):
+        """ Set the active ups to the daemon ups.
+        :return:
+        """
         for k, v in self.ups_list.items():
             if v['daemon']:
                 self.active_ups = v
@@ -436,11 +437,23 @@ class UPSsnmp:
         return False
 
     def set_active_ups(self, ups_item):
+        """ Sets the active ups to the specified ups.
+        :param ups_item: The target ups
+        :type ups_item: dict
+        :return:
+        """
         self.active_ups = ups_item
     # End of methods to set daemon and active UPS.
 
     # Set of methods to return parameters for target UPS.
     def get_ups_parameter_value(self, param_name, tups):
+        """ Get ups parameter value for parameter name from target UPS or active UPS if not specified
+        :param param_name:
+        :type param_name: str
+        :param tups:
+        :type tups: dict
+        :return:
+        """
         if not tups:
             tups = self.active_ups
         if param_name in tups.keys():
@@ -448,16 +461,18 @@ class UPSsnmp:
         else:
             return None
 
-    # TODO test this and use where command name is needed.
     def get_mib_commands(self, tups=None):
+        """ Get the list of MIB commands for the target UPS.
+        :param tups:
+        :type tups: dict
+        :return: List of MIB commands for target UPS
+        """
         if not tups:
             tups = self.active_ups
         return tups['mib_commands']
 
-    # TODO test this and use where command name is needed.
     def get_mib_name(self, mib_cmd, tups=None):
         """Get the mib command name.
-
         :param mib_cmd: string representing mib command
         :param tups: target UPS, active UPS if missing
         :return: string of mib command name
@@ -471,7 +486,6 @@ class UPSsnmp:
 
     def get_mib_name_for_type(self, mib_cmd, ups_type):
         """Get mib command name for a given UPS type.
-
         :param mib_cmd:
         :param ups_type:
         :return: string of mib command name
@@ -479,21 +493,41 @@ class UPSsnmp:
         return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
     def ups_uuid(self, tups=None):
+        """ Get the uuid value for the target UPS or active UPS if target is None.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  The uuid as an int.
+        """
         if not tups:
             tups = self.active_ups
         return tups['uuid']
 
     def ups_name(self, tups=None):
+        """ Get the name value for the target UPS or active UPS if target is None.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  The name as an str.
+        """
         if not tups:
             tups = self.active_ups
         return tups['display_name']
 
     def ups_type(self, tups=None):
+        """ Get the type value for the target UPS or active UPS if target is None.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  The ups_type as an str.
+        """
         if not tups:
             tups = self.active_ups
         return tups['ups_type']
 
     def ups_ip(self, tups=None):
+        """ Get the IP address value for the target UPS or active UPS if target is None.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  The IP address as an str.
+        """
         if not tups:
             tups = self.active_ups
         return tups['ups_IP']
@@ -501,6 +535,11 @@ class UPSsnmp:
 
     # Set of methods to check if UPS is valid.
     def check_ip(self, tups=None):
+        """ check the IP address value for the target UPS or active UPS if target is None.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  bool True if the given IP address is pingable, else False
+        """
         if not tups:
             tups = self.active_ups
         if not os.system('ping -c 1 {} > /dev/null'.format(tups['ups_IP'])):
@@ -508,6 +547,11 @@ class UPSsnmp:
         return False
 
     def check_snmp(self, tups=None):
+        """ check if the IP address for the target UPS or active UPS if target is None, responds to snmp command.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  bool True if the given IP address responds, else False
+        """
         if not tups:
             tups = self.active_ups
         cmd_str = 'snmpget -v2c -c {} {} {}'.format(tups['snmp_community'], tups['ups_IP'], 'iso.3.6.1.2.1.1.1.0')
@@ -520,24 +564,44 @@ class UPSsnmp:
             return False
         return True
 
-    def is_compatible(self, v=None):
-        if not v:
-            v = self.active_ups
-        return v['compatible']
+    def is_compatible(self, tups=None):
+        """ check if target UPS or active UPS if target is None, is compatible.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  bool True if compatible
+        """
+        if not tups:
+            tups = self.active_ups
+        return tups['compatible']
 
-    def is_responsive(self, v=None):
-        if not v:
-            v = self.active_ups
-        return v['responsive']
+    def is_responsive(self, tups=None):
+        """ check if target UPS or active UPS if target is None, is responsive.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  bool True if responsive
+        """
+        if not tups:
+            tups = self.active_ups
+        return tups['responsive']
 
-    def is_accessible(self, v=None):
-        if not v:
-            v = self.active_ups
-        return v['accessible']
+    def is_accessible(self, tups=None):
+        """ check if target UPS or active UPS if target is None, is accessible.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  bool True if accessible
+        """
+        if not tups:
+            tups = self.active_ups
+        return tups['accessible']
     # End of set of methods to check if UPS is valid.
 
     # Commands to read from UPS using snmp protocol.
     def get_monitor_mib_commands(self, cmd_type='dynamic'):
+        """ Get the specified list of monitor mib commands for the active UPS.
+        :param cmd_type:  The target type of monitor commands
+        :type cmd_type: str
+        :return:  list of relevant mib commands
+        """
         if cmd_type == 'all':
             return_list = []
             for cmd_type in ['static', 'dynamic']:
@@ -548,6 +612,13 @@ class UPSsnmp:
             return self.monitor_mib_cmds[cmd_type]
 
     def read_all_ups_list_items(self, command_list, errups=True):
+        """ Get the specified list of monitor mib commands for all UPSs.
+        :param command_list:  A list of mib commands to be read from the active UPS
+        :type command_list: list
+        :param errups: Flag to indicate if error UPS should be included.
+        :type errups: bool
+        :return:  dict of results from the reading of all commands from all UPSs.
+        """
         results = {}
         for ups_name, ups_item in self.get_ups_list().items():
             if not errups:
