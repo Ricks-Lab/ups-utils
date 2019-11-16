@@ -347,6 +347,7 @@ def main():
     print('Reading and verifying UPSs listed in config.json')
     ups = UPS.UPSsnmp()
     num_ups = ups.get_num_ups_tuple()
+    ups.set_daemon_parameters()
 
     if num_ups[0] == 0:
         print('No UPSs specified in config.json, exiting...')
