@@ -64,7 +64,16 @@ class UPSsnmp:
                                                'SleepOnTimer', 'SleepNoPower', 'On', 'Rebooting', 'BatterCommLost',
                                                'ShutdownInitiated', 'Boost/TrimFailure', 'BadOutVoltage',
                                                'BatteryChargerFail', 'HiBatTemp', 'WarnBatTemp', 'CritBatTemp',
-                                               'SelfTestInProgress', 'LowBat/OnBat']}
+                                               'SelfTestInProgress', 'LowBat/OnBat', 'ShutdownFromUpstream',
+                                               'ShutdownFromDownstream', 'NoBatteriesAttached', 'SyncCmdsInProg',
+                                               'SyncSleepInProg', 'SyncRebootInProg', 'InvDCimbalance',
+                                               'TransferReadyFailure', 'Shutdown/Unable to Transfer',
+                                               'LowBatShutdown', 'FanFail', 'MainRelayFail', 'BypassRelayFail',
+                                               'TempBypass', 'HighInternalTemp', 'BatTempSensorFault',
+                                               'InputOORforBypass', 'DCbusOverV', 'PFCfailure', 'CritHWfail',
+                                               'Green/ECO mode', 'HotStandby', 'EPO', 'LoadAlarmViolation',
+                                               'BypassPhaseFault', 'UPSinternalComFail', 'EffBoosterMode',
+                                               'Off', 'Standby', 'Minor/EnvAlarm']}
 
         # UPS from config.py for ups-daemon and monitor utilities.
         self.daemon_params = {'suspend_script': '', 'resume_script': '',
@@ -737,6 +746,15 @@ class UPSsnmp:
                 else:
                     value_str = '{}-{}'.format(value_str, decode_key[index])
         return value_str
+
+    def print_decoders(self):
+        """ Prints all bit decoders.
+        :return: None
+        """
+        for k, v in self.decoders.items():
+            print('decode key: {}'.format(k))
+            for i, item in enumerate(v, start=1):
+                print('  {:2d}: {}'.format(i, item))
 
     def print_snmp_commands(self, tups=None):
         """ Print all supported mib commands for the target UPS, which is the active UPS when not specified.
