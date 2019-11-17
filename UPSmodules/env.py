@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """env.py - sets environment for ups-utils and establishes global variables
 
-
     Copyright (C) 2019  RueiKe
 
     This program is free software: you can redistribute it and/or modify
@@ -72,11 +71,19 @@ class UT_CONST:
 
     @staticmethod
     def now(ltz=False):
+        """ Get current time
+        :param ltz:  Set to True to use local time zone.
+        :type ltz: bool
+        :return:  Returns current time as datetime object
+        """
         if ltz:
             return datetime.now()
         return datetime.utcnow()
 
     def check_env(self):
+        """ Check the user's environment for compatibility.
+        :return: Returns an integer indicating env error code: 0 for passes
+        """
         # Check python version
         required_pversion = [3, 6]
         (python_major, python_minor, python_patch) = platform.python_version_tuple()
@@ -117,6 +124,9 @@ ut_const = UT_CONST()
 
 
 def about():
+    """ Display details about this module.
+    :return:  None
+    """
     print(__doc__)
     print('Author: ', __author__)
     print('Copyright: ', __copyright__)

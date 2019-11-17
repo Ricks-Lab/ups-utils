@@ -628,27 +628,44 @@ class UPSsnmp:
             results[ups_name] = self.read_ups_list_items(command_list)
         return results
 
-    def read_ups_list_items(self, command_list):
-        results = {'display_name': self.ups_name(),
-                   'name': self.ups_name(),
-                   'uuid': self.ups_uuid(),
-                   'ups_IP': self.ups_ip(),
-                   'ups_type': self.ups_type()}
+    def read_ups_list_items(self, command_list, tups=None):
+        """ Read the specified list of monitor mib commands for all UPSs.
+        :param command_list:  A list of mib commands to be read from the active UPS
+        :type command_list: list
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  dict of results from the reading of all commands target UPS.
+        """
+        if not tups:
+            tups = self.active_ups
+        results = {'display_name': self.ups_name(tups=tups),
+                   'name': self.ups_name(tups=tups),
+                   'uuid': self.ups_uuid(tups=tups),
+                   'ups_IP': self.ups_ip(tups=tups),
+                   'ups_type': self.ups_type(tups=tups)}
         for cmd in command_list:
-            results[cmd] = self.send_snmp_command(cmd)
+            results[cmd] = self.send_snmp_command(cmd, tups=tups)
         return results
 
-    def send_snmp_command(self, command_name, target_ups=None, display=False):
-        if not target_ups:
-            target_ups = self.active_ups
-        if not self.is_responsive(target_ups):
+    def send_snmp_command(self, command_name, tups=None, display=False):
+        """ Read the specified mib commands results for specified UPS or active UPS if not specified.
+        :param command_name:  A command to be read from the target UPS
+        :type command_name: str
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :param display: If true the results will be printed
+        :type display: bool
+        :return:  The results from the read
+        """
+        if not tups:
+            tups = self.active_ups
+        if not self.is_responsive(tups):
             return 'Invalid UPS'
-        snmp_mib_commands = self.get_mib_commands(target_ups)
+        snmp_mib_commands = self.get_mib_commands(tups)
         if command_name not in snmp_mib_commands:
             return 'No data'
         cmd_mib = snmp_mib_commands[command_name]['iso']
-        cmd_str = 'snmpget -v2c -c {} {} {}'.format(target_ups['snmp_community'],
-                                                    target_ups['ups_IP'], cmd_mib)
+        cmd_str = 'snmpget -v2c -c {} {} {}'.format(tups['snmp_community'], tups['ups_IP'], cmd_mib)
         try:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
@@ -667,7 +684,7 @@ class UPSsnmp:
         if snmp_mib_commands[command_name]['decode']:
             if value in snmp_mib_commands[command_name]['decode'].keys():
                 value = snmp_mib_commands[command_name]['decode'][value]
-        if target_ups['ups_type'] == 'eaton-pw':
+        if tups['ups_type'] == 'eaton-pw':
             if command_name == 'mib_output_voltage' or command_name == 'mib_output_frequency':
                 value = int(value) / 10.0
             elif command_name == 'mib_output_current':
@@ -676,11 +693,11 @@ class UPSsnmp:
                 value = int(value) / 10.0
             elif command_name == 'mib_system_temperature':
                 value = int(value) / 10.0
-        if command_name == 'mib_system_status' and target_ups['ups_type'] == 'apc-ap9630':
+        if command_name == 'mib_system_status' and tups['ups_type'] == 'apc-ap9630':
             value = self.bit_str_decoder(value, self.decoders['apc_system_status'])
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
-            if target_ups['ups_type'] == 'eaton-pw':
+            if tups['ups_type'] == 'eaton-pw':
                 # Process time for eaton-pw
                 if command_name == 'mib_time_on_battery':
                     # Measured in seconds.
@@ -704,10 +721,11 @@ class UPSsnmp:
     @staticmethod
     def bit_str_decoder(value, decode_key):
         """ Bit string decoder
-            
-            :param value: A string representing a bit encoded set of flags
-            :param decode_key: A list representing the meaning of a 1 for each bit field
-            :returns: A string of concatenated bit decode strings 
+        :param value: A string representing a bit encoded set of flags
+        :type value: str
+        :param decode_key: A list representing the meaning of a 1 for each bit field
+        :type decode_key: list
+        :return: A string of concatenated bit decode strings
         """
         value_str = ''
         for index, bit_value in enumerate(value):
@@ -721,6 +739,11 @@ class UPSsnmp:
         return value_str
 
     def print_snmp_commands(self, tups=None):
+        """ Print all supported mib commands for the target UPS, which is the active UPS when not specified.
+        :param tups:  The target ups dictionary from list or None.
+        :type tups: dict
+        :return:  None
+        """
         if not tups:
             tups = self.active_ups
         for k, v in self.get_mib_commands(tups).items():
@@ -733,6 +756,9 @@ class UPSsnmp:
 
     # Set parameters required for daemon mode.
     def set_daemon_parameters(self):
+        """ Set all daemon parameters based on defaults in env.ut_const and the config.py file.
+        :return:  None
+        """
         if env.ut_const.ERROR_config:
             print('Error in config.py file.  Using defaults')
             return
@@ -818,11 +844,17 @@ class UPSsnmp:
                 print('Invalid threshold_battery_capacity_warn in config.py.  Using default.')
 
     def print_daemon_parameters(self):
+        """ Print all daemon parameters.
+        :return:  None
+        """
         print('Daemon parameters:')
         for k, v in self.daemon_params.items():
             print('    {}: {}'.format(k, v))
 
     def shutdown(self):
+        """ Execute the shutdown script as defined in the daemon parameters.
+        :return:  None
+        """
         if not self.daemon_params['shutdown_script']:
             print('No shutdown script defined')
             return
@@ -838,6 +870,9 @@ class UPSsnmp:
                   file=sys.stderr)
 
     def cancel_shutdown(self):
+        """ Execute the cancel shutdown script as defined in the daemon parameters.
+        :return:  None
+        """
         if not self.daemon_params['cancel_shutdown_script']:
             print('No cancel shutdown script defined')
             return
@@ -853,6 +888,9 @@ class UPSsnmp:
                   self.daemon_params['cancel_shutdown_script']), file=sys.stderr)
 
     def resume(self):
+        """ Execute the resume script as defined in the daemon parameters.
+        :return:  None
+        """
         if not self.daemon_params['resume_script']:
             print('No resume script defined')
             return
@@ -868,6 +906,9 @@ class UPSsnmp:
                   file=sys.stderr)
 
     def suspend(self):
+        """ Execute the suspend script as defined in the daemon parameters.
+        :return:  None
+        """
         if not self.daemon_params['suspend_script']:
             print('No suspend script defined')
             return
@@ -885,6 +926,9 @@ class UPSsnmp:
 
 
 def about():
+    """ Display details about this module.
+    :return:  None
+    """
     # About me
     print(__doc__)
     print("Author: ", __author__)

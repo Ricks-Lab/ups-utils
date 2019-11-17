@@ -59,6 +59,17 @@ from gi.repository import GLib, Gtk, Gdk
 
 class MonitorWindow(Gtk.Window):
     def __init__(self, ups, header_items, command_items, devices):
+        """ Initialize the main UPS monitor window.
+        :param ups:  The main ups module object
+        :type ups: UPSsnmp
+        :param header_items:  A list of non-mib parameters
+        :type header_items: list
+        :param command_items:  A list of mib parameter results
+        :type command_items: list
+        :param devices: A dictionary of Gtk components and values
+        :type devices: dict
+        :return: None
+        """
         self.quit = False
 
         Gtk.Window.__init__(self, title='ups-monitor')
@@ -161,10 +172,26 @@ class MonitorWindow(Gtk.Window):
                 row += 1
 
     def set_quit(self, _arg2, _arg3):
+        """ Function called when quit monitor is executed.  Sets flag to end update loop.
+        :param _arg2: Ignored
+        :param _arg3: Ignored
+        :return:
+        """
         self.quit = True
 
 
 def updateData(ups, header_list, command_list, devices):
+    """ Function that updates data in MonitorWindow  with call to read data from ups.
+    :param ups:  The main ups module object
+    :type ups: UPSsnmp
+    :param header_list:  A list of non-mib parameters
+    :type header_list: list
+    :param command_list:  A list of mib parameter results
+    :type command_list: list
+    :param devices: A dictionary of Gtk components and values
+    :type devices: dict
+    :return: None
+    """
     irw = 20
     ups_data = ups.read_all_ups_list_items(command_list, errups=env.ut_const.show_unresponsive)
     if env.ut_const.LOG:
@@ -224,6 +251,23 @@ def updateData(ups, header_list, command_list, devices):
 
 
 def refresh(refreshtime, updateData, ups, header_list, command_list, devices, umonitor):
+    """ Function that continuously updates the Gtk monitor window.
+    :param refreshtime:  Delay time in seconds between monitor display refreshes
+    :type refreshtime: int
+    :param updateData: Function name that does the actual refresh of the monitor table.
+    :type updateData: FunctionType
+    :param ups:  The main ups module object
+    :type ups: UPSsnmp
+    :param header_list:  A list of non-mib parameters
+    :type header_list: list
+    :param command_list:  A list of mib parameter results
+    :type command_list: list
+    :param devices: A dictionary of Gtk components and values
+    :type devices: dict
+    :param umonitor: The main Gtk monitor window.
+    :type umonitor: MonitorWindow
+    :return: None
+    """
     while True:
         if umonitor.quit:
             print('Quitting...')
@@ -239,12 +283,23 @@ def refresh(refreshtime, updateData, ups, header_list, command_list, devices, um
 
 
 def print_monitor_table(ups, header_list, cmd_list, ups_data):
+    """ Print the monitor table in format optimized for terminal window.
+    :param ups:  The main ups module object
+    :type ups: UPSsnmp
+    :param header_list:  A list of non-mib parameters
+    :type header_list: list
+    :param cmd_list:  A list of mib parameter results
+    :type cmd_list: list
+    :param ups_data: A dictionary of results for items listed in header and command lists
+    :type ups_data: dict
+    :return:
+    """
     num_ups = ups.get_num_ups_tuple()
     if num_ups[0] < 1:
         return -1
 
-    hrw = 29
-    irw = 24
+    hrw = 29  # Row header item width
+    irw = 24  # Row data item width
 
     print('┌', '─'.ljust(hrw, '─'), sep='', end='')
     for _, _ in ups_data.items():
@@ -294,6 +349,17 @@ def print_monitor_table(ups, header_list, cmd_list, ups_data):
 
 
 def print_log(fileptr, header_list, command_list, ups_data):
+    """ Print the logfile data line.
+    :param fileptr:  The logfile fileptr
+    :type fileptr: file
+    :param header_list:  A list of non-mib parameters
+    :type header_list: list
+    :param command_list:  A list of mib parameter results
+    :type command_list: list
+    :param ups_data: A dictionary of results for items listed in header and command lists
+    :type ups_data: dict
+    :return:
+    """
     time_str = (str(env.ut_const.now(ltz=True).strftime('%c')).strip())
     for k, v in ups_data.items():
         print('{}'.format(time_str), file=fileptr, end='')
@@ -305,6 +371,15 @@ def print_log(fileptr, header_list, command_list, ups_data):
 
 
 def print_log_header(fileptr, header_list, command_list):
+    """ Print the logfile header line.
+    :param fileptr:  The logfile fileptr
+    :type fileptr: file
+    :param header_list:  A list of non-mib parameters
+    :type header_list: list
+    :param command_list:  A list of mib parameter results
+    :type command_list: list
+    :return:
+    """
     print('time', file=fileptr, end='')
     for item in header_list:
         print('|{}'.format(item), file=fileptr, end='')
