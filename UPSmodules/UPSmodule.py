@@ -383,6 +383,12 @@ class UPSsnmp:
         return 'Error'
 
     def get_uuid_for_ups_name(self, ups_name):
+        """ Get uuid for ups with given name.
+
+        :param ups_name: The target ups name.
+        :type ups_name: str
+        :return:
+        """
         for k, v in self.ups_list.items():
             if v['display_name'] == ups_name:
                 return v['uuid']
