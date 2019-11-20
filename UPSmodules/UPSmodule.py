@@ -660,6 +660,11 @@ class UPSsnmp:
                    'ups_type': self.ups_type(tups=tups)}
         for cmd in command_list:
             results[cmd] = self.send_snmp_command(cmd, tups=tups)
+        # Since PowerWalker NMC is not intended for 110V UPSs, the following correction to output current is needed.
+        if self.ups_type(tups=tups) == 'eaton-pw':
+            if 'mib_output_current' in results.keys() and 'mib_output_voltage' in results.keys():
+                results['mib_output_current'] = round((230/results['mib_output_voltage']) *
+                                                      results['mib_output_current'], 1)
         return results
 
     def send_snmp_command(self, command_name, tups=None, display=False):
@@ -730,7 +735,10 @@ class UPSsnmp:
                     value_minute, value_str = value_items
                 value = (round(int(value_minute)/60/60, 2), value_str)
         if display:
-            print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
+            if command_name == 'mib_output_current' and tups['ups_type'] == 'eaton-pw':
+                print('{}: {} - raw, uncorrected value.'.format(snmp_mib_commands[command_name]['name'], value))
+            else:
+                print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
         return value
 
     @staticmethod
