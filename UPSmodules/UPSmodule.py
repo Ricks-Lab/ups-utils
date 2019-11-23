@@ -332,6 +332,7 @@ class UPSsnmp:
     def read_ups_list(self):
         """Reads the config.json file which contains parameters for UPSs to be used by utility.
         :return: boolean True if no problems reading list
+        :rtype: bool
         """
         if not os.path.isfile(env.ut_const.UPS_LIST_JSON_FILE):
             print('Error: UPS List file not found: {}'.format(env.ut_const.UPS_LIST_JSON_FILE))
@@ -344,7 +345,8 @@ class UPSsnmp:
         """Check the list of UPS for compatibility, accessibility, and responsiveness.
         :param quiet: flag to specify if method should print results or return quietly
         :type quiet: bool
-        :return:
+        :return: None
+        :rtype: None
         """
         daemon_cnt = 0
         ups_cnt = 0
@@ -376,6 +378,8 @@ class UPSsnmp:
         """ Get the ups name for a given uuid
         :param ups_uuid: Universally unique identifier for a UPS
         :type ups_uuid: int
+        :return: name of the ups
+        :rtype: str
         """
         for k, v in self.ups_list.items():
             if v['uuid'] == ups_uuid:
@@ -384,10 +388,10 @@ class UPSsnmp:
 
     def get_uuid_for_ups_name(self, ups_name):
         """ Get uuid for ups with given name.
-
         :param ups_name: The target ups name.
         :type ups_name: str
-        :return:
+        :return: The uuid as str or 'Error' if not found
+        :rtype: str
         """
         for k, v in self.ups_list.items():
             if v['display_name'] == ups_name:
@@ -399,6 +403,7 @@ class UPSsnmp:
         :param errups: Flag to indicate if UPSs with errors should be inclduded
         :type errups: bool
         :return:  dictionary representing the list of UPSs
+        :rtype: dict
         """
         return_list = {}
         for ups_name, ups_item in self.ups_list.items():
@@ -411,6 +416,7 @@ class UPSsnmp:
     def get_num_ups_tuple(self):
         """ This function will return a tuple of the UPS counts.
         :return: tuple represents listed, compatible, accessible, responsive UPSs
+        :rtype: tuple
         """
         cnt = [0, 0, 0, 0]
         for k, v in self.ups_list.items():
@@ -427,7 +433,8 @@ class UPSsnmp:
         """ Checks if the given UPS type is valid
         :param test_ups_type:  A string representation of the ups type
         :type test_ups_type: str
-        :return: bool where True indicates the ups type is valid
+        :return: True indicates the ups type is valid
+        :rtype: bool
         """
         if test_ups_type not in self.all_mib_cmds.keys():
             return False
@@ -436,6 +443,7 @@ class UPSsnmp:
     def list_valid_ups_types(self):
         """ Return a list of valid ups types
         :return: list of str representing valid ups types
+        :rtype: list
         """
         return list(self.all_mib_cmds.keys())
     # End of methods to get, check, and list UPSs
@@ -443,7 +451,8 @@ class UPSsnmp:
     # Methods to set daemon and active UPS.
     def set_daemon_ups(self):
         """ Set the active ups to the daemon ups.
-        :return:
+        :return: True if active UPS setting is a success
+        :rtype: bool
         """
         for k, v in self.ups_list.items():
             if v['daemon']:
@@ -455,7 +464,8 @@ class UPSsnmp:
         """ Sets the active ups to the specified ups.
         :param ups_item: The target ups
         :type ups_item: dict
-        :return:
+        :return: None
+        :rtype: None
         """
         self.active_ups = ups_item
     # End of methods to set daemon and active UPS.
@@ -467,7 +477,8 @@ class UPSsnmp:
         :type param_name: str
         :param tups:
         :type tups: dict
-        :return:
+        :return: Parameter value as string else None
+        :rtype: str
         """
         if not tups:
             tups = self.active_ups
@@ -481,6 +492,7 @@ class UPSsnmp:
         :param tups:
         :type tups: dict
         :return: List of MIB commands for target UPS
+        :rtype: dict
         """
         if not tups:
             tups = self.active_ups
@@ -491,6 +503,7 @@ class UPSsnmp:
         :param mib_cmd: string representing mib command
         :param tups: target UPS, active UPS if missing
         :return: string of mib command name
+        :rtype: str
         """
         if not tups:
             tups = self.active_ups
@@ -504,6 +517,7 @@ class UPSsnmp:
         :param mib_cmd:
         :param ups_type:
         :return: string of mib command name
+        :rtype: str
         """
         return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
@@ -512,6 +526,7 @@ class UPSsnmp:
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
         :return:  The uuid as an int.
+        :rtype: int
         """
         if not tups:
             tups = self.active_ups
@@ -522,6 +537,7 @@ class UPSsnmp:
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
         :return:  The name as an str.
+        :rtype: str
         """
         if not tups:
             tups = self.active_ups
@@ -532,6 +548,7 @@ class UPSsnmp:
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
         :return:  The ups_type as an str.
+        :rtype: str
         """
         if not tups:
             tups = self.active_ups
@@ -542,6 +559,7 @@ class UPSsnmp:
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
         :return:  The IP address as an str.
+        :rtype: str
         """
         if not tups:
             tups = self.active_ups
@@ -553,7 +571,8 @@ class UPSsnmp:
         """ check the IP address value for the target UPS or active UPS if target is None.
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
-        :return:  bool True if the given IP address is pingable, else False
+        :return:  True if the given IP address is pingable, else False
+        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
@@ -565,7 +584,8 @@ class UPSsnmp:
         """ check if the IP address for the target UPS or active UPS if target is None, responds to snmp command.
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
-        :return:  bool True if the given IP address responds, else False
+        :return:  True if the given IP address responds, else False
+        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
@@ -583,7 +603,8 @@ class UPSsnmp:
         """ check if target UPS or active UPS if target is None, is compatible.
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
-        :return:  bool True if compatible
+        :return:  True if compatible
+        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
@@ -593,7 +614,8 @@ class UPSsnmp:
         """ check if target UPS or active UPS if target is None, is responsive.
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
-        :return:  bool True if responsive
+        :return:  True if responsive
+        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
@@ -603,7 +625,8 @@ class UPSsnmp:
         """ check if target UPS or active UPS if target is None, is accessible.
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
-        :return:  bool True if accessible
+        :return:  True if accessible
+        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
@@ -616,6 +639,7 @@ class UPSsnmp:
         :param cmd_type:  The target type of monitor commands
         :type cmd_type: str
         :return:  list of relevant mib commands
+        :rtype: list
         """
         if cmd_type == 'all':
             return_list = []
@@ -633,6 +657,7 @@ class UPSsnmp:
         :param errups: Flag to indicate if error UPS should be included.
         :type errups: bool
         :return:  dict of results from the reading of all commands from all UPSs.
+        :rtype: dict
         """
         results = {}
         for ups_name, ups_item in self.get_ups_list().items():
@@ -650,6 +675,7 @@ class UPSsnmp:
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
         :return:  dict of results from the reading of all commands target UPS.
+        :rtype: dict
         """
         if not tups:
             tups = self.active_ups
@@ -675,7 +701,7 @@ class UPSsnmp:
         :type tups: dict
         :param display: If true the results will be printed
         :type display: bool
-        :return:  The results from the read
+        :return:  The results from the read, could be str, int or tuple
         """
         if not tups:
             tups = self.active_ups
@@ -749,6 +775,7 @@ class UPSsnmp:
         :param decode_key: A list representing the meaning of a 1 for each bit field
         :type decode_key: list
         :return: A string of concatenated bit decode strings
+        :rtype: str
         """
         value_str = ''
         for index, bit_value in enumerate(value):
@@ -764,6 +791,7 @@ class UPSsnmp:
     def print_decoders(self):
         """ Prints all bit decoders.
         :return: None
+        :rtype: None
         """
         for k, v in self.decoders.items():
             print('decode key: {}'.format(k))
@@ -775,6 +803,7 @@ class UPSsnmp:
         :param tups:  The target ups dictionary from list or None.
         :type tups: dict
         :return:  None
+        :rtype: None
         """
         if not tups:
             tups = self.active_ups
@@ -790,6 +819,7 @@ class UPSsnmp:
     def set_daemon_parameters(self):
         """ Set all daemon parameters based on defaults in env.ut_const and the config.py file.
         :return:  None
+        :rtype: None
         """
         if env.ut_const.ERROR_config:
             print('Error in config.py file.  Using defaults')
@@ -878,6 +908,7 @@ class UPSsnmp:
     def print_daemon_parameters(self):
         """ Print all daemon parameters.
         :return:  None
+        :rtype: None
         """
         print('Daemon parameters:')
         for k, v in self.daemon_params.items():
@@ -886,6 +917,7 @@ class UPSsnmp:
     def shutdown(self):
         """ Execute the shutdown script as defined in the daemon parameters.
         :return:  None
+        :rtype: None
         """
         if not self.daemon_params['shutdown_script']:
             print('No shutdown script defined')
@@ -904,6 +936,7 @@ class UPSsnmp:
     def cancel_shutdown(self):
         """ Execute the cancel shutdown script as defined in the daemon parameters.
         :return:  None
+        :rtype: None
         """
         if not self.daemon_params['cancel_shutdown_script']:
             print('No cancel shutdown script defined')
@@ -922,6 +955,7 @@ class UPSsnmp:
     def resume(self):
         """ Execute the resume script as defined in the daemon parameters.
         :return:  None
+        :rtype: None
         """
         if not self.daemon_params['resume_script']:
             print('No resume script defined')
@@ -940,6 +974,7 @@ class UPSsnmp:
     def suspend(self):
         """ Execute the suspend script as defined in the daemon parameters.
         :return:  None
+        :rtype: None
         """
         if not self.daemon_params['suspend_script']:
             print('No suspend script defined')
@@ -960,6 +995,7 @@ class UPSsnmp:
 def about():
     """ Display details about this module.
     :return:  None
+    :rtype: None
     """
     # About me
     print(__doc__)

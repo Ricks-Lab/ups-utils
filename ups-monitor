@@ -69,6 +69,7 @@ class MonitorWindow(Gtk.Window):
         :param devices: A dictionary of Gtk components and values
         :type devices: dict
         :return: None
+        :rtype: None
         """
         self.quit = False
 
@@ -175,7 +176,8 @@ class MonitorWindow(Gtk.Window):
         """ Function called when quit monitor is executed.  Sets flag to end update loop.
         :param _arg2: Ignored
         :param _arg3: Ignored
-        :return:
+        :return: None
+        :rtype: None
         """
         self.quit = True
 
@@ -191,6 +193,7 @@ def updateData(ups, header_list, command_list, devices):
     :param devices: A dictionary of Gtk components and values
     :type devices: dict
     :return: None
+    :rtype: None
     """
     irw = 20
     ups_data = ups.read_all_ups_list_items(command_list, errups=env.ut_const.show_unresponsive)
@@ -267,6 +270,7 @@ def refresh(refreshtime, updateData, ups, header_list, command_list, devices, um
     :param umonitor: The main Gtk monitor window.
     :type umonitor: MonitorWindow
     :return: None
+    :rtype: None
     """
     while True:
         if umonitor.quit:
@@ -292,7 +296,8 @@ def print_monitor_table(ups, header_list, cmd_list, ups_data):
     :type cmd_list: list
     :param ups_data: A dictionary of results for items listed in header and command lists
     :type ups_data: dict
-    :return:
+    :return: Zero if all is good.
+    :rtype: int
     """
     num_ups = ups.get_num_ups_tuple()
     if num_ups[0] < 1:
@@ -346,6 +351,7 @@ def print_monitor_table(ups, header_list, cmd_list, ups_data):
     for _, _ in ups_data.items():
         print('┴', '─'.ljust(irw, '─'), sep='', end='')
     print('┘')
+    return 0
 
 
 def print_log(fileptr, header_list, command_list, ups_data):
@@ -358,7 +364,8 @@ def print_log(fileptr, header_list, command_list, ups_data):
     :type command_list: list
     :param ups_data: A dictionary of results for items listed in header and command lists
     :type ups_data: dict
-    :return:
+    :return: None
+    :rtype: None
     """
     time_str = (str(env.ut_const.now(ltz=True).strftime('%c')).strip())
     for k, v in ups_data.items():
@@ -378,7 +385,8 @@ def print_log_header(fileptr, header_list, command_list):
     :type header_list: list
     :param command_list:  A list of mib parameter results
     :type command_list: list
-    :return:
+    :return: None
+    :rtype: None
     """
     print('time', file=fileptr, end='')
     for item in header_list:
@@ -459,8 +467,6 @@ def main():
         print_log_header(env.ut_const.log_file_ptr, header_list, command_list)
 
     if args.gui:
-        # print("GUI option not implemented yet")
-        # sys.exit(0)
         # Display Gtk style Monitor
         devices = {}
         umonitor = MonitorWindow(ups, header_list, command_list, devices)

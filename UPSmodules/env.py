@@ -75,6 +75,7 @@ class UT_CONST:
         :param ltz:  Set to True to use local time zone.
         :type ltz: bool
         :return:  Returns current time as datetime object
+        :rtype: datetime
         """
         if ltz:
             return datetime.now()
@@ -83,6 +84,7 @@ class UT_CONST:
     def check_env(self):
         """ Check the user's environment for compatibility.
         :return: Returns an integer indicating env error code: 0 for passes
+        :rtype: int
         """
         # Check python version
         required_pversion = [3, 6]
@@ -126,6 +128,7 @@ ut_const = UT_CONST()
 def about():
     """ Display details about this module.
     :return:  None
+    :rtype:  None
     """
     print(__doc__)
     print('Author: ', __author__)
