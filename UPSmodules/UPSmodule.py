@@ -668,7 +668,8 @@ class UPSsnmp:
                                                       results['mib_output_current'], 1)
         return results
 
-    def send_snmp_command(self, command_name: str, tups: dict = None, display: bool = False) -> Union[str, int, tuple]:
+    def send_snmp_command(self, command_name: str, tups: dict = None,
+                          display: bool = False) -> Union[str, int, List[float, str], float]:
         """ Read the specified mib commands results for specified UPS or active UPS if not specified.
 
         :param command_name:  A command to be read from the target UPS
@@ -726,7 +727,7 @@ class UPSsnmp:
                     value = int(value) * 60
                 value_str = str(datetime.timedelta(seconds=int(value)))
                 value_minute = round(float(value) / 60.0, 2)
-                value = (value_minute, value_str)
+                value = [value_minute, value_str]
             else:
                 # Process time for apc
                 value_items = re.sub(r'\(', '', value).split(')')
