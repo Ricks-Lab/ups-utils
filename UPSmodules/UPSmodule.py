@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """UPSmodule  -  utility for interacting with compatible UPSs
 
-    Copyright (C) 2019  RueiKe
+    Copyright (C) 2019  RicksLab
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,13 +17,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __author__ = "RueiKe"
-__copyright__ = "Copyright (C) 2019 RueiKe"
+__copyright__ = "Copyright (C) 2019 RicksLab"
 __credits__ = []
 __license__ = "GNU General Public License"
 __program_name__ = "ups-utils"
-__version__ = "v0.9.0"
 __maintainer__ = "RueiKe"
-__status__ = "Beta Release"
 
 import os
 import sys
@@ -33,7 +31,9 @@ import time
 import datetime
 import json
 import subprocess
+from typing import Tuple, List, Union
 from uuid import uuid4
+from UPSmodules import __version__, __status__
 try:
     from UPSmodules import env
 except ModuleNotFoundError:
@@ -47,7 +47,7 @@ try:
 except ModuleNotFoundError:
     print('The config.py file is missing or mis-configured.  Use config.py.template as a template.')
     print('Using defaults, which will not enable any daemon response scripts.')
-    env.ut_const.ERROR_config = True
+    env.UT_CONST.ERROR_config = True
 
 
 class UPSsnmp:
@@ -78,15 +78,15 @@ class UPSsnmp:
         # UPS from config.py for ups-daemon and monitor utilities.
         self.daemon_params = {'suspend_script': '', 'resume_script': '',
                               'shutdown_script': '', 'cancel_shutdown_script': '',
-                              'read_interval': env.ut_const.DEFAULT_DAEMON_READ_INTERVAL,
-                              'threshold_battery_time_rem_crit': env.ut_const.def_threshold_battery_time_rem[0],
-                              'threshold_battery_time_rem_warn': env.ut_const.def_threshold_battery_time_rem[1],
-                              'threshold_time_on_battery_crit': env.ut_const.def_threshold_time_on_battery[0],
-                              'threshold_time_on_battery_warn': env.ut_const.def_threshold_time_on_battery[1],
-                              'threshold_battery_load_crit': env.ut_const.def_threshold_battery_load[0],
-                              'threshold_battery_load_warn': env.ut_const.def_threshold_battery_load[1],
-                              'threshold_battery_capacity_crit': env.ut_const.def_threshold_battery_capacity[0],
-                              'threshold_battery_capacity_warn': env.ut_const.def_threshold_battery_capacity[1]
+                              'read_interval': env.UT_CONST.DEFAULT_DAEMON_READ_INTERVAL,
+                              'threshold_battery_time_rem_crit': env.UT_CONST.def_threshold_battery_time_rem[0],
+                              'threshold_battery_time_rem_warn': env.UT_CONST.def_threshold_battery_time_rem[1],
+                              'threshold_time_on_battery_crit': env.UT_CONST.def_threshold_time_on_battery[0],
+                              'threshold_time_on_battery_warn': env.UT_CONST.def_threshold_time_on_battery[1],
+                              'threshold_battery_load_crit': env.UT_CONST.def_threshold_battery_load[0],
+                              'threshold_battery_load_warn': env.UT_CONST.def_threshold_battery_load[1],
+                              'threshold_battery_capacity_crit': env.UT_CONST.def_threshold_battery_capacity[0],
+                              'threshold_battery_capacity_warn': env.UT_CONST.def_threshold_battery_capacity[1]
                               }
 
         # UPS MiB Commands
@@ -324,29 +324,28 @@ class UPSsnmp:
         if self.read_ups_list():
             self.check_ups_list()
         else:
-            print('Fatal Error: could not read json configuration file: {}'.format(env.ut_const.UPS_LIST_JSON_FILE))
+            print('Fatal Error: could not read json configuration file: {}'.format(env.UT_CONST.UPS_LIST_JSON_FILE))
             sys.exit(-1)
         # End of init
 
     # Read and check the UPS list.
-    def read_ups_list(self):
+    def read_ups_list(self) -> bool:
         """Reads the config.json file which contains parameters for UPSs to be used by utility.
+
         :return: boolean True if no problems reading list
-        :rtype: bool
         """
-        if not os.path.isfile(env.ut_const.UPS_LIST_JSON_FILE):
-            print('Error: UPS List file not found: {}'.format(env.ut_const.UPS_LIST_JSON_FILE))
+        if not os.path.isfile(env.UT_CONST.UPS_LIST_JSON_FILE):
+            print('Error: UPS List file not found: {}'.format(env.UT_CONST.UPS_LIST_JSON_FILE))
             return False
-        with open(env.ut_const.UPS_LIST_JSON_FILE, 'r') as ups_list_file:
+        with open(env.UT_CONST.UPS_LIST_JSON_FILE, 'r') as ups_list_file:
             self.ups_list = json.load(ups_list_file)
         return True
 
-    def check_ups_list(self, quiet=True):
+    def check_ups_list(self, quiet: bool = True) -> None:
         """Check the list of UPS for compatibility, accessibility, and responsiveness.
+
         :param quiet: flag to specify if method should print results or return quietly
-        :type quiet: bool
         :return: None
-        :rtype: None
         """
         daemon_cnt = 0
         ups_cnt = 0
@@ -374,36 +373,33 @@ class UPSsnmp:
     # End of read and check the UPS list.
 
     # Methods to get, check, and list UPSs
-    def get_name_for_ups_uuid(self, ups_uuid):
+    def get_name_for_ups_uuid(self, ups_uuid: int) -> str:
         """ Get the ups name for a given uuid
+
         :param ups_uuid: Universally unique identifier for a UPS
-        :type ups_uuid: int
         :return: name of the ups
-        :rtype: str
         """
         for k, v in self.ups_list.items():
             if v['uuid'] == ups_uuid:
                 return str(k)
         return 'Error'
 
-    def get_uuid_for_ups_name(self, ups_name):
+    def get_uuid_for_ups_name(self, ups_name: str) -> str:
         """ Get uuid for ups with given name.
+
         :param ups_name: The target ups name.
-        :type ups_name: str
         :return: The uuid as str or 'Error' if not found
-        :rtype: str
         """
         for k, v in self.ups_list.items():
             if v['display_name'] == ups_name:
                 return v['uuid']
         return 'Error'
 
-    def get_ups_list(self, errups=True):
+    def get_ups_list(self, errups: bool = True) -> dict:
         """Get the dictionary list of UPSs read at start up.
-        :param errups: Flag to indicate if UPSs with errors should be inclduded
-        :type errups: bool
+
+        :param errups: Flag to indicate if UPSs with errors should be included
         :return:  dictionary representing the list of UPSs
-        :rtype: dict
         """
         return_list = {}
         for ups_name, ups_item in self.ups_list.items():
@@ -413,10 +409,10 @@ class UPSsnmp:
             return_list[ups_name] = ups_item
         return return_list
 
-    def get_num_ups_tuple(self):
+    def get_num_ups_tuple(self) -> Tuple[int]:
         """ This function will return a tuple of the UPS counts.
+
         :return: tuple represents listed, compatible, accessible, responsive UPSs
-        :rtype: tuple
         """
         cnt = [0, 0, 0, 0]
         for k, v in self.ups_list.items():
@@ -429,30 +425,29 @@ class UPSsnmp:
                 cnt[3] += 1
         return tuple(cnt)
 
-    def check_ups_type(self, test_ups_type):
+    def check_ups_type(self, test_ups_type: str) -> bool:
         """ Checks if the given UPS type is valid
+
         :param test_ups_type:  A string representation of the ups type
-        :type test_ups_type: str
         :return: True indicates the ups type is valid
-        :rtype: bool
         """
         if test_ups_type not in self.all_mib_cmds.keys():
             return False
         return True
 
-    def list_valid_ups_types(self):
+    def list_valid_ups_types(self) -> List[str]:
         """ Return a list of valid ups types
+
         :return: list of str representing valid ups types
-        :rtype: list
         """
         return list(self.all_mib_cmds.keys())
     # End of methods to get, check, and list UPSs
 
     # Methods to set daemon and active UPS.
-    def set_daemon_ups(self):
+    def set_daemon_ups(self) -> bool:
         """ Set the active ups to the daemon ups.
+
         :return: True if active UPS setting is a success
-        :rtype: bool
         """
         for k, v in self.ups_list.items():
             if v['daemon']:
@@ -460,50 +455,43 @@ class UPSsnmp:
                 return True
         return False
 
-    def set_active_ups(self, ups_item):
+    def set_active_ups(self, ups_item: dict) -> None:
         """ Sets the active ups to the specified ups.
+
         :param ups_item: The target ups
-        :type ups_item: dict
         :return: None
-        :rtype: None
         """
         self.active_ups = ups_item
     # End of methods to set daemon and active UPS.
 
     # Set of methods to return parameters for target UPS.
-    def get_ups_parameter_value(self, param_name, tups):
+    def get_ups_parameter_value(self, param_name: str, tups: dict) -> Union[str, None]:
         """ Get ups parameter value for parameter name from target UPS or active UPS if not specified
-        :param param_name:
-        :type param_name: str
-        :param tups:
-        :type tups: dict
+
+        :param param_name: Target parameter name
+        :param tups: Target UPS dict
         :return: Parameter value as string else None
-        :rtype: str
         """
         if not tups:
             tups = self.active_ups
-        if param_name in tups.keys():
-            return tups[param_name]
-        else:
-            return None
+        return tups[param_name] if param_name in tups.keys() else None
 
-    def get_mib_commands(self, tups=None):
+    def get_mib_commands(self, tups: dict = None) -> dict:
         """ Get the list of MIB commands for the target UPS.
+
         :param tups:
-        :type tups: dict
         :return: List of MIB commands for target UPS
-        :rtype: dict
         """
         if not tups:
             tups = self.active_ups
         return tups['mib_commands']
 
-    def get_mib_name(self, mib_cmd, tups=None):
+    def get_mib_name(self, mib_cmd: str, tups: dict = None) -> str:
         """Get the mib command name.
+
         :param mib_cmd: string representing mib command
         :param tups: target UPS, active UPS if missing
         :return: string of mib command name
-        :rtype: str
         """
         if not tups:
             tups = self.active_ups
@@ -512,54 +500,50 @@ class UPSsnmp:
         else:
             return mib_cmd
 
-    def get_mib_name_for_type(self, mib_cmd, ups_type):
+    def get_mib_name_for_type(self, mib_cmd: str, ups_type: str) -> str:
         """Get mib command name for a given UPS type.
+
         :param mib_cmd:
         :param ups_type:
         :return: string of mib command name
-        :rtype: str
         """
         return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
-    def ups_uuid(self, tups=None):
+    def ups_uuid(self, tups: dict = None) -> int:
         """ Get the uuid value for the target UPS or active UPS if target is None.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  The uuid as an int.
-        :rtype: int
         """
         if not tups:
             tups = self.active_ups
         return tups['uuid']
 
-    def ups_name(self, tups=None):
+    def ups_name(self, tups: dict = None) -> str:
         """ Get the name value for the target UPS or active UPS if target is None.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  The name as an str.
-        :rtype: str
         """
         if not tups:
             tups = self.active_ups
         return tups['display_name']
 
-    def ups_type(self, tups=None):
+    def ups_type(self, tups: dict = None) -> str:
         """ Get the type value for the target UPS or active UPS if target is None.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  The ups_type as an str.
-        :rtype: str
         """
         if not tups:
             tups = self.active_ups
         return tups['ups_type']
 
-    def ups_ip(self, tups=None):
+    def ups_ip(self, tups: dict = None) -> None:
         """ Get the IP address value for the target UPS or active UPS if target is None.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  The IP address as an str.
-        :rtype: str
         """
         if not tups:
             tups = self.active_ups
@@ -567,25 +551,24 @@ class UPSsnmp:
     # End of set of methods to return parameters for target UPS.
 
     # Set of methods to check if UPS is valid.
-    def check_ip(self, tups=None):
+    def check_ip(self, tups: dict = None) -> bool:
         """ check the IP address value for the target UPS or active UPS if target is None.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  True if the given IP address is pingable, else False
-        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
+        # TODO use asbool
         if not os.system('ping -c 1 {} > /dev/null'.format(tups['ups_IP'])):
             return True
         return False
 
-    def check_snmp(self, tups=None):
+    def check_snmp(self, tups: dict = None) -> bool:
         """ check if the IP address for the target UPS or active UPS if target is None, responds to snmp command.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  True if the given IP address responds, else False
-        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
@@ -594,39 +577,36 @@ class UPSsnmp:
         try:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
-            if env.ut_const.DEBUG: print(snmp_output)
+            if env.UT_CONST.DEBUG: print(snmp_output)
         except:
             return False
         return True
 
-    def is_compatible(self, tups=None):
+    def is_compatible(self, tups: dict = None) -> bool:
         """ check if target UPS or active UPS if target is None, is compatible.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  True if compatible
-        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
         return tups['compatible']
 
-    def is_responsive(self, tups=None):
+    def is_responsive(self, tups: dict = None) -> bool:
         """ check if target UPS or active UPS if target is None, is responsive.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  True if responsive
-        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
         return tups['responsive']
 
-    def is_accessible(self, tups=None):
+    def is_accessible(self, tups: dict = None) -> bool:
         """ check if target UPS or active UPS if target is None, is accessible.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  True if accessible
-        :rtype: bool
         """
         if not tups:
             tups = self.active_ups
@@ -634,12 +614,11 @@ class UPSsnmp:
     # End of set of methods to check if UPS is valid.
 
     # Commands to read from UPS using snmp protocol.
-    def get_monitor_mib_commands(self, cmd_type='dynamic'):
+    def get_monitor_mib_commands(self, cmd_type: str = 'dynamic') -> list:
         """ Get the specified list of monitor mib commands for the active UPS.
+
         :param cmd_type:  The target type of monitor commands
-        :type cmd_type: str
         :return:  list of relevant mib commands
-        :rtype: list
         """
         if cmd_type == 'all':
             return_list = []
@@ -650,14 +629,12 @@ class UPSsnmp:
         else:
             return self.monitor_mib_cmds[cmd_type]
 
-    def read_all_ups_list_items(self, command_list, errups=True):
+    def read_all_ups_list_items(self, command_list: list, errups: bool = True) -> dict:
         """ Get the specified list of monitor mib commands for all UPSs.
+
         :param command_list:  A list of mib commands to be read from the active UPS
-        :type command_list: list
         :param errups: Flag to indicate if error UPS should be included.
-        :type errups: bool
         :return:  dict of results from the reading of all commands from all UPSs.
-        :rtype: dict
         """
         results = {}
         for ups_name, ups_item in self.get_ups_list().items():
@@ -668,14 +645,12 @@ class UPSsnmp:
             results[ups_name] = self.read_ups_list_items(command_list)
         return results
 
-    def read_ups_list_items(self, command_list, tups=None):
+    def read_ups_list_items(self, command_list: list, tups: dict = None) -> dict:
         """ Read the specified list of monitor mib commands for all UPSs.
+
         :param command_list:  A list of mib commands to be read from the active UPS
-        :type command_list: list
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  dict of results from the reading of all commands target UPS.
-        :rtype: dict
         """
         if not tups:
             tups = self.active_ups
@@ -693,14 +668,12 @@ class UPSsnmp:
                                                       results['mib_output_current'], 1)
         return results
 
-    def send_snmp_command(self, command_name, tups=None, display=False):
+    def send_snmp_command(self, command_name: str, tups: dict = None, display: bool = False) -> Union[str, int, tuple]:
         """ Read the specified mib commands results for specified UPS or active UPS if not specified.
+
         :param command_name:  A command to be read from the target UPS
-        :type command_name: str
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :param display: If true the results will be printed
-        :type display: bool
         :return:  The results from the read, could be str, int or tuple
         """
         if not tups:
@@ -723,8 +696,8 @@ class UPSsnmp:
         value_minute = -1
         value_str = 'UNK'
         for line in snmp_output:
-            if env.ut_const.DEBUG: print('line:  {}'.format(line))
-            if re.match(r'.*=.*:.*', line):
+            if env.UT_CONST.DEBUG: print('line:  {}'.format(line))
+            if re.match(env.UT_CONST.PATTERNS['SNMP_VALUE'], line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()
         if snmp_mib_commands[command_name]['decode']:
@@ -768,14 +741,12 @@ class UPSsnmp:
         return value
 
     @staticmethod
-    def bit_str_decoder(value, decode_key):
+    def bit_str_decoder(value: str, decode_key: list) -> str:
         """ Bit string decoder
+
         :param value: A string representing a bit encoded set of flags
-        :type value: str
         :param decode_key: A list representing the meaning of a 1 for each bit field
-        :type decode_key: list
         :return: A string of concatenated bit decode strings
-        :rtype: str
         """
         value_str = ''
         for index, bit_value in enumerate(value):
@@ -788,22 +759,21 @@ class UPSsnmp:
                     value_str = '{}-{}'.format(value_str, decode_key[index])
         return value_str
 
-    def print_decoders(self):
+    def print_decoders(self) -> None:
         """ Prints all bit decoders.
+
         :return: None
-        :rtype: None
         """
         for k, v in self.decoders.items():
             print('decode key: {}'.format(k))
             for i, item in enumerate(v, start=1):
                 print('  {:2d}: {}'.format(i, item))
 
-    def print_snmp_commands(self, tups=None):
+    def print_snmp_commands(self, tups: dict = None) -> None:
         """ Print all supported mib commands for the target UPS, which is the active UPS when not specified.
+
         :param tups:  The target ups dictionary from list or None.
-        :type tups: dict
         :return:  None
-        :rtype: None
         """
         if not tups:
             tups = self.active_ups
@@ -816,12 +786,12 @@ class UPSsnmp:
     # End of commands to read from UPS using snmp protocol.
 
     # Set parameters required for daemon mode.
-    def set_daemon_parameters(self):
-        """ Set all daemon parameters based on defaults in env.ut_const and the config.py file.
+    def set_daemon_parameters(self) -> None:
+        """ Set all daemon parameters based on defaults in env.UT_CONST and the config.py file.
+
         :return:  None
-        :rtype: None
         """
-        if env.ut_const.ERROR_config:
+        if env.UT_CONST.ERROR_config:
             print('Error in config.py file.  Using defaults')
             return
 
@@ -852,14 +822,14 @@ class UPSsnmp:
 
         # Set daemon read interval
         if isinstance(read_interval, int):
-            if read_interval >= env.ut_const.READ_INTERVAL_LIMIT:
+            if read_interval >= env.UT_CONST.READ_INTERVAL_LIMIT:
                 self.daemon_params['read_interval'] = read_interval
             else:
                 print('Invalid read interval in config.py.  Using default.')
                 
         # Battery Time Remaining
         if isinstance(threshold_battery_time_rem_crit, int):
-            if threshold_battery_time_rem_crit >= env.ut_const.def_threshold_battery_time_rem[2]:
+            if threshold_battery_time_rem_crit >= env.UT_CONST.def_threshold_battery_time_rem[2]:
                 self.daemon_params['threshold_battery_time_rem_crit'] = threshold_battery_time_rem_crit
             else:
                 print('Invalid threshold_battery_time_rem_crit in config.py.  Using default.')
@@ -871,7 +841,7 @@ class UPSsnmp:
                 
         # Time on Battery        
         if isinstance(threshold_time_on_battery_warn, int):
-            if threshold_time_on_battery_warn >= env.ut_const.def_threshold_time_on_battery[2]:
+            if threshold_time_on_battery_warn >= env.UT_CONST.def_threshold_time_on_battery[2]:
                 self.daemon_params['threshold_time_on_battery_warn'] = threshold_time_on_battery_warn
             else:
                 print('Invalid threshold_time_battery_warn in config.py.  Using default.')
@@ -883,7 +853,7 @@ class UPSsnmp:
 
         # Battery Load
         if isinstance(threshold_battery_load_warn, int):
-            if env.ut_const.def_threshold_battery_load[2] < threshold_battery_load_warn < 100:
+            if env.UT_CONST.def_threshold_battery_load[2] < threshold_battery_load_warn < 100:
                 self.daemon_params['threshold_battery_load_warn'] = threshold_battery_load_warn
             else:
                 print('Invalid threshold_battery_load_warn in config.py.  Using default.')
@@ -895,7 +865,7 @@ class UPSsnmp:
 
         # Battery Capacity
         if isinstance(threshold_battery_capacity_crit, int):
-            if env.ut_const.def_threshold_battery_capacity[2] < threshold_battery_capacity_crit < 100:
+            if env.UT_CONST.def_threshold_battery_capacity[2] < threshold_battery_capacity_crit < 100:
                 self.daemon_params['threshold_battery_capacity_crit'] = threshold_battery_capacity_crit
             else:
                 print('Invalid threshold_battery_capacity_crit in config.py.  Using default.')
@@ -905,19 +875,19 @@ class UPSsnmp:
             else:
                 print('Invalid threshold_battery_capacity_warn in config.py.  Using default.')
 
-    def print_daemon_parameters(self):
+    def print_daemon_parameters(self) -> None:
         """ Print all daemon parameters.
+
         :return:  None
-        :rtype: None
         """
         print('Daemon parameters:')
         for k, v in self.daemon_params.items():
             print('    {}: {}'.format(k, v))
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """ Execute the shutdown script as defined in the daemon parameters.
+
         :return:  None
-        :rtype: None
         """
         if not self.daemon_params['shutdown_script']:
             print('No shutdown script defined')
@@ -933,10 +903,10 @@ class UPSsnmp:
             print('Error: could not execute shutdown script: {}'.format(self.daemon_params['shutdown_script']),
                   file=sys.stderr)
 
-    def cancel_shutdown(self):
+    def cancel_shutdown(self) -> None:
         """ Execute the cancel shutdown script as defined in the daemon parameters.
+
         :return:  None
-        :rtype: None
         """
         if not self.daemon_params['cancel_shutdown_script']:
             print('No cancel shutdown script defined')
@@ -952,10 +922,10 @@ class UPSsnmp:
             print('Error: could not execute cancel shutdown script: {}'.format(
                   self.daemon_params['cancel_shutdown_script']), file=sys.stderr)
 
-    def resume(self):
+    def resume(self) -> None:
         """ Execute the resume script as defined in the daemon parameters.
+
         :return:  None
-        :rtype: None
         """
         if not self.daemon_params['resume_script']:
             print('No resume script defined')
@@ -971,10 +941,10 @@ class UPSsnmp:
             print('Error: could not execute resume script: {}'.format(self.daemon_params['resume_script']),
                   file=sys.stderr)
 
-    def suspend(self):
+    def suspend(self) -> None:
         """ Execute the suspend script as defined in the daemon parameters.
+
         :return:  None
-        :rtype: None
         """
         if not self.daemon_params['suspend_script']:
             print('No suspend script defined')
@@ -992,10 +962,9 @@ class UPSsnmp:
     # End of set parameters required for daemon mode.
 
 
-def about():
+def about() -> None:
     """ Display details about this module.
     :return:  None
-    :rtype: None
     """
     # About me
     print(__doc__)

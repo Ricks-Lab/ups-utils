@@ -14,6 +14,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from UPSmodules import UPSmodule
-from UPSmodules import env
 
+__version__ = '0.10.0'
+#__status__ = 'Development Status :: 5 - Production/Stable'
+__status__ = 'Development Status :: 4 - Beta'

@@ -17,23 +17,28 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __author__ = 'RueiKe'
-__copyright__ = 'Copyright (C) 2019 RueiKe'
+__copyright__ = 'Copyright (C) 2019 RicksLab'
 __credits__ = []
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-utils'
-__version__ = 'v0.9.0'
 __maintainer__ = 'RueiKe'
-__status__ = 'Beta Release'
 
 import platform
 import sys
 import os
+import re
 from pathlib import Path
 import shutil
 from datetime import datetime
+from UPSmodules import __version__, __status__
 
 
-class UT_CONST:
+class UtConst:
+    PATTERNS = {'HEXRGB': re.compile(r'^#[0-9a-fA-F]{6}'),
+                'SNMP_VALUE': re.compile(r'.*=.*:.*'),
+                'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
+                'NORMAL': re.compile(r'(.*Battery Normal.*)')}
+
     def __init__(self):
         # Utility Path Definitions
         self.repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
@@ -81,10 +86,10 @@ class UT_CONST:
             return datetime.now()
         return datetime.utcnow()
 
-    def check_env(self):
+    def check_env(self) -> int:
         """ Check the user's environment for compatibility.
+        
         :return: Returns an integer indicating env error code: 0 for passes
-        :rtype: int
         """
         # Check python version
         required_pversion = [3, 6]
@@ -122,13 +127,13 @@ class UT_CONST:
         return 0
 
 
-ut_const = UT_CONST()
+UT_CONST = UtConst()
 
 
-def about():
+def about() -> None:
     """ Display details about this module.
+    
     :return:  None
-    :rtype:  None
     """
     print(__doc__)
     print('Author: ', __author__)

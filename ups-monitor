@@ -13,7 +13,7 @@
     informational parameters. By default, unresponsive UPSs will not be displayed, but the
     *--show_unresponsive* can be used to force their display.
 
-    Copyright (C) 2019  RueiKe
+    Copyright (C) 2019  RicksLab
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,13 +29,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __author__ = 'RueiKe'
-__copyright__ = 'Copyright (C) 2019 RueiKe'
+__copyright__ = 'Copyright (C) 2019 RicksLab'
 __credits__ = ['']
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-monitor'
-__version__ = 'v0.9.0'
 __maintainer__ = 'RueiKe'
-__status__ = 'Beta Release'
 
 import argparse
 import threading
@@ -43,8 +41,10 @@ import os
 import sys
 import re
 import time
+from typing import TextIO, List, Any, Callable
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
+from UPSmodules import __version__, __status__
 try:
     import gi
 except ModuleNotFoundError as error:
@@ -56,27 +56,24 @@ except ModuleNotFoundError as error:
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, Gdk
 
+MAX_WIDTH = 23
+
 
 class MonitorWindow(Gtk.Window):
-    def __init__(self, ups, header_items, command_items, devices):
+    def __init__(self, ups: UPS.UPSsnmp, header_items: list, command_items: list, devices: dict):
         """ Initialize the main UPS monitor window.
+
         :param ups:  The main ups module object
-        :type ups: UPSsnmp
         :param header_items:  A list of non-mib parameters
-        :type header_items: list
         :param command_items:  A list of mib parameter results
-        :type command_items: list
         :param devices: A dictionary of Gtk components and values
-        :type devices: dict
-        :return: None
-        :rtype: None
         """
         self.quit = False
 
         Gtk.Window.__init__(self, title='ups-monitor')
         self.set_border_width(1)
-        icon_file = os.path.join(env.ut_const.icon_path, 'ups-utils-monitor.icon.png')
-        if env.ut_const.DEBUG: print('Icon file: [{}]'.format(icon_file))
+        icon_file = os.path.join(env.UT_CONST.icon_path, 'ups-utils-monitor.icon.png')
+        if env.UT_CONST.DEBUG: print('Icon file: [{}]'.format(icon_file))
         if os.path.isfile(icon_file):
             self.set_icon_from_file(icon_file)
         grid = Gtk.Grid()
@@ -85,15 +82,15 @@ class MonitorWindow(Gtk.Window):
 
         col = 0
         row = 0
-        if env.ut_const.show_unresponsive:
+        if env.UT_CONST.show_unresponsive:
             num_ups = ups.get_num_ups_tuple()[0]
         else:
             num_ups = ups.get_num_ups_tuple()[3]
 
         # Set logging details at top of table if logging enabled
-        if env.ut_const.LOG:
+        if env.UT_CONST.LOG:
             log_label = Gtk.Label()
-            log_label.set_markup('<big><b> Logging to:    </b>' + env.ut_const.log_file + '</big>')
+            log_label.set_markup('<big><b> Logging to:    </b>' + env.UT_CONST.log_file + '</big>')
             log_label.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
             lbox = Gtk.Box(spacing=6)
             lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
@@ -139,7 +136,7 @@ class MonitorWindow(Gtk.Window):
             row += 1
 
         # Associate all table items with data source in devices dictionary
-        for item_name, item_ups in ups.get_ups_list(errups=env.ut_const.show_unresponsive).items():
+        for item_name, item_ups in ups.get_ups_list(errups=env.UT_CONST.show_unresponsive).items():
             devices[item_ups['uuid']] = {'display_name':  Gtk.Label(ups.ups_name(item_ups))}
             for item_hdr in header_items:
                 devices[item_ups['uuid']][item_hdr] = Gtk.Label(label=ups.get_ups_parameter_value(item_hdr, item_ups))
@@ -167,44 +164,40 @@ class MonitorWindow(Gtk.Window):
                 lv.set_property('margin-bottom', 1)
                 lv.set_property('margin-right', 3)
                 lv.set_property('margin-left', 3)
-                lv.set_width_chars(17)
+                lv.set_width_chars(MAX_WIDTH)
                 lbox.pack_start(lv, True, True, 0)
                 grid.attach(lbox, col, row, 1, 1)
                 row += 1
 
-    def set_quit(self, _arg2, _arg3):
+    def set_quit(self, _arg2: Any, _arg3: Any) -> None:
         """ Function called when quit monitor is executed.  Sets flag to end update loop.
+
         :param _arg2: Ignored
         :param _arg3: Ignored
         :return: None
-        :rtype: None
         """
         self.quit = True
 
 
-def updateData(ups, header_list, command_list, devices):
+def update_data(ups: UPS.UPSsnmp, header_list: list, command_list: list, devices: dict) -> None:
     """ Function that updates data in MonitorWindow  with call to read data from ups.
+
     :param ups:  The main ups module object
-    :type ups: UPSsnmp
     :param header_list:  A list of non-mib parameters
-    :type header_list: list
     :param command_list:  A list of mib parameter results
-    :type command_list: list
     :param devices: A dictionary of Gtk components and values
-    :type devices: dict
     :return: None
-    :rtype: None
     """
-    irw = 20
-    ups_data = ups.read_all_ups_list_items(command_list, errups=env.ut_const.show_unresponsive)
-    if env.ut_const.LOG:
-        print_log(env.ut_const.log_file_ptr, header_list, command_list, ups_data)
+    irw = 23
+    ups_data = ups.read_all_ups_list_items(command_list, errups=env.UT_CONST.show_unresponsive)
+    if env.UT_CONST.LOG:
+        print_log(env.UT_CONST.log_file_ptr, header_list, command_list, ups_data)
 
     # update gui
     for dev_uuid, dev_data in devices.items():
         ups_name = ups.get_name_for_ups_uuid(dev_uuid)
         for mib_name, lv in dev_data.items():
-            data_value = str(ups_data[ups_name][mib_name])[:irw]
+            data_value = str(ups_data[ups_name][mib_name])[:MAX_WIDTH]
             if data_value == '-1':
                 data_value = ''
             if mib_name == 'mib_battery_capacity' and data_value.isnumeric():
@@ -230,14 +223,14 @@ def updateData(ups, header_list, command_list, devices):
             elif mib_name == 'mib_battery_status':
                 lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
                 lv.set_markup('<b>{}</b>'.format(data_value))
-                if re.match(r'(.*Battery Normal.*)', data_value):
+                if re.match(env.UT_CONST.PATTERNS['NORMAL'], data_value):
                     lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .60, .40, 1.0))
                 else:
                     lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
             elif mib_name == 'mib_system_status':
                 lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
                 lv.set_markup('<b>{}</b>'.format(data_value))
-                if re.match(r'(.*Standby.*)|(.*OnLine.*)', data_value):
+                if re.match(env.UT_CONST.PATTERNS['ONLINE'], data_value):
                     lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .60, .40, 1.0))
                 else:
                     lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
@@ -247,38 +240,32 @@ def updateData(ups, header_list, command_list, devices):
             else:
                 lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.3, 0.3, 0.3, 1.0))
                 lv.set_text(data_value)
-            lv.set_width_chars(irw + 1)
+            lv.set_width_chars(MAX_WIDTH + 1)
 
     while Gtk.events_pending():
         Gtk.main_iteration_do(True)
 
 
-def refresh(refreshtime, updateData, ups, header_list, command_list, devices, umonitor):
+def refresh(refresh_time: int, updater: Callable, ups: UPS.UPSsnmp, header_list: list,
+            command_list: list, devices: dict, umonitor: MonitorWindow) -> None:
     """ Function that continuously updates the Gtk monitor window.
-    :param refreshtime:  Delay time in seconds between monitor display refreshes
-    :type refreshtime: int
-    :param updateData: Function name that does the actual refresh of the monitor table.
-    :type updateData: FunctionType
+
+    :param refresh_time:  Delay time in seconds between monitor display refreshes
+    :param updater: Function name that does the actual refresh of the monitor table.
     :param ups:  The main ups module object
-    :type ups: UPSsnmp
     :param header_list:  A list of non-mib parameters
-    :type header_list: list
     :param command_list:  A list of mib parameter results
-    :type command_list: list
     :param devices: A dictionary of Gtk components and values
-    :type devices: dict
     :param umonitor: The main Gtk monitor window.
-    :type umonitor: MonitorWindow
     :return: None
-    :rtype: None
     """
     while True:
         if umonitor.quit:
             print('Quitting...')
             Gtk.main_quit()
             sys.exit(0)
-        GLib.idle_add(updateData, ups, header_list, command_list, devices)
-        for sleep_increment in range(0, refreshtime):
+        GLib.idle_add(updater, ups, header_list, command_list, devices)
+        for sleep_increment in range(0, refresh_time):
             if umonitor.quit:
                 print('Quitting...')
                 Gtk.main_quit()
@@ -286,18 +273,14 @@ def refresh(refreshtime, updateData, ups, header_list, command_list, devices, um
             time.sleep(1)
 
 
-def print_monitor_table(ups, header_list, cmd_list, ups_data):
+def print_monitor_table(ups: UPS.UPSsnmp, header_list: list, cmd_list: list, ups_data: dict) -> int:
     """ Print the monitor table in format optimized for terminal window.
+
     :param ups:  The main ups module object
-    :type ups: UPSsnmp
     :param header_list:  A list of non-mib parameters
-    :type header_list: list
     :param cmd_list:  A list of mib parameter results
-    :type cmd_list: list
     :param ups_data: A dictionary of results for items listed in header and command lists
-    :type ups_data: dict
     :return: Zero if all is good.
-    :rtype: int
     """
     num_ups = ups.get_num_ups_tuple()
     if num_ups[0] < 1:
@@ -333,12 +316,12 @@ def print_monitor_table(ups, header_list, cmd_list, ups_data):
               sep='', end='')
         for k, v in ups_data.items():
             if table_item == 'mib_system_status':
-                if re.match(r'(.*Standby.*)|(.*OnLine.*)', v[table_item]):
+                if re.match(env.UT_CONST.PATTERNS['ONLINE'], v[table_item]):
                     item_str = '\x1b[1;30;42m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
                 else:
                     item_str = '\x1b[1;37;41m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
             elif table_item == 'mib_battery_status':
-                if re.match(r'(.*Battery Normal.*)', v[table_item]):
+                if re.match(env.UT_CONST.PATTERNS['NORMAL'], v[table_item]):
                     item_str = '\x1b[1;30;42m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
                 else:
                     item_str = '\x1b[1;37;41m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
@@ -354,20 +337,16 @@ def print_monitor_table(ups, header_list, cmd_list, ups_data):
     return 0
 
 
-def print_log(fileptr, header_list, command_list, ups_data):
+def print_log(fileptr: TextIO, header_list: list, command_list: list, ups_data: dict) -> None:
     """ Print the logfile data line.
+
     :param fileptr:  The logfile fileptr
-    :type fileptr: file
     :param header_list:  A list of non-mib parameters
-    :type header_list: list
     :param command_list:  A list of mib parameter results
-    :type command_list: list
     :param ups_data: A dictionary of results for items listed in header and command lists
-    :type ups_data: dict
     :return: None
-    :rtype: None
     """
-    time_str = (str(env.ut_const.now(ltz=True).strftime('%c')).strip())
+    time_str = (str(env.UT_CONST.now(ltz=True).strftime('%c')).strip())
     for k, v in ups_data.items():
         print('{}'.format(time_str), file=fileptr, end='')
         for item in header_list:
@@ -377,16 +356,13 @@ def print_log(fileptr, header_list, command_list, ups_data):
         print('', file=fileptr)
 
 
-def print_log_header(fileptr, header_list, command_list):
+def print_log_header(fileptr: TextIO, header_list: List[str], command_list: list) -> None:
     """ Print the logfile header line.
+
     :param fileptr:  The logfile fileptr
-    :type fileptr: file
     :param header_list:  A list of non-mib parameters
-    :type header_list: list
     :param command_list:  A list of mib parameter results
-    :type command_list: list
     :return: None
-    :rtype: None
     """
     print('time', file=fileptr, end='')
     for item in header_list:
@@ -396,7 +372,7 @@ def print_log_header(fileptr, header_list, command_list):
     print('', file=fileptr)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README', action='store_true', default=False)
     parser.add_argument('--status', help='Display table of current status of UPSs', action='store_true', default=False)
@@ -405,7 +381,7 @@ def main():
     parser.add_argument('--gui', help='Display GTK Version of Monitor', action='store_true', default=False)
     parser.add_argument('--log', help='Write all monitor data to logfile', action='store_true', default=False)
     parser.add_argument('--sleep', help='Number of seconds to sleep between updates',
-                        type=int, default=env.ut_const.DEFAULT_DAEMON_READ_INTERVAL)
+                        type=int, default=env.UT_CONST.DEFAULT_DAEMON_READ_INTERVAL)
     parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
     args = parser.parse_args()
 
@@ -421,9 +397,9 @@ def main():
         print('Status: ', __status__)
         sys.exit(0)
 
-    env.ut_const.DEBUG = args.debug
+    env.UT_CONST.DEBUG = args.debug
 
-    if env.ut_const.check_env() < 0:
+    if env.UT_CONST.check_env() < 0:
         print('Error in environment. Exiting...')
         sys.exit(-1)
 
@@ -441,11 +417,11 @@ def main():
         print('    Check the config.json file.')
     print('')
 
-    if int(args.sleep) >= env.ut_const.READ_INTERVAL_LIMIT:
-        env.ut_const.SLEEP = int(args.sleep)
+    if int(args.sleep) >= env.UT_CONST.READ_INTERVAL_LIMIT:
+        env.UT_CONST.SLEEP = int(args.sleep)
     else:
         print('Invalid value for sleep specified.  Must be an integer >= {}'.format(
-              env.ut_const.DEFAULT_MONITOR_UPDATE_INTERVAL))
+              env.UT_CONST.DEFAULT_MONITOR_UPDATE_INTERVAL))
         sys.exit(-1)
 
     header_list = ['ups_type', 'ups_IP']
@@ -455,16 +431,16 @@ def main():
         command_list = ups.get_monitor_mib_commands()
 
     if args.show_unresponsive:
-        env.ut_const.show_unresponsive = True
+        env.UT_CONST.show_unresponsive = True
     else:
-        env.ut_const.show_unresponsive = False
+        env.UT_CONST.show_unresponsive = False
 
     if args.log:
-        env.ut_const.LOG = True
-        env.ut_const.log_file = './log_monitor_{}.txt'.format(
-            env.ut_const.now(ltz=env.ut_const.USELTZ).strftime('%m%d_%H%M%S'))
-        env.ut_const.log_file_ptr = open(env.ut_const.log_file, 'w', 1)
-        print_log_header(env.ut_const.log_file_ptr, header_list, command_list)
+        env.UT_CONST.LOG = True
+        env.UT_CONST.log_file = './log_monitor_{}.txt'.format(
+            env.UT_CONST.now(ltz=env.UT_CONST.USELTZ).strftime('%m%d_%H%M%S'))
+        env.UT_CONST.log_file_ptr = open(env.UT_CONST.log_file, 'w', 1)
+        print_log_header(env.UT_CONST.log_file_ptr, header_list, command_list)
 
     if args.gui:
         # Display Gtk style Monitor
@@ -474,8 +450,8 @@ def main():
         umonitor.show_all()
 
         # Start thread to update Monitor
-        monthread = threading.Thread(target=refresh, daemon=True, args=[env.ut_const.SLEEP,
-                                     updateData, ups, header_list, command_list, devices, umonitor]).start()
+        monthread = threading.Thread(target=refresh, daemon=True, args=[env.UT_CONST.SLEEP,
+                                     update_data, ups, header_list, command_list, devices, umonitor]).start()
 
         Gtk.main()
     else:
@@ -486,15 +462,15 @@ def main():
                 if args.status:
                     print_monitor_table(ups, header_list, command_list, ups_data)
                     sys.exit(0)
-                if not env.ut_const.DEBUG: os.system('clear')
-                if env.ut_const.LOG:
-                    print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.ut_const.log_file, '\033[0m'))
-                    print_log(env.ut_const.log_file_ptr, header_list, command_list, ups_data)
+                if not env.UT_CONST.DEBUG: os.system('clear')
+                if env.UT_CONST.LOG:
+                    print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.UT_CONST.log_file, '\033[0m'))
+                    print_log(env.UT_CONST.log_file_ptr, header_list, command_list, ups_data)
                 print_monitor_table(ups, header_list, command_list, ups_data)
-                time.sleep(env.ut_const.SLEEP)
+                time.sleep(env.UT_CONST.SLEEP)
         except KeyboardInterrupt:
-            if env.ut_const.LOG:
-                env.ut_const.log_file_ptr.close()
+            if env.UT_CONST.LOG:
+                env.UT_CONST.log_file_ptr.close()
             sys.exit(0)
 
 
