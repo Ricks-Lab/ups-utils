@@ -5,10 +5,10 @@
 """
 # Daemon/monitor parameter definitions
 # Daemon scripts
-suspend_script = '/home/rick/pydev/ups-utils/pauseSETI.sh'
-resume_script = '/home/rick/pydev/ups-utils/resumeSETI.sh'
-shutdown_script = '/home/rick/pydev/ups-utils/shutdownSETI.sh'
-cancel_shutdown_script = '/home/rick/pydev/ups-utils/cancelShutdownSETI.sh'
+suspend_script = '/home/rick/pydev/ups-utils/pauseBOINC.sh'
+resume_script = '/home/rick/pydev/ups-utils/resumeBOINC.sh'
+shutdown_script = '/home/rick/pydev/ups-utils/shutdownBOINC.sh'
+cancel_shutdown_script = '/home/rick/pydev/ups-utils/cancelShutdownBOINC.sh'
 # Daemon parameters
 read_interval = 30                                # Read interval for daemon utility
 threshold_battery_time_rem_crit = 5               # Trigger shutdown script
