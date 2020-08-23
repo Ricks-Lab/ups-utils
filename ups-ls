@@ -30,9 +30,12 @@ __maintainer__ = 'RueiKe'
 
 import argparse
 import sys
+import logging
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
 from UPSmodules import __version__, __status__
+
+LOGGER = logging.getLogger('ups-utils')
 
 
 def main() -> None:
@@ -59,7 +62,8 @@ def main() -> None:
         print('Status: ', __status__)
         sys.exit(0)
 
-    env.UT_CONST.DEBUG = args.debug
+    env.UT_CONST.set_env_args(args)
+    LOGGER.debug('########## %s %s', __program_name__, __version__)
 
     if env.UT_CONST.check_env() < 0:
         print('Error in environment. Exiting...')
