@@ -31,6 +31,7 @@ import time
 import datetime
 import json
 import subprocess
+from enum import Enum
 from typing import Tuple, List, Union
 from uuid import uuid4
 from UPSmodules import __version__, __status__
@@ -51,6 +52,8 @@ except ModuleNotFoundError:
 
 
 class UPSsnmp:
+    state_style = Enum('state', 'warn crit green bold normal')
+
     def __init__(self):
         # UPS list from config.json for monitor and ls utils.
         self.ups_list = {}
@@ -327,6 +330,17 @@ class UPSsnmp:
             print('Fatal Error: could not read json configuration file: {}'.format(env.UT_CONST.UPS_LIST_JSON_FILE))
             sys.exit(-1)
         # End of init
+
+    def __str__(self):
+        str_rep = ''
+        for name, value in self.ups_list.items():
+            if str_rep:
+                str_rep = '{}\n{}:\n'.format(str_rep, name)
+            else:
+                str_rep = '{}:\n'.format(name)
+            for k2, v2 in value.items():
+                str_rep = '{}\n    {}: {}\n'.format(str_rep, k2, v2)
+        return str_rep
 
     # Read and check the UPS list.
     def read_ups_list(self) -> bool:
@@ -669,7 +683,7 @@ class UPSsnmp:
         return results
 
     def send_snmp_command(self, command_name: str, tups: dict = None,
-                          display: bool = False) -> Union[str, int, List[float, str], float]:
+                          display: bool = False) -> Union[str, int, List[Union[float, str]], float]:
         """ Read the specified mib commands results for specified UPS or active UPS if not specified.
 
         :param command_name:  A command to be read from the target UPS

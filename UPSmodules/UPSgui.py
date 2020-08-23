@@ -51,7 +51,7 @@ except ImportError:
 from UPSmodules import __version__, __status__
 
 ColorDict = Dict[str, str]
-LOGGER = logging.getLogger('gpu-utils')
+LOGGER = logging.getLogger('ups-utils')
 PATTERNS = env.UtConst.PATTERNS
 
 
@@ -210,6 +210,14 @@ class GuiProps:
             css_list.append("#head_box { background-image: image(%s); }" % cls._colors['blue'])
             css_list.append("#warn_box { background-image: image(%s); }" % cls._colors['red'])
             css_list.append("#button_box { background-image: image(%s); }" % cls._colors['slate_dk'])
+            css_list.append("#out_load_box { background-image: image(%s); }" % cls._colors['slate_md'])
+            css_list.append("#out_load_label { color: %s; }" % cls._colors['white_off'])
+            css_list.append("#bat_cap_box { background-image: image(%s); }" % cls._colors['slate_md'])
+            css_list.append("#bat_cap_label { color: %s; }" % cls._colors['white_off'])
+            css_list.append("#sys_stat_box { background-image: image(%s); }" % cls._colors['slate_md'])
+            css_list.append("#sys_stat_label { color: %s; }" % cls._colors['white_off'])
+            css_list.append("#bat_stat_box { background-image: image(%s); }" % cls._colors['slate_md'])
+            css_list.append("#bat_stat_label { color: %s; }" % cls._colors['white_off'])
             css_list.append("#message_box { background-image: image(%s); }" % cls._colors['gray50'])
             css_list.append("#message_label { color: %s; }" % cls._colors['white_off'])
             css_list.append("#warn_label { color: %s; }" % cls._colors['white_pp'])

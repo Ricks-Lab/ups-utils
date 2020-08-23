@@ -27,10 +27,13 @@ import platform
 import sys
 import os
 import re
+import logging
 from pathlib import Path
 import shutil
 from datetime import datetime
 from UPSmodules import __version__, __status__
+
+LOGGER = logging.getLogger('ups-utils')
 
 
 class UtConst:

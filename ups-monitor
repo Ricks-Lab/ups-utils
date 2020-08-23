@@ -41,9 +41,11 @@ import os
 import sys
 import re
 import time
+import logging
 from typing import TextIO, List, Any, Callable
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
+from UPSmodules import UPSgui
 from UPSmodules import __version__, __status__
 try:
     import gi
@@ -56,48 +58,52 @@ except ModuleNotFoundError as error:
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, Gdk
 
+set_gtk_prop = UPSgui.GuiProps.set_gtk_prop
+LOGGER = logging.getLogger('gpu-utils')
 MAX_WIDTH = 23
 
 
 class MonitorWindow(Gtk.Window):
-    def __init__(self, ups: UPS.UPSsnmp, header_items: list, command_items: list, devices: dict):
+    def __init__(self, ups: UPS.UPSsnmp, non_mib_params: list, mib_params: list, devices: dict):
         """ Initialize the main UPS monitor window.
 
         :param ups:  The main ups module object
-        :param header_items:  A list of non-mib parameters
-        :param command_items:  A list of mib parameter results
+        :param non_mib_params:  A list of non-mib parameters
+        :param mib_params:  A list of mib parameter results
         :param devices: A dictionary of Gtk components and values
         """
         self.quit = False
 
         Gtk.Window.__init__(self, title='ups-monitor')
-        self.set_border_width(1)
+        self.set_border_width(0)
+        UPSgui.GuiProps.set_style()
+
         icon_file = os.path.join(env.UT_CONST.icon_path, 'ups-utils-monitor.icon.png')
         if env.UT_CONST.DEBUG: print('Icon file: [{}]'.format(icon_file))
         if os.path.isfile(icon_file):
             self.set_icon_from_file(icon_file)
+
         grid = Gtk.Grid()
-        grid.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1, 1, 1, 1))
         self.add(grid)
 
         col = 0
         row = 0
-        if env.UT_CONST.show_unresponsive:
-            num_ups = ups.get_num_ups_tuple()[0]
-        else:
-            num_ups = ups.get_num_ups_tuple()[3]
+        num_ups = ups.get_num_ups_tuple()[0] if env.UT_CONST.show_unresponsive else ups.get_num_ups_tuple()[3]
 
         # Set logging details at top of table if logging enabled
+        if env.UT_CONST.DEBUG:
+            log_label = Gtk.Label(name='warn_label')
+            log_label.set_markup('<big><b> DEBUG Logger Active </b></big>')
+            lbox = Gtk.Box(spacing=6, name='warn_box')
+            set_gtk_prop(log_label, top=1, bottom=1, right=1, left=1)
+            lbox.pack_start(log_label, True, True, 0)
+            grid.attach(lbox, 0, row, num_ups + 1, 1)
+        row += 1
         if env.UT_CONST.LOG:
-            log_label = Gtk.Label()
+            log_label = Gtk.Label(name='warn_label')
             log_label.set_markup('<big><b> Logging to:    </b>' + env.UT_CONST.log_file + '</big>')
-            log_label.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
-            lbox = Gtk.Box(spacing=6)
-            lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
-            lbox.set_property('margin-top', 1)
-            lbox.set_property('margin-bottom', 1)
-            lbox.set_property('margin-right', 1)
-            lbox.set_property('margin-left', 1)
+            lbox = Gtk.Box(spacing=6, name='warn_box')
+            set_gtk_prop(log_label, top=1, bottom=1, right=1, left=1)
             lbox.pack_start(log_label, True, True, 0)
             grid.attach(lbox, 0, row, num_ups + 1, 1)
         row += 1
@@ -105,69 +111,79 @@ class MonitorWindow(Gtk.Window):
 
         # Set first column of table to static values
         row = row_start
-        row_labels = {'display_name': Gtk.Label()}
+        row_labels = {'display_name': Gtk.Label(name='white_label')}
         row_labels['display_name'].set_markup('<b>UPS Parameters</b>')
-        row_labels['display_name'].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
         # Set row labels for header items
-        for v in header_items:
-            row_labels[v] = Gtk.Label()
+        for v in non_mib_params:
+            row_labels[v] = Gtk.Label(name='white_label')
             row_labels[v].set_markup('<b>' + str(ups.get_mib_name(v)) + '</b>')
-            row_labels[v].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
         # Set row labels for command items
-        for v in command_items:
-            row_labels[v] = Gtk.Label()
+        for v in mib_params:
+            row_labels[v] = Gtk.Label(name='white_label')
             row_labels[v].set_markup('<b>' + str(ups.get_mib_name(v)) + '</b>')
-            row_labels[v].override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
         # Set boxes for each row label
-        for k, v in row_labels.items():
-            lbox = Gtk.Box(spacing=6)
-            lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .40, .60, 1.0))
-            lbox.set_property('margin-top', 1)
-            lbox.set_property('margin-bottom', 1)
-            lbox.set_property('margin-right', 1)
-            lbox.set_property('margin-left', 1)
-            v.set_property('margin-top', 1)
-            v.set_property('margin-bottom', 1)
-            v.set_property('margin-right', 4)
-            v.set_property('margin-left', 4)
-            lbox.pack_start(v, True, True, 0)
+        for row_label_item in row_labels.values():
+            lbox = Gtk.Box(spacing=6, name='head_box')
+            set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+            set_gtk_prop(row_label_item, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
+            lbox.pack_start(row_label_item, True, True, 0)
             grid.attach(lbox, col, row, 1, 1)
-            v.set_alignment(0, 0.5)
             row += 1
 
         # Associate all table items with data source in devices dictionary
+        col = 1
+        def_box_css = "{ background-image: image(%s); }" % UPSgui.GuiProps.color_name_to_hex('slate_md')
         for item_name, item_ups in ups.get_ups_list(errups=env.UT_CONST.show_unresponsive).items():
-            devices[item_ups['uuid']] = {'display_name':  Gtk.Label(ups.ups_name(item_ups))}
-            for item_hdr in header_items:
-                devices[item_ups['uuid']][item_hdr] = Gtk.Label(label=ups.get_ups_parameter_value(item_hdr, item_ups))
-                devices[item_ups['uuid']][item_hdr].set_width_chars(10)
-            for item_cmd in command_items:
-                devices[item_ups['uuid']][item_cmd] = Gtk.Label(label=ups.get_ups_parameter_value(item_cmd, item_ups))
-                devices[item_ups['uuid']][item_cmd].set_width_chars(10)
-
-        # Set boxes for internal table items
-        for dk, dv in devices.items():
-            col += 1
             row = row_start
-            for lk, lv in dv.items():
-                lv.set_text('')
-                lbox = Gtk.Box(spacing=6)
-                if row == row_start:
-                    lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .40, .60, 1.0))
-                else:
-                    lbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.06, .06, .06, .06))
-                lbox.set_property('margin-top', 1)
-                lbox.set_property('margin-bottom', 1)
-                lbox.set_property('margin-right', 1)
-                lbox.set_property('margin-left', 1)
-                lv.set_property('margin-top', 1)
-                lv.set_property('margin-bottom', 1)
-                lv.set_property('margin-right', 3)
-                lv.set_property('margin-left', 3)
-                lv.set_width_chars(MAX_WIDTH)
-                lbox.pack_start(lv, True, True, 0)
+            devices[item_ups['uuid']] = {'display_name': {
+                'label': Gtk.Label(ups.ups_name(item_ups), name='white_label'),
+                'box': Gtk.Box(spacing=6, name='head_box'),
+                'box_name': 'head_box'}}
+            lbox = devices[item_ups['uuid']]['display_name']['box']
+            litem = devices[item_ups['uuid']]['display_name']['label']
+            set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+            set_gtk_prop(litem, top=1, bottom=1, right=3, left=3, width_chars=17)
+            set_gtk_prop(litem, width_chars=MAX_WIDTH)
+            lbox.pack_start(litem, True, True, 0)
+            grid.attach(lbox, col, row, 1, 1)
+            row += 1
+            for item_hdr in non_mib_params:
+                box_name = '{}_{}'.format(item_name, item_hdr)
+                devices[item_ups['uuid']].update({item_hdr: {'label': '', 'box': '', 'box_name': box_name}})
+                UPSgui.GuiProps.set_style(css_str="#{} {}".format(box_name, def_box_css))
+                devices[item_ups['uuid']][item_hdr]['label'] = Gtk.Label(
+                    label=ups.get_ups_parameter_value(item_hdr, item_ups), name='white_label')
+                devices[item_ups['uuid']][item_hdr]['label'].set_width_chars(10)
+                devices[item_ups['uuid']][item_hdr]['box'] = Gtk.Box(spacing=6, name=box_name)
+                lbox = devices[item_ups['uuid']][item_hdr]['box']
+                litem = devices[item_ups['uuid']][item_hdr]['label']
+                set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+                set_gtk_prop(litem, top=1, bottom=1, right=3, left=3, width_chars=17)
+                set_gtk_prop(litem, width_chars=MAX_WIDTH)
+                lbox.pack_start(litem, True, True, 0)
                 grid.attach(lbox, col, row, 1, 1)
                 row += 1
+            for item_cmd in mib_params:
+                box_name = '{}_{}'.format(item_name, item_cmd)
+                devices[item_ups['uuid']].update({item_cmd: {'label': '', 'box': '', 'box_name': box_name}})
+                UPSgui.GuiProps.set_style(css_str="#{} {}".format(box_name, def_box_css))
+                devices[item_ups['uuid']][item_cmd]['label'] = Gtk.Label(
+                    label=ups.get_ups_parameter_value(item_cmd, item_ups), name='white_label')
+                devices[item_ups['uuid']][item_cmd]['label'].set_width_chars(10)
+                devices[item_ups['uuid']][item_cmd]['box'] = Gtk.Box(spacing=6, name=box_name)
+                lbox = devices[item_ups['uuid']][item_cmd]['box']
+                litem = devices[item_ups['uuid']][item_cmd]['label']
+                set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+                set_gtk_prop(litem, top=1, bottom=1, right=3, left=3, width_chars=17)
+                set_gtk_prop(litem, width_chars=MAX_WIDTH)
+                lbox.pack_start(litem, True, True, 0)
+                grid.attach(lbox, col, row, 1, 1)
+                row += 1
+            col += 1
+        #for k, v in devices.items():
+            #print('{}:\n'.format(k, v))
+            #for k2, v2 in v.items():
+                #print('    {}:{}\n'.format(k2, v2))
 
     def set_quit(self, _arg2: Any, _arg3: Any) -> None:
         """ Function called when quit monitor is executed.  Sets flag to end update loop.
@@ -196,51 +212,52 @@ def update_data(ups: UPS.UPSsnmp, header_list: list, command_list: list, devices
     # update gui
     for dev_uuid, dev_data in devices.items():
         ups_name = ups.get_name_for_ups_uuid(dev_uuid)
-        for mib_name, lv in dev_data.items():
+        for mib_name, gui_comp in dev_data.items():
+            warn = crit = green = bold = False
             data_value = str(ups_data[ups_name][mib_name])[:MAX_WIDTH]
+            lv = gui_comp['label']
+            box_name = gui_comp['box_name']
             if data_value == '-1':
                 data_value = ''
             if mib_name == 'mib_battery_capacity' and data_value.isnumeric():
                 if int(data_value) <= ups.daemon_params['threshold_battery_capacity_crit']:
-                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.70, .20, .20, 1.0))
-                    lv.set_markup('<b>{}</b>'.format(data_value))
-                elif int(data_value) >= ups.daemon_params['threshold_battery_capacity_warn']:
-                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.90, .50, .00, 1.0))
-                    lv.set_markup('<b>{}</b>'.format(data_value))
-                else:
-                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.3, 0.3, 0.3, 1.0))
-                    lv.set_text(data_value)
-            if mib_name == 'mib_output_load' and data_value.isnumeric():
+                    crit = True
+                elif int(data_value) <= ups.daemon_params['threshold_battery_capacity_warn']:
+                    warn = True
+            elif mib_name == 'mib_output_load' and data_value.isnumeric():
                 if int(data_value) >= ups.daemon_params['threshold_battery_load_crit']:
-                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.70, .20, .20, 1.0))
-                    lv.set_markup('<b>{}</b>'.format(data_value))
+                    crit = True
                 elif int(data_value) >= ups.daemon_params['threshold_battery_load_warn']:
-                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(.90, .50, .00, 1.0))
-                    lv.set_markup('<b>{}</b>'.format(data_value))
-                else:
-                    lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.3, 0.3, 0.3, 1.0))
-                    lv.set_text(data_value)
+                    warn = True
             elif mib_name == 'mib_battery_status':
-                lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
-                lv.set_markup('<b>{}</b>'.format(data_value))
                 if re.match(env.UT_CONST.PATTERNS['NORMAL'], data_value):
-                    lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .60, .40, 1.0))
+                    green = True
                 else:
-                    lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
+                    crit = True
             elif mib_name == 'mib_system_status':
-                lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
-                lv.set_markup('<b>{}</b>'.format(data_value))
                 if re.match(env.UT_CONST.PATTERNS['ONLINE'], data_value):
-                    lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.20, .60, .40, 1.0))
+                    green = True
                 else:
-                    lv.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(.60, .20, .20, 1.0))
+                    crit = True
             elif mib_name == 'display_name':
-                lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 1.0))
+                bold = True
+            set_gtk_prop(lv, width_chars=MAX_WIDTH+1)
+            if crit:
+                lv.set_markup('<b>{}</b>'.format(data_value))
+                UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
+                    box_name, UPSgui.GuiProps.color_name_to_hex('red')))
+            elif warn:
+                lv.set_markup('<b>{}</b>'.format(data_value))
+                UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
+                    box_name, UPSgui.GuiProps.color_name_to_hex('yellow')))
+            elif green:
+                lv.set_markup('<b>{}</b>'.format(data_value))
+                UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
+                    box_name, UPSgui.GuiProps.color_name_to_hex('green_dk')))
+            elif bold:
                 lv.set_markup('<b>{}</b>'.format(data_value))
             else:
-                lv.override_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.3, 0.3, 0.3, 1.0))
                 lv.set_text(data_value)
-            lv.set_width_chars(MAX_WIDTH + 1)
 
     while Gtk.events_pending():
         Gtk.main_iteration_do(True)
