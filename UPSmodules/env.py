@@ -41,18 +41,27 @@ class UtConst:
                 'SNMP_VALUE': re.compile(r'.*=.*:.*'),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
+    _local_icon_list = ['{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home())),
+                        '/usr/share/rickslab-ups-utils/icons']
+    gui_window_title = 'Ricks-Lab UPS Utilities'
 
     def __init__(self):
+        self.args = None
         # Utility Path Definitions
         self.repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
         self.repository_path = os.path.join(self.repository_module_path, '..')
         self.config_dir = os.path.join(os.getenv('HOME'), '.ups-utils/')
         self.dist_share = '/usr/share/ricks-ups-utils/'
         self.dist_icons = os.path.join(self.dist_share, 'icons')
-        if os.path.isdir(self.dist_icons):
-            self.icon_path = self.dist_icons
+
+        # Set Icon Path
+        self._local_icon_list.append(os.path.join(self.repository_path, 'icons'))
+        for try_icon_path in UtConst._local_icon_list:
+            if os.path.isdir(try_icon_path):
+                self.icon_path = try_icon_path
+                break
         else:
-            self.icon_path = os.path.join(self.repository_path, 'icons')
+            self.icon_path = None
 
         # Configuration Parameters
         self.ERROR_config = False
@@ -75,7 +84,36 @@ class UtConst:
         self.log_file_ptr = ''
         self.USELTZ = False
         self.LTZ = datetime.utcnow().astimezone().tzinfo
-        if self.DEBUG: print('Local TZ: %s' % str(self.LTZ))
+
+    def set_env_args(self, args) -> None:
+        """
+        Set arguments for the give args object.
+
+        :param args: The object return by args parser.
+        """
+        self.args = args
+        for target_arg in vars(self.args):
+            if target_arg == 'debug': self.DEBUG = self.args.debug
+            elif target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
+            elif target_arg == 'log': self.LOG = self.args.log
+            elif target_arg == 'ltz': self.USELTZ = self.args.ltz
+        LOGGER.propagate = False
+        formatter = logging.Formatter("%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s")
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        stream_handler.setLevel(logging.WARNING)
+        LOGGER.addHandler(stream_handler)
+        LOGGER.setLevel(logging.WARNING)
+        if self.DEBUG:
+            LOGGER.setLevel(logging.DEBUG)
+            file_handler = logging.FileHandler(
+                'debug_ups-utils_{}.log'.format(datetime.now().strftime("%Y%m%d-%H%M%S")), 'w')
+            file_handler.setFormatter(formatter)
+            file_handler.setLevel(logging.DEBUG)
+            LOGGER.addHandler(file_handler)
+        LOGGER.debug('Command line arguments:\n  %s', args)
+        LOGGER.debug('Local TZ: %s', self.LTZ)
+        LOGGER.debug('Icon path set to: %s', self.icon_path)
 
     @staticmethod
     def now(ltz=False):
@@ -97,7 +135,7 @@ class UtConst:
         # Check python version
         required_pversion = [3, 6]
         (python_major, python_minor, python_patch) = platform.python_version_tuple()
-        if self.DEBUG: print('Using python ' + python_major + '.' + python_minor + '.' + python_patch)
+        LOGGER.debug('Using python %s.%s.%s' % (python_major, python_minor, python_patch))
         if int(python_major) < required_pversion[0]:
             print('Using python' + python_major + ', but ' + __program_name__ +
                   ' requires python ' + str(required_pversion[0]) + '.' + str(required_pversion[1]) + ' or higher.',

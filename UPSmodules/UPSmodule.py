@@ -31,6 +31,7 @@ import time
 import datetime
 import json
 import subprocess
+import logging
 from enum import Enum
 from typing import Tuple, List, Union
 from uuid import uuid4
@@ -49,6 +50,8 @@ except ModuleNotFoundError:
     print('The config.py file is missing or mis-configured.  Use config.py.template as a template.')
     print('Using defaults, which will not enable any daemon response scripts.')
     env.UT_CONST.ERROR_config = True
+
+LOGGER = logging.getLogger('ups-utils')
 
 
 class UPSsnmp:
@@ -591,7 +594,7 @@ class UPSsnmp:
         try:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
-            if env.UT_CONST.DEBUG: print(snmp_output)
+            LOGGER.debug(snmp_output)
         except:
             return False
         return True
@@ -711,7 +714,7 @@ class UPSsnmp:
         value_minute = -1
         value_str = 'UNK'
         for line in snmp_output:
-            if env.UT_CONST.DEBUG: print('line:  {}'.format(line))
+            LOGGER.debug('line: %s' % line)
             if re.match(env.UT_CONST.PATTERNS['SNMP_VALUE'], line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()

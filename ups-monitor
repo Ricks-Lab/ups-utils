@@ -59,7 +59,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, Gdk
 
 set_gtk_prop = UPSgui.GuiProps.set_gtk_prop
-LOGGER = logging.getLogger('gpu-utils')
+LOGGER = logging.getLogger('ups-utils')
 MAX_WIDTH = 23
 
 
@@ -74,12 +74,12 @@ class MonitorWindow(Gtk.Window):
         """
         self.quit = False
 
-        Gtk.Window.__init__(self, title='ups-monitor')
+        Gtk.Window.__init__(self, title='{} - Monitor'.format(env.UT_CONST.gui_window_title))
         self.set_border_width(0)
         UPSgui.GuiProps.set_style()
 
         icon_file = os.path.join(env.UT_CONST.icon_path, 'ups-utils-monitor.icon.png')
-        if env.UT_CONST.DEBUG: print('Icon file: [{}]'.format(icon_file))
+        LOGGER.debug('Icon file: [%s]' % icon_file)
         if os.path.isfile(icon_file):
             self.set_icon_from_file(icon_file)
 
@@ -180,10 +180,14 @@ class MonitorWindow(Gtk.Window):
                 grid.attach(lbox, col, row, 1, 1)
                 row += 1
             col += 1
-        for k, v in devices.items():
-            print('{}:\n'.format(k, v))
-            for k2, v2 in v.items():
-                print('    {}:{}\n'.format(k2, v2))
+        if LOGGER.getEffectiveLevel() == logging.DEBUG:
+            log_message = ''
+            for k, v in devices.items():
+                if log_message: log_message = '{}\n\n{}:'.format(log_message, k)
+                else: log_message = '{}:\n\n'.format(k)
+                for k2, v2 in v.items():
+                    log_message = '{}\n    {}:{}'.format(log_message, k2, v2)
+            LOGGER.debug('Device dict:\n %s' % log_message)
 
     def set_quit(self, _arg2: Any, _arg3: Any) -> None:
         """ Function called when quit monitor is executed.  Sets flag to end update loop.
@@ -415,7 +419,8 @@ def main() -> None:
         print('Status: ', __status__)
         sys.exit(0)
 
-    env.UT_CONST.DEBUG = args.debug
+    env.UT_CONST.set_env_args(args)
+    LOGGER.debug('########## %s %s', __program_name__, __version__)
 
     if env.UT_CONST.check_env() < 0:
         print('Error in environment. Exiting...')
@@ -480,7 +485,7 @@ def main() -> None:
                 if args.status:
                     print_monitor_table(ups, header_list, command_list, ups_data)
                     sys.exit(0)
-                if not env.UT_CONST.DEBUG: os.system('clear')
+                #if not env.UT_CONST.DEBUG: os.system('clear')
                 if env.UT_CONST.LOG:
                     print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.UT_CONST.log_file, '\033[0m'))
                     print_log(env.UT_CONST.log_file_ptr, header_list, command_list, ups_data)
