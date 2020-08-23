@@ -180,10 +180,10 @@ class MonitorWindow(Gtk.Window):
                 grid.attach(lbox, col, row, 1, 1)
                 row += 1
             col += 1
-        #for k, v in devices.items():
-            #print('{}:\n'.format(k, v))
-            #for k2, v2 in v.items():
-                #print('    {}:{}\n'.format(k2, v2))
+        for k, v in devices.items():
+            print('{}:\n'.format(k, v))
+            for k2, v2 in v.items():
+                print('    {}:{}\n'.format(k2, v2))
 
     def set_quit(self, _arg2: Any, _arg3: Any) -> None:
         """ Function called when quit monitor is executed.  Sets flag to end update loop.
@@ -213,7 +213,7 @@ def update_data(ups: UPS.UPSsnmp, header_list: list, command_list: list, devices
     for dev_uuid, dev_data in devices.items():
         ups_name = ups.get_name_for_ups_uuid(dev_uuid)
         for mib_name, gui_comp in dev_data.items():
-            warn = crit = green = bold = False
+            state_style = UPS.UPSsnmp.state_style.normal
             data_value = str(ups_data[ups_name][mib_name])[:MAX_WIDTH]
             lv = gui_comp['label']
             box_name = gui_comp['box_name']
@@ -221,40 +221,41 @@ def update_data(ups: UPS.UPSsnmp, header_list: list, command_list: list, devices
                 data_value = ''
             if mib_name == 'mib_battery_capacity' and data_value.isnumeric():
                 if int(data_value) <= ups.daemon_params['threshold_battery_capacity_crit']:
-                    crit = True
+                    state_style = UPS.UPSsnmp.state_style.crit
                 elif int(data_value) <= ups.daemon_params['threshold_battery_capacity_warn']:
-                    warn = True
+                    state_style = UPS.UPSsnmp.state_style.warn
             elif mib_name == 'mib_output_load' and data_value.isnumeric():
                 if int(data_value) >= ups.daemon_params['threshold_battery_load_crit']:
-                    crit = True
+                    state_style = UPS.UPSsnmp.state_style.crit
                 elif int(data_value) >= ups.daemon_params['threshold_battery_load_warn']:
-                    warn = True
+                    state_style = UPS.UPSsnmp.state_style.warn
             elif mib_name == 'mib_battery_status':
                 if re.match(env.UT_CONST.PATTERNS['NORMAL'], data_value):
-                    green = True
+                    state_style = UPS.UPSsnmp.state_style.green
                 else:
-                    crit = True
+                    state_style = UPS.UPSsnmp.state_style.crit
             elif mib_name == 'mib_system_status':
                 if re.match(env.UT_CONST.PATTERNS['ONLINE'], data_value):
-                    green = True
+                    state_style = UPS.UPSsnmp.state_style.green
                 else:
-                    crit = True
+                    state_style = UPS.UPSsnmp.state_style.crit
             elif mib_name == 'display_name':
-                bold = True
+                state_style = UPS.UPSsnmp.state_style.bold
+
             set_gtk_prop(lv, width_chars=MAX_WIDTH+1)
-            if crit:
+            if state_style == UPS.UPSsnmp.state_style.crit:
                 lv.set_markup('<b>{}</b>'.format(data_value))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     box_name, UPSgui.GuiProps.color_name_to_hex('red')))
-            elif warn:
+            elif state_style == UPS.UPSsnmp.state_style.warn:
                 lv.set_markup('<b>{}</b>'.format(data_value))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     box_name, UPSgui.GuiProps.color_name_to_hex('yellow')))
-            elif green:
+            elif state_style == UPS.UPSsnmp.state_style.green:
                 lv.set_markup('<b>{}</b>'.format(data_value))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     box_name, UPSgui.GuiProps.color_name_to_hex('green_dk')))
-            elif bold:
+            elif state_style == UPS.UPSsnmp.state_style.bold:
                 lv.set_markup('<b>{}</b>'.format(data_value))
             else:
                 lv.set_text(data_value)
