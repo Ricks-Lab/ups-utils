@@ -9,7 +9,7 @@ using the config.py.template file as a template.
 Also, a UPS list must be specified in the config.json file using config.json.template as a template.  This file
 contains details about each UPS that make snmp communication possible.  The utility requires snmp v2c in order
 to communicate with the network accessible UPSs.  As a result, you must configure your target Network attached 
-UPS devices to use SNMPv2 with a know Private Community String.
+UPS devices to use SNMPv2 with a known Private Community String.
 
 The ups-utils rely on the command *snmpget* which is part of the snmp package that must be installed.
 
