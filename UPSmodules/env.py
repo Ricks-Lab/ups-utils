@@ -22,6 +22,10 @@ __credits__ = []
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-utils'
 __maintainer__ = 'RueiKe'
+__docformat__ = 'reStructuredText'
+# pylint: disable=multiple-statements
+# pylint: disable=line-too-long
+# pylint: disable=bad-continuation
 
 import platform
 import sys
@@ -37,6 +41,7 @@ LOGGER = logging.getLogger('ups-utils')
 
 
 class UtConst:
+    """ Class definition for UPS Utils environment"""
     PATTERNS = {'HEXRGB': re.compile(r'^#[0-9a-fA-F]{6}'),
                 'SNMP_VALUE': re.compile(r'.*=.*:.*'),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
@@ -127,15 +132,16 @@ class UtConst:
             return datetime.now()
         return datetime.utcnow()
 
-    def check_env(self) -> int:
+    @staticmethod
+    def check_env() -> int:
         """ Check the user's environment for compatibility.
-        
-        :return: Returns an integer indicating env error code: 0 for passes
+
+        :return: Returns an integer indicating env error code: 0 for passes.
         """
         # Check python version
         required_pversion = [3, 6]
         (python_major, python_minor, python_patch) = platform.python_version_tuple()
-        LOGGER.debug('Using python %s.%s.%s' % (python_major, python_minor, python_patch))
+        LOGGER.debug('Using python %s.%s.%s', python_major, python_minor, python_patch)
         if int(python_major) < required_pversion[0]:
             print('Using python' + python_major + ', but ' + __program_name__ +
                   ' requires python ' + str(required_pversion[0]) + '.' + str(required_pversion[1]) + ' or higher.',
@@ -173,7 +179,7 @@ UT_CONST = UtConst()
 
 def about() -> None:
     """ Display details about this module.
-    
+
     :return:  None
     """
     print(__doc__)

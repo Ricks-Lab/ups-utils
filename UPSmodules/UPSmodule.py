@@ -22,6 +22,10 @@ __credits__ = []
 __license__ = "GNU General Public License"
 __program_name__ = "ups-utils"
 __maintainer__ = "RueiKe"
+__docformat__ = 'reStructuredText'
+# pylint: disable=multiple-statements
+# pylint: disable=line-too-long
+# pylint: disable=bad-continuation
 
 import os
 import sys
@@ -55,277 +59,257 @@ LOGGER = logging.getLogger('ups-utils')
 
 
 class UPSsnmp:
+    """ Class definition for UPS communication object."""
     state_style = Enum('state', 'warn crit green bold normal')
+
+    # UPS response bit string decoders
+    decoders = {'apc_system_status': ['Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
+                                      'SCE', 'AVR_Boost', 'AVR_Trim', 'OverLoad', 'RT_Calibration',
+                                      'BatteriesDischarged', 'ManualBypass', 'SoftwareBypass',
+                                      'Bypass-InternalFault', 'Bypass-SupplyFailure', 'Bypass-FanFailure',
+                                      'SleepOnTimer', 'SleepNoPower', 'On', 'Rebooting', 'BatterCommLost',
+                                      'ShutdownInitiated', 'Boost/TrimFailure', 'BadOutVoltage',
+                                      'BatteryChargerFail', 'HiBatTemp', 'WarnBatTemp', 'CritBatTemp',
+                                      'SelfTestInProgress', 'LowBat/OnBat', 'ShutdownFromUpstream',
+                                      'ShutdownFromDownstream', 'NoBatteriesAttached', 'SyncCmdsInProg',
+                                      'SyncSleepInProg', 'SyncRebootInProg', 'InvDCimbalance',
+                                      'TransferReadyFailure', 'Shutdown/Unable to Transfer',
+                                      'LowBatShutdown', 'FanFail', 'MainRelayFail', 'BypassRelayFail',
+                                      'TempBypass', 'HighInternalTemp', 'BatTempSensorFault',
+                                      'InputOORforBypass', 'DCbusOverV', 'PFCfailure', 'CritHWfail',
+                                      'Green/ECO mode', 'HotStandby', 'EPO', 'LoadAlarmViolation',
+                                      'BypassPhaseFault', 'UPSinternalComFail', 'EffBoosterMode',
+                                      'Off', 'Standby', 'Minor/EnvAlarm']}
+
+    # UPS from config.py for ups-daemon and monitor utilities.
+    daemon_params = {'suspend_script': '', 'resume_script': '',
+                     'shutdown_script': '', 'cancel_shutdown_script': '',
+                     'read_interval': env.UT_CONST.DEFAULT_DAEMON_READ_INTERVAL,
+                     'threshold_battery_time_rem_crit': env.UT_CONST.def_threshold_battery_time_rem[0],
+                     'threshold_battery_time_rem_warn': env.UT_CONST.def_threshold_battery_time_rem[1],
+                     'threshold_time_on_battery_crit': env.UT_CONST.def_threshold_time_on_battery[0],
+                     'threshold_time_on_battery_warn': env.UT_CONST.def_threshold_time_on_battery[1],
+                     'threshold_battery_load_crit': env.UT_CONST.def_threshold_battery_load[0],
+                     'threshold_battery_load_warn': env.UT_CONST.def_threshold_battery_load[1],
+                     'threshold_battery_capacity_crit': env.UT_CONST.def_threshold_battery_capacity[0],
+                     'threshold_battery_capacity_warn': env.UT_CONST.def_threshold_battery_capacity[1]
+                     }
+    # UPS MiB Commands
+    monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
+                                   'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
+                                   'mib_ups_uptime'],
+                        'dynamic': ['mib_battery_capacity', 'mib_time_on_battery',
+                                    'mib_battery_runtime_remain', 'mib_input_voltage',
+                                    'mib_input_frequency', 'mib_output_voltage', 'mib_output_frequency',
+                                    'mib_output_load', 'mib_output_current', 'mib_output_power',
+                                    'mib_system_status', 'mib_battery_status']}
+    output_mib_cmds = ['mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
+                       'mib_output_power']
+    input_mib_cmds = ['mib_input_voltage', 'mib_input_frequency']
+
+    all_mib_cmds = {
+        # MiBs for APC UPS with AP9630 NMC
+        'apc-ap9630': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
+                                        'name': 'General UPS Information',
+                                        'decode': None},
+                       'mib_bios_serial_number': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.3.0',
+                                                  'name': 'UPS BIOS Serial Number',
+                                                  'decode': None},
+                       'mib_firmware_revision': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.1.0',
+                                                 'name': 'UPS Firmware Revision',
+                                                 'decode': None},
+                       'mib_ups_type': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.1.1.0',
+                                        'name': 'UPS Model Type',
+                                        'decode': None},
+                       'mib_ups_model': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.5.0',
+                                         'name': 'UPS Model Number',
+                                         'decode': None},
+                       'mib_ups_contact': {'iso': 'iso.3.6.1.2.1.1.4.0',
+                                           'name': 'UPS Contact',
+                                           'decode': None},
+                       'mib_ups_location': {'iso': 'iso.3.6.1.2.1.1.6.0',
+                                            'name': 'UPS Location',
+                                            'decode': None},
+                       'mib_ups_uptime': {'iso': 'iso.3.6.1.2.1.1.3.0',
+                                          'name': 'UPS Up Time',
+                                          'decode': None},
+                       'mib_ups_manufacture_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
+                                                    'name': 'UPS Manufacture Date',
+                                                    'decode': None},
+                       'mib_ups_name': {'iso': 'iso.3.6.1.2.1.33.1.1.5.0',
+                                        'name': 'UPS Name',
+                                        'decode': None},
+                       'mib_battery_capacity': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.1.0',
+                                                'name': 'Percentage of Total Capacity',
+                                                'decode': None},
+                       'mib_battery_temperature': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.2.0',
+                                                   'name': 'Battery Temperature in C',
+                                                   'decode': None},
+                       'mib_system_status': {'iso': 'iso.3.6.1.4.1.318.1.1.1.11.1.1.0',
+                                             'name': 'UPS System Status',
+                                             'decode': None},
+                       'mib_battery_status': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.1.1.0',
+                                              'name': 'Battery Status',
+                                              'decode': {'1': 'Unknown',
+                                                         '2': 'Battery Normal',
+                                                         '3': 'Battery Low',
+                                                         '4': 'Battery in Fault Condition'}},
+                       'mib_time_on_battery': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.1.2.0',
+                                               'name': 'Time on Battery',
+                                               'decode': None},
+                       'mib_battery_runtime_remain': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.3.0',
+                                                      'name': 'Runtime Remaining',
+                                                      'decode': None},
+                       'mib_battery_replace ': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.4.0',
+                                                'name': 'Battery Replacement',
+                                                'decode': {'1': 'OK',
+                                                           '2': 'Replacement Required'}},
+                       'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.1.0',
+                                             'name': 'Input Voltage',
+                                             'decode': None},
+                       'mib_input_frequency': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.4.0',
+                                               'name': 'Input Frequency Hz',
+                                               'decode': None},
+                       'mib_reason_for_last_transfer': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.5.0',
+                                                        'name': 'Last Transfer Event',
+                                                        'decode': {'1': 'No Transfer',
+                                                                   '2': 'High Line Voltage',
+                                                                   '3': 'Brownout',
+                                                                   '4': 'Loss of Main Power',
+                                                                   '5': 'Small Temp Power Drop',
+                                                                   '6': 'Large Temp Power Drop',
+                                                                   '7': 'Small Spike',
+                                                                   '8': 'Large Spike',
+                                                                   '9': 'UPS Self Test',
+                                                                   '10': 'Excessive Input V Fluctuation'}},
+                       'mib_output_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.1.0',
+                                              'name': 'Output Voltage',
+                                              'decode': None},
+                       'mib_output_frequency': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.2.0',
+                                                'name': 'Output Frequency Hz',
+                                                'decode': None},
+                       'mib_output_load': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.3.0',
+                                           'name': 'Output Load as % of Capacity',
+                                           'decode': None},
+                       'mib_output_power': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.8.0',
+                                            'name': 'Output Power in W',
+                                            'decode': None},
+                       'mib_output_current': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.4.0',
+                                              'name': 'Output Current in Amps',
+                                              'decode': None},
+                       'mib_comms': {'iso': 'iso.3.6.1.4.1.318.1.1.1.8.1.0',
+                                     'name': 'Communicating with UPS Device',
+                                     'decode': {'1': 'Communication OK',
+                                                '2': 'Communication Error'}},
+                       'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.3.0',
+                                                     'name': 'Last Self Test Results',
+                                                     'decode': {'1': 'OK',
+                                                                '2': 'Failed',
+                                                                '3': 'Invalid',
+                                                                '4': 'In Progress'}},
+                       'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.4.0',
+                                                   'name': 'Date of Last Self Test',
+                                                   'decode': None}},
+        # MiBs for Eaton UPS with PowerWalker NMC
+        'eaton-pw': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
+                                      'name': 'General UPS Information',
+                                      'decode': None},
+                     'mib_ups_manufacturer': {'iso': 'iso.3.6.1.4.1.935.10.1.1.1.1.0',
+                                              'name': 'UPS Manufacturer',
+                                              'decode': None},
+                     'mib_firmware_revision': {'iso': 'iso.3.6.1.4.1.935.10.1.1.1.6.0',
+                                               'name': 'UPS Firmware Revision',
+                                               'decode': None},
+                     'mib_ups_type': {'iso': 'iso.3.6.1.4.1.935.10.1.1.1.2.0',
+                                      'name': 'UPS Model Type',
+                                      'decode': None},
+                     'mib_ups_contact': {'iso': 'iso.3.6.1.2.1.1.4.0',
+                                         'name': 'UPS Contact',
+                                         'decode': None},
+                     'mib_ups_location': {'iso': 'iso.3.6.1.2.1.1.6.0',
+                                          'name': 'UPS Location',
+                                          'decode': None},
+                     'mib_ups_uptime': {'iso': 'iso.3.6.1.2.1.1.3.0',
+                                        'name': 'System Up Time',
+                                        'decode': None},
+                     'mib_ups_manufacture_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
+                                                  'name': 'UPS Manufacture Date',
+                                                  'decode': None},
+                     'mib_ups_name': {'iso': 'iso.3.6.1.2.1.33.1.1.5.0',
+                                      'name': 'UPS Name',
+                                      'decode': None},
+                     'mib_battery_capacity': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.4.0',
+                                              'name': 'Percentage of Total Capacity',
+                                              'decode': None},
+                     'mib_system_temperature': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.2.0',
+                                                'name': 'System Temperature in C',
+                                                'decode': None},
+                     'mib_system_status': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.1.0',
+                                           'name': 'UPS System Status',
+                                           'decode': {'1': 'Power On',
+                                                      '2': 'Standby',
+                                                      '3': 'Bypass',
+                                                      '4': 'Line',
+                                                      '5': 'Battery',
+                                                      '6': 'Battery Test',
+                                                      '7': 'Fault',
+                                                      '8': 'Converter',
+                                                      '9': 'ECO',
+                                                      '10': 'Shutdown',
+                                                      '11': 'On Booster',
+                                                      '12': 'On Reducer',
+                                                      '13': 'Other'}},
+                     'mib_battery_status': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.1.0',
+                                            'name': 'Battery Status',
+                                            'decode': {'1': 'Unknown',
+                                                       '2': 'Battery Normal',
+                                                       '3': 'Battery Low',
+                                                       '4': 'Battery Depleted',
+                                                       '5': 'Battery Discharging',
+                                                       '6': 'Battery Failure'}},
+                     'mib_time_on_battery': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.2.0',
+                                             'name': 'Time on Battery',
+                                             'decode': None},
+                     'mib_battery_runtime_remain': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.3.0',
+                                                    'name': 'Runtime Remaining',
+                                                    'decode': None},
+                     'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.16.1.3.1',
+                                           'name': 'Input Voltage V',
+                                           'decode': None},
+                     'mib_input_frequency': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.16.1.2.1',
+                                             'name': 'Input Frequency Hz',
+                                             'decode': None},
+                     'mib_output_voltage': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.3.1',
+                                            'name': 'Output Voltage',
+                                            'decode': None},
+                     'mib_output_frequency': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.2.1',
+                                              'name': 'Output Frequency Hz',
+                                              'decode': None},
+                     'mib_output_load': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.7.1',
+                                         'name': 'Output Load as % of Capacity',
+                                         'decode': None},
+                     'mib_output_current': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.4.1',
+                                            'name': 'Output Current in Amps',
+                                            'decode': None},
+                     'mib_output_power': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.5.1',
+                                          'name': 'Output Power in W',
+                                          'decode': None},
+                     'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.3.0',
+                                                   'name': 'Last Self Test Results',
+                                                   'decode': {'1': 'Idle',
+                                                              '2': 'Processing',
+                                                              '3': 'No Failure',
+                                                              '4': 'Failure/Warning',
+                                                              '5': 'Not Possible',
+                                                              '6': 'Test Cancel'}},
+                     'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.4.0',
+                                                 'name': 'Date of Last Self Test',
+                                                 'decode': None}}}
 
     def __init__(self):
         # UPS list from config.json for monitor and ls utils.
         self.ups_list = {}
         self.active_ups = {}
-
-        # UPS response bit string decoders
-        self.decoders = {'apc_system_status': ['Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
-                                               'SCE', 'AVR_Boost', 'AVR_Trim', 'OverLoad', 'RT_Calibration',
-                                               'BatteriesDischarged', 'ManualBypass', 'SoftwareBypass',
-                                               'Bypass-InternalFault', 'Bypass-SupplyFailure', 'Bypass-FanFailure',
-                                               'SleepOnTimer', 'SleepNoPower', 'On', 'Rebooting', 'BatterCommLost',
-                                               'ShutdownInitiated', 'Boost/TrimFailure', 'BadOutVoltage',
-                                               'BatteryChargerFail', 'HiBatTemp', 'WarnBatTemp', 'CritBatTemp',
-                                               'SelfTestInProgress', 'LowBat/OnBat', 'ShutdownFromUpstream',
-                                               'ShutdownFromDownstream', 'NoBatteriesAttached', 'SyncCmdsInProg',
-                                               'SyncSleepInProg', 'SyncRebootInProg', 'InvDCimbalance',
-                                               'TransferReadyFailure', 'Shutdown/Unable to Transfer',
-                                               'LowBatShutdown', 'FanFail', 'MainRelayFail', 'BypassRelayFail',
-                                               'TempBypass', 'HighInternalTemp', 'BatTempSensorFault',
-                                               'InputOORforBypass', 'DCbusOverV', 'PFCfailure', 'CritHWfail',
-                                               'Green/ECO mode', 'HotStandby', 'EPO', 'LoadAlarmViolation',
-                                               'BypassPhaseFault', 'UPSinternalComFail', 'EffBoosterMode',
-                                               'Off', 'Standby', 'Minor/EnvAlarm']}
-
-        # UPS from config.py for ups-daemon and monitor utilities.
-        self.daemon_params = {'suspend_script': '', 'resume_script': '',
-                              'shutdown_script': '', 'cancel_shutdown_script': '',
-                              'read_interval': env.UT_CONST.DEFAULT_DAEMON_READ_INTERVAL,
-                              'threshold_battery_time_rem_crit': env.UT_CONST.def_threshold_battery_time_rem[0],
-                              'threshold_battery_time_rem_warn': env.UT_CONST.def_threshold_battery_time_rem[1],
-                              'threshold_time_on_battery_crit': env.UT_CONST.def_threshold_time_on_battery[0],
-                              'threshold_time_on_battery_warn': env.UT_CONST.def_threshold_time_on_battery[1],
-                              'threshold_battery_load_crit': env.UT_CONST.def_threshold_battery_load[0],
-                              'threshold_battery_load_warn': env.UT_CONST.def_threshold_battery_load[1],
-                              'threshold_battery_capacity_crit': env.UT_CONST.def_threshold_battery_capacity[0],
-                              'threshold_battery_capacity_warn': env.UT_CONST.def_threshold_battery_capacity[1]
-                              }
-
-        # UPS MiB Commands
-        self.monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
-                                            'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
-                                            'mib_ups_uptime'],
-                                 'dynamic': ['mib_battery_capacity', 'mib_time_on_battery',
-                                             'mib_battery_runtime_remain', 'mib_input_voltage',
-                                             'mib_input_frequency', 'mib_output_voltage', 'mib_output_frequency',
-                                             'mib_output_load', 'mib_output_current', 'mib_output_power',
-                                             'mib_system_status', 'mib_battery_status']}
-        self.output_mib_cmds = ['mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
-                                'mib_output_power']
-        self.input_mib_cmds = ['mib_input_voltage', 'mib_input_frequency']
-
-        self.all_mib_cmds = {
-                      # MiBs for APC UPS with AP9630 NMC
-                      'apc-ap9630': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
-                                                      'name': 'General UPS Information',
-                                                      'decode': None},
-                                     'mib_bios_serial_number': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.3.0',
-                                                                'name': 'UPS BIOS Serial Number',
-                                                                'decode': None},
-                                     'mib_firmware_revision': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.1.0',
-                                                               'name': 'UPS Firmware Revision',
-                                                               'decode': None},
-                                     'mib_ups_type': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.1.1.0',
-                                                      'name': 'UPS Model Type',
-                                                      'decode': None},
-                                     'mib_ups_model': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.5.0',
-                                                       'name': 'UPS Model Number',
-                                                       'decode': None},
-                                     'mib_ups_contact': {'iso': 'iso.3.6.1.2.1.1.4.0',
-                                                         'name': 'UPS Contact',
-                                                         'decode': None},
-                                     'mib_ups_location': {'iso': 'iso.3.6.1.2.1.1.6.0',
-                                                          'name': 'UPS Location',
-                                                          'decode': None},
-                                     'mib_ups_uptime': {'iso': 'iso.3.6.1.2.1.1.3.0',
-                                                        'name': 'UPS Up Time',
-                                                        'decode': None},
-                                     'mib_ups_manufacture_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
-                                                                  'name': 'UPS Manufacture Date',
-                                                                  'decode': None},
-                                     'mib_ups_name': {'iso': 'iso.3.6.1.2.1.33.1.1.5.0',
-                                                      'name': 'UPS Name',
-                                                      'decode': None},
-                                     'mib_battery_capacity': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.1.0',
-                                                              'name': 'Percentage of Total Capacity',
-                                                              'decode': None},
-                                     'mib_battery_temperature': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.2.0',
-                                                                 'name': 'Battery Temperature in C',
-                                                                 'decode': None},
-                                     'mib_system_status': {'iso': 'iso.3.6.1.4.1.318.1.1.1.11.1.1.0',
-                                                           'name': 'UPS System Status',
-                                                           'decode': None},
-                                     'mib_battery_status': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.1.1.0',
-                                                            'name': 'Battery Status',
-                                                            'decode': {'1': 'Unknown',
-                                                                       '2': 'Battery Normal',
-                                                                       '3': 'Battery Low',
-                                                                       '4': 'Battery in Fault Condition'}},
-                                     'mib_time_on_battery': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.1.2.0',
-                                                             'name': 'Time on Battery',
-                                                             'decode': None},
-                                     'mib_battery_runtime_remain': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.3.0',
-                                                                    'name': 'Runtime Remaining',
-                                                                    'decode': None},
-                                     'mib_battery_replace ': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.4.0',
-                                                              'name': 'Battery Replacement',
-                                                              'decode': {'1': 'OK',
-                                                                         '2': 'Replacement Required'}},
-                                     'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.1.0',
-                                                           'name': 'Input Voltage',
-                                                           'decode': None},
-                                     'mib_input_frequency': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.4.0',
-                                                             'name': 'Input Frequency Hz',
-                                                             'decode': None},
-                                     'mib_reason_for_last_transfer': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.5.0',
-                                                                      'name': 'Last Transfer Event',
-                                                                      'decode': {'1': 'No Transfer',
-                                                                                 '2': 'High Line Voltage',
-                                                                                 '3': 'Brownout',
-                                                                                 '4': 'Loss of Main Power',
-                                                                                 '5': 'Small Temp Power Drop',
-                                                                                 '6': 'Large Temp Power Drop',
-                                                                                 '7': 'Small Spike',
-                                                                                 '8': 'Large Spike',
-                                                                                 '9': 'UPS Self Test',
-                                                                                 '10': 'Excessive Input V Fluctuation'}},
-                                     'mib_output_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.1.0',
-                                                            'name': 'Output Voltage',
-                                                            'decode': None},
-                                     'mib_output_frequency': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.2.0',
-                                                              'name': 'Output Frequency Hz',
-                                                              'decode': None},
-                                     'mib_output_load': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.3.0',
-                                                         'name': 'Output Load as % of Capacity',
-                                                         'decode': None},
-                                     'mib_output_power': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.8.0',
-                                                          'name': 'Output Power in W',
-                                                          'decode': None},
-                                     'mib_output_current': {'iso': 'iso.3.6.1.4.1.318.1.1.1.4.2.4.0',
-                                                            'name': 'Output Current in Amps',
-                                                            'decode': None},
-                                     'mib_comms': {'iso': 'iso.3.6.1.4.1.318.1.1.1.8.1.0',
-                                                   'name': 'Communicating with UPS Device',
-                                                   'decode': {'1': 'Communication OK',
-                                                              '2': 'Communication Error'}},
-                                     'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.3.0',
-                                                                   'name': 'Last Self Test Results',
-                                                                   'decode': {'1': 'OK',
-                                                                              '2': 'Failed',
-                                                                              '3': 'Invalid',
-                                                                              '4': 'In Progress'}},
-                                     'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.7.2.4.0',
-                                                                 'name': 'Date of Last Self Test',
-                                                                 'decode': None}},
-                      # MiBs for Eaton UPS with PowerWalker NMC
-                      'eaton-pw': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
-                                                    'name': 'General UPS Information',
-                                                    'decode': None},
-                                   'mib_ups_manufacturer': {'iso': 'iso.3.6.1.4.1.935.10.1.1.1.1.0',
-                                                            'name': 'UPS Manufacturer',
-                                                            'decode': None},
-                                   #'mib_bios_serial_number': {'iso': 'iso.3.6.1.4.1.935.10.1.1.1.4.0',
-                                                              #'name': 'UPS BIOS Serial Number',
-                                                              #'decode': None},
-                                   'mib_firmware_revision': {'iso': 'iso.3.6.1.4.1.935.10.1.1.1.6.0',
-                                                             'name': 'UPS Firmware Revision',
-                                                             'decode': None},
-                                   'mib_ups_type': {'iso': 'iso.3.6.1.4.1.935.10.1.1.1.2.0',
-                                                    'name': 'UPS Model Type',
-                                                    'decode': None},
-                                   'mib_ups_contact': {'iso': 'iso.3.6.1.2.1.1.4.0',
-                                                       'name': 'UPS Contact',
-                                                       'decode': None},
-                                   'mib_ups_location': {'iso': 'iso.3.6.1.2.1.1.6.0',
-                                                        'name': 'UPS Location',
-                                                        'decode': None},
-                                   'mib_ups_uptime': {'iso': 'iso.3.6.1.2.1.1.3.0',
-                                                      'name': 'System Up Time',
-                                                      'decode': None},
-                                   'mib_ups_manufacture_date': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.2.0',
-                                                                'name': 'UPS Manufacture Date',
-                                                                'decode': None},
-                                   'mib_ups_name': {'iso': 'iso.3.6.1.2.1.33.1.1.5.0',
-                                                    'name': 'UPS Name',
-                                                    'decode': None},
-                                   'mib_battery_capacity': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.4.0',
-                                                            'name': 'Percentage of Total Capacity',
-                                                            'decode': None},
-                                   'mib_system_temperature': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.2.0',
-                                                              'name': 'System Temperature in C',
-                                                              'decode': None},
-                                   'mib_system_status': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.1.0',
-                                                         'name': 'UPS System Status',
-                                                         'decode': {'1': 'Power On',
-                                                                    '2': 'Standby',
-                                                                    '3': 'Bypass',
-                                                                    '4': 'Line',
-                                                                    '5': 'Battery',
-                                                                    '6': 'Battery Test',
-                                                                    '7': 'Fault',
-                                                                    '8': 'Converter',
-                                                                    '9': 'ECO',
-                                                                    '10': 'Shutdown',
-                                                                    '11': 'On Booster',
-                                                                    '12': 'On Reducer',
-                                                                    '13': 'Other'}},
-                                   'mib_battery_status': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.1.0',
-                                                          'name': 'Battery Status',
-                                                          'decode': {'1': 'Unknown',
-                                                                     '2': 'Battery Normal',
-                                                                     '3': 'Battery Low',
-                                                                     '4': 'Battery Depleted',
-                                                                     '5': 'Battery Discharging',
-                                                                     '6': 'Battery Failure'}},
-                                   'mib_time_on_battery': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.2.0',
-                                                           'name': 'Time on Battery',
-                                                           'decode': None},
-                                   'mib_battery_runtime_remain': {'iso': 'iso.3.6.1.4.1.935.10.1.1.3.3.0',
-                                                                  'name': 'Runtime Remaining',
-                                                                  'decode': None},
-                                   #'mib_battery_replace ': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.4.0',
-                                                            #'name': 'Battery replacement',
-                                                            #'decode': {'1': 'OK',
-                                                                       #'2': 'Replacement Required'}},
-                                   'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.16.1.3.1',
-                                                         'name': 'Input Voltage V',
-                                                         'decode': None},
-                                   'mib_input_frequency': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.16.1.2.1',
-                                                           'name': 'Input Frequency Hz',
-                                                           'decode': None},
-                                   # TODO is there an Eaton equivalent
-                                   #'mib_reason_for_last_transfer': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.5.0',
-                                                                    #'name': 'Last Transfer Event',
-                                                                    #'decode': {'1': 'No Transfer',
-                                                                               #'2': 'High Line Voltage',
-                                                                               #'3': 'Brownout',
-                                                                               #'4': 'Loss of Main Power',
-                                                                               #'5': 'Small Temp Power Drop',
-                                                                               #'6': 'Large Temp Power Drop',
-                                                                               #'7': 'Small Spike',
-                                                                               #'8': 'Large Spike',
-                                                                               #'9': 'UPS Self Test',
-                                                                               #'10': 'Excessive Input V Fluctuation'}},
-                                   'mib_output_voltage': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.3.1',
-                                                          'name': 'Output Voltage',
-                                                          'decode': None},
-                                   'mib_output_frequency': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.2.1',
-                                                            'name': 'Output Frequency Hz',
-                                                            'decode': None},
-                                   'mib_output_load': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.7.1',
-                                                       'name': 'Output Load as % of Capacity',
-                                                       'decode': None},
-                                   'mib_output_current': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.4.1',
-                                                          'name': 'Output Current in Amps',
-                                                          'decode': None},
-                                   'mib_output_power': {'iso': 'iso.3.6.1.4.1.935.10.1.1.2.18.1.5.1',
-                                                        'name': 'Output Power in W',
-                                                        'decode': None},
-                                   'mib_last_self_test_result': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.3.0',
-                                                                 'name': 'Last Self Test Results',
-                                                                 'decode': {'1': 'Idle',
-                                                                            '2': 'Processing',
-                                                                            '3': 'No Failure',
-                                                                            '4': 'Failure/Warning',
-                                                                            '5': 'Not Possible',
-                                                                            '6': 'Test Cancel'}},
-                                   'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.4.0',
-                                                               'name': 'Date of Last Self Test',
-                                                               'decode': None}}}
 
         if self.read_ups_list():
             self.check_ups_list()
@@ -341,8 +325,8 @@ class UPSsnmp:
                 str_rep = '{}\n{}:\n'.format(str_rep, name)
             else:
                 str_rep = '{}:\n'.format(name)
-            for k2, v2 in value.items():
-                str_rep = '{}\n    {}: {}\n'.format(str_rep, k2, v2)
+            for ups_param_name, ups_param_value in value.items():
+                str_rep = '{}\n    {}: {}\n'.format(str_rep, ups_param_name, ups_param_value)
         return str_rep
 
     # Read and check the UPS list.
@@ -366,25 +350,25 @@ class UPSsnmp:
         """
         daemon_cnt = 0
         ups_cnt = 0
-        for k, v in self.ups_list.items():
-            v['uuid'] = uuid4().hex
-            v['accessible'] = False
-            v['responsive'] = False
-            v['mib_commands'] = None
-            if self.check_ups_type(v['ups_type']):
-                v['compatible'] = True
-                if self.check_ip(v):
-                    v['accessible'] = True
-                    if self.check_snmp(v):
-                        v['responsive'] = True
+        for ups in self.ups_list.values():
+            ups['uuid'] = uuid4().hex
+            ups['accessible'] = False
+            ups['responsive'] = False
+            ups['mib_commands'] = None
+            if self.check_ups_type(ups['ups_type']):
+                ups['compatible'] = True
+                if self.check_ip(ups):
+                    ups['accessible'] = True
+                    if self.check_snmp(ups):
+                        ups['responsive'] = True
                         ups_cnt += 1
-                        v['mib_commands'] = self.all_mib_cmds[v['ups_type']]
-                if v['daemon']:
+                        ups['mib_commands'] = self.all_mib_cmds[ups['ups_type']]
+                if ups['daemon']:
                     daemon_cnt += 1
-                    self.active_ups = v
+                    self.active_ups = ups
             else:
-                v['compatible'] = False
-                v['mib_commands'] = None
+                ups['compatible'] = False
+                ups['mib_commands'] = None
         if not quiet:
             print('config.json contains {} total UPSs and {} daemon UPS'.format(ups_cnt, daemon_cnt))
     # End of read and check the UPS list.
@@ -396,9 +380,9 @@ class UPSsnmp:
         :param ups_uuid: Universally unique identifier for a UPS
         :return: name of the ups
         """
-        for k, v in self.ups_list.items():
-            if v['uuid'] == ups_uuid:
-                return str(k)
+        for name, ups in self.ups_list.items():
+            if ups['uuid'] == ups_uuid:
+                return str(name)
         return 'Error'
 
     def get_uuid_for_ups_name(self, ups_name: str) -> str:
@@ -407,9 +391,9 @@ class UPSsnmp:
         :param ups_name: The target ups name.
         :return: The uuid as str or 'Error' if not found
         """
-        for k, v in self.ups_list.items():
-            if v['display_name'] == ups_name:
-                return v['uuid']
+        for ups in self.ups_list.values():
+            if ups['display_name'] == ups_name:
+                return ups['uuid']
         return 'Error'
 
     def get_ups_list(self, errups: bool = True) -> dict:
@@ -432,13 +416,13 @@ class UPSsnmp:
         :return: tuple represents listed, compatible, accessible, responsive UPSs
         """
         cnt = [0, 0, 0, 0]
-        for k, v in self.ups_list.items():
+        for ups in self.ups_list.values():
             cnt[0] += 1
-            if self.is_compatible(v):
+            if self.is_compatible(ups):
                 cnt[1] += 1
-            if self.is_accessible(v):
+            if self.is_accessible(ups):
                 cnt[2] += 1
-            if self.is_responsive(v):
+            if self.is_responsive(ups):
                 cnt[3] += 1
         return tuple(cnt)
 
@@ -466,9 +450,9 @@ class UPSsnmp:
 
         :return: True if active UPS setting is a success
         """
-        for k, v in self.ups_list.items():
-            if v['daemon']:
-                self.active_ups = v
+        for ups in self.ups_list.values():
+            if ups['daemon']:
+                self.active_ups = ups
                 return True
         return False
 
@@ -514,8 +498,7 @@ class UPSsnmp:
             tups = self.active_ups
         if mib_cmd in tups['mib_commands'].keys():
             return tups['mib_commands'][mib_cmd]['name']
-        else:
-            return mib_cmd
+        return mib_cmd
 
     def get_mib_name_for_type(self, mib_cmd: str, ups_type: str) -> str:
         """Get mib command name for a given UPS type.
@@ -595,7 +578,8 @@ class UPSsnmp:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
             LOGGER.debug(snmp_output)
-        except:
+        except subprocess.CalledProcessError as err:
+            LOGGER.debug('%s execution error: %s', cmd_str, err)
             return False
         return True
 
@@ -639,12 +623,11 @@ class UPSsnmp:
         """
         if cmd_type == 'all':
             return_list = []
-            for cmd_type in ['static', 'dynamic']:
-                for item in self.monitor_mib_cmds[cmd_type]:
+            for try_cmd_type in ['static', 'dynamic']:
+                for item in self.monitor_mib_cmds[try_cmd_type]:
                     return_list.append(item)
             return return_list
-        else:
-            return self.monitor_mib_cmds[cmd_type]
+        return self.monitor_mib_cmds[cmd_type]
 
     def read_all_ups_list_items(self, command_list: list, errups: bool = True) -> dict:
         """ Get the specified list of monitor mib commands for all UPSs.
@@ -714,7 +697,7 @@ class UPSsnmp:
         value_minute = -1
         value_str = 'UNK'
         for line in snmp_output:
-            LOGGER.debug('line: %s' % line)
+            LOGGER.debug('line: %s', line)
             if re.match(env.UT_CONST.PATTERNS['SNMP_VALUE'], line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()
@@ -782,9 +765,9 @@ class UPSsnmp:
 
         :return: None
         """
-        for k, v in self.decoders.items():
-            print('decode key: {}'.format(k))
-            for i, item in enumerate(v, start=1):
+        for decoder_name, decoder_list in self.decoders.items():
+            print('decode key: {}'.format(decoder_name))
+            for i, item in enumerate(decoder_list, start=1):
                 print('  {:2d}: {}'.format(i, item))
 
     def print_snmp_commands(self, tups: dict = None) -> None:
@@ -795,12 +778,12 @@ class UPSsnmp:
         """
         if not tups:
             tups = self.active_ups
-        for k, v in self.get_mib_commands(tups).items():
-            print('{}: Value: {}'.format(k, v['iso']))
-            print('    Description: {}'.format(v['name']))
-            if v['decode']:
-                for k2, v2 in v['decode'].items():
-                    print('        {}: {}'.format(k2, v2))
+        for mib_name, mib_dict in self.get_mib_commands(tups).items():
+            print('{}: Value: {}'.format(mib_name, mib_dict['iso']))
+            print('    Description: {}'.format(mib_dict['name']))
+            if mib_dict['decode']:
+                for decoder_name, decoder_list in mib_dict['decode'].items():
+                    print('        {}: {}'.format(decoder_name, decoder_list))
     # End of commands to read from UPS using snmp protocol.
 
     # Set parameters required for daemon mode.
@@ -844,7 +827,7 @@ class UPSsnmp:
                 self.daemon_params['read_interval'] = read_interval
             else:
                 print('Invalid read interval in config.py.  Using default.')
-                
+
         # Battery Time Remaining
         if isinstance(threshold_battery_time_rem_crit, int):
             if threshold_battery_time_rem_crit >= env.UT_CONST.def_threshold_battery_time_rem[2]:
@@ -856,8 +839,8 @@ class UPSsnmp:
                 self.daemon_params['threshold_battery_time_rem_warn'] = threshold_battery_time_rem_warn
             else:
                 print('Invalid threshold_battery_time_rem_warn in config.py.  Using default.')
-                
-        # Time on Battery        
+
+        # Time on Battery
         if isinstance(threshold_time_on_battery_warn, int):
             if threshold_time_on_battery_warn >= env.UT_CONST.def_threshold_time_on_battery[2]:
                 self.daemon_params['threshold_time_on_battery_warn'] = threshold_time_on_battery_warn
@@ -899,8 +882,8 @@ class UPSsnmp:
         :return:  None
         """
         print('Daemon parameters:')
-        for k, v in self.daemon_params.items():
-            print('    {}: {}'.format(k, v))
+        for param_name, param_value in self.daemon_params.items():
+            print('    {}: {}'.format(param_name, param_value))
 
     def shutdown(self) -> None:
         """ Execute the shutdown script as defined in the daemon parameters.
@@ -982,6 +965,7 @@ class UPSsnmp:
 
 def about() -> None:
     """ Display details about this module.
+
     :return:  None
     """
     # About me
