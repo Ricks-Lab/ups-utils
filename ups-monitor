@@ -136,7 +136,7 @@ class MonitorWindow(Gtk.Window):
         for item_name, item_ups in ups.get_ups_list(errups=env.UT_CONST.show_unresponsive).items():
             row = row_start
             devices[item_ups['uuid']] = {'display_name': {
-                'label': Gtk.Label(ups.ups_name(item_ups), name='white_label'),
+                'label': Gtk.Label(label=ups.ups_name(item_ups), name='white_label'),
                 'box': Gtk.Box(spacing=6, name='head_box'),
                 'box_name': 'head_box'}}
             lbox = devices[item_ups['uuid']]['display_name']['box']
