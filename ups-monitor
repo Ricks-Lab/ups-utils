@@ -74,7 +74,13 @@ class MonitorWindow(Gtk.Window):
         """
         self.quit = False
 
+        # RuntimeError: Gtk couldn't be initialized. Use Gtk.init_check() if you want to handle this case.
         Gtk.Window.__init__(self, title='{} - Monitor'.format(env.UT_CONST.gui_window_title))
+        init_chk_value = Gtk.init_check(sys.argv)
+        LOGGER.debug('init_check: %s', init_chk_value)
+        if not init_chk_value[0]:
+            print('Gtk Error, Exiting')
+            sys.exit(-1)
         self.set_border_width(0)
         UPSgui.GuiProps.set_style()
 
