@@ -792,6 +792,7 @@ class UPSsnmp:
 
         :return:  None
         """
+        # TODO - Use config parser
         if env.UT_CONST.ERROR_config:
             print('Error in config.py file.  Using defaults')
             return
