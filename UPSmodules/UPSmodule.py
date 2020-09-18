@@ -36,6 +36,7 @@ import datetime
 import json
 import subprocess
 import logging
+import configparser
 from enum import Enum
 from typing import Tuple, List, Union
 from uuid import uuid4
@@ -44,16 +45,7 @@ try:
     from UPSmodules import env
 except ModuleNotFoundError:
     import env
-try:
-    from config import (suspend_script, resume_script, shutdown_script, cancel_shutdown_script, read_interval,
-                        threshold_battery_time_rem_crit, threshold_battery_time_rem_warn,
-                        threshold_time_on_battery_crit, threshold_time_on_battery_warn,
-                        threshold_battery_load_crit, threshold_battery_load_warn,
-                        threshold_battery_capacity_crit, threshold_battery_capacity_warn)
-except ModuleNotFoundError:
-    print('The config.py file is missing or mis-configured.  Use config.py.template as a template.')
-    print('Using defaults, which will not enable any daemon response scripts.')
-    env.UT_CONST.ERROR_config = True
+
 
 LOGGER = logging.getLogger('ups-utils')
 
@@ -793,6 +785,37 @@ class UPSsnmp:
         :return:  None
         """
         # TODO - Use config parser
+        config = configparser.ConfigParser()
+        config.read('ups-utils.ini')
+
+        suspend_script = config['DaemonScripts']['suspend_script']
+        LOGGER.debug('suspend_script = %s', suspend_script)
+        resume_script = config['DaemonScripts']['resume_script']
+        LOGGER.debug('resume_script = %s', resume_script)
+        shutdown_script = config['DaemonScripts']['shutdown_script']
+        LOGGER.debug('shutdown_script = %s', shutdown_script)
+        cancel_shutdown_script = config['DaemonScripts']['cancel_shutdown_script']
+        LOGGER.debug('cancel_shutdown_script = %s', cancel_shutdown_script)
+
+        read_interval = config['DaemonParameters']['read_interval']
+        LOGGER.debug('read_interval = %s', read_interval)
+        threshold_battery_time_rem_crit = config['DaemonParameters']['threshold_battery_time_rem_crit']
+        LOGGER.debug('threshold_battery_time_rem_crit = %s', threshold_battery_time_rem_crit)
+        threshold_battery_time_rem_warn = config['DaemonParameters']['threshold_battery_time_rem_warn']
+        LOGGER.debug('threshold_battery_time_rem_warn = %s', threshold_battery_time_rem_warn)
+        threshold_time_on_battery_crit = config['DaemonParameters']['threshold_time_on_battery_crit']
+        LOGGER.debug('threshold_time_on_battery_crit = %s', threshold_time_on_battery_crit)
+        threshold_time_on_battery_warn = config['DaemonParameters']['threshold_time_on_battery_warn']
+        LOGGER.debug('threshold_time_on_battery_warn = %s', threshold_time_on_battery_warn)
+        threshold_battery_load_crit = config['DaemonParameters']['threshold_battery_load_crit']
+        LOGGER.debug('threshold_battery_load_crit = %s', threshold_battery_load_crit)
+        threshold_battery_load_warn = config['DaemonParameters']['threshold_battery_load_warn']
+        LOGGER.debug('threshold_battery_load_warn = %s', threshold_battery_load_warn)
+        threshold_battery_capacity_crit = config['DaemonParameters']['threshold_battery_capacity_crit']
+        LOGGER.debug('threshold_battery_capacity_crit = %s', threshold_battery_capacity_crit)
+        threshold_battery_capacity_warn = config['DaemonParameters']['threshold_battery_capacity_warn']
+        LOGGER.debug('threshold_battery_capacity_warn = %s', threshold_battery_capacity_warn)
+
         if env.UT_CONST.ERROR_config:
             print('Error in config.py file.  Using defaults')
             return
@@ -800,6 +823,7 @@ class UPSsnmp:
         # Set script definitions
         if isinstance(suspend_script, str):
             self.daemon_params['suspend_script'] = suspend_script
+            LOGGER.debug('suspend_script = %s', suspend_script)
             if suspend_script:
                 if not os.path.isfile(suspend_script):
                     print('Missing suspend script: {}'.format(suspend_script))
