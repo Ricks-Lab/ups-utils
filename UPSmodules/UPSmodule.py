@@ -787,11 +787,9 @@ class UPSsnmp:
         # TODO - Use config parser
         config = configparser.ConfigParser()
         config.read('ups-utils.ini')
+        LOGGER.debug('config = %s', config['DaemonScripts'])
+        LOGGER.debug('config = %s', config['DaemonParameters'])
 
-        suspend_script = config['DaemonScripts']['suspend_script']
-        LOGGER.debug('suspend_script = %s', suspend_script)
-        resume_script = config['DaemonScripts']['resume_script']
-        LOGGER.debug('resume_script = %s', resume_script)
         shutdown_script = config['DaemonScripts']['shutdown_script']
         LOGGER.debug('shutdown_script = %s', shutdown_script)
         cancel_shutdown_script = config['DaemonScripts']['cancel_shutdown_script']
@@ -821,18 +819,17 @@ class UPSsnmp:
             return
 
         # Set script definitions
-        if isinstance(suspend_script, str):
-            self.daemon_params['suspend_script'] = suspend_script
-            LOGGER.debug('suspend_script = %s', suspend_script)
-            if suspend_script:
-                if not os.path.isfile(suspend_script):
-                    print('Missing suspend script: {}'.format(suspend_script))
+        if isinstance(config['DaemonScripts']['suspend_script'], str):
+            self.daemon_params['suspend_script'] = config['DaemonScripts']['suspend_script']
+            if self.daemon_params['suspend_script']:
+                if not os.path.isfile(self.daemon_params['suspend_script']):
+                    print('Missing suspend script: {}'.format(self.daemon_params['suspend_script']))
                     sys.exit(-1)
-        if isinstance(resume_script, str):
-            self.daemon_params['resume_script'] = resume_script
-            if resume_script:
-                if not os.path.isfile(resume_script):
-                    print('Missing resume script: {}'.format(resume_script))
+        if isinstance(config['DaemonScripts']['resume_script'], str):
+            self.daemon_params['resume_script'] = config['DaemonScripts']['resume_script']
+            if self.daemon_params['resume_script']:
+                if not os.path.isfile(self.daemon_params['resume_script']):
+                    print('Missing resume script: {}'.format(self.daemon_params['resume_script']))
                     sys.exit(-1)
         if isinstance(shutdown_script, str):
             self.daemon_params['shutdown_script'] = shutdown_script
