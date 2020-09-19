@@ -810,8 +810,7 @@ class UPSsnmp:
         # Set script parameters
         for parameter_name in self.daemon_parameters:
             if re.search(env.UT_CONST.PATTERNS['INI'], config['DaemonParameters'][parameter_name]):
-                raw_param = re.sub(r'[\s\t\n]', '', config['DaemonParameters'][parameter_name])
-                params = tuple(int(x) for x in raw_param[1:-1].split(','))
+                params = tuple(int(x) for x in config['DaemonParameters'][parameter_name][1:-1].split(','))
                 if parameter_name == 'read_interval':
                     self.daemon_params[parameter_name]['monitor'] = params[0]
                     self.daemon_params[parameter_name]['daemon'] = params[1]
@@ -819,14 +818,16 @@ class UPSsnmp:
                     self.daemon_params[parameter_name]['crit'] = params[0]
                     self.daemon_params[parameter_name]['warn'] = params[1]
             else:
-                print('Incorrect format for {} parameter: {}'.format(parameter_name, config['DaemonParameters'][parameter_name]))
+                print('Incorrect format for {} parameter: {}'.format(
+                    parameter_name, config['DaemonParameters'][parameter_name]))
                 sys.exit(-1)
 
         # Check Daemon Parameter Values
         for parameter_name in self.daemon_parameters:
             if parameter_name == 'read_interval':
                 for sub_parameter_name in ['monitor', 'daemon']:
-                    if self.daemon_params[parameter_name][sub_parameter_name] < self.daemon_params[parameter_name]['limit']:
+                    if self.daemon_params[parameter_name][sub_parameter_name] < \
+                            self.daemon_params[parameter_name]['limit']:
                         print('Warning invalid {}-{} value [{}], using defaults'.format(
                             parameter_name, sub_parameter_name, self.daemon_params[parameter_name][sub_parameter_name]))
             else:
