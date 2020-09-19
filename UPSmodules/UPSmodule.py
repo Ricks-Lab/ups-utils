@@ -54,6 +54,10 @@ class UPSsnmp:
     """ Class definition for UPS communication object."""
 
     daemon_scripts = ['suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script']
+    daemon_parameters = ['read_interval', 'threshold_battery_time_rem_crit', 'threshold_battery_time_rem_warn',
+                         'threshold_time_on_battery_crit', 'threshold_time_on_battery_warn',
+                         'threshold_battery_load_crit', 'threshold_battery_load_warn',
+                         'threshold_battery_capacity_crit', 'threshold_battery_capacity_warn']
     state_style = Enum('state', 'warn crit green bold normal')
 
     # UPS response bit string decoders
@@ -792,25 +796,6 @@ class UPSsnmp:
         LOGGER.debug('config[DaemonScripts]: %s', dict(config['DaemonScripts']))
         LOGGER.debug('config[DaemonParameters]: %s', dict(config['DaemonParameters']))
 
-        read_interval = config['DaemonParameters']['read_interval']
-        LOGGER.debug('read_interval = %s', read_interval)
-        threshold_battery_time_rem_crit = config['DaemonParameters']['threshold_battery_time_rem_crit']
-        LOGGER.debug('threshold_battery_time_rem_crit = %s', threshold_battery_time_rem_crit)
-        threshold_battery_time_rem_warn = config['DaemonParameters']['threshold_battery_time_rem_warn']
-        LOGGER.debug('threshold_battery_time_rem_warn = %s', threshold_battery_time_rem_warn)
-        threshold_time_on_battery_crit = config['DaemonParameters']['threshold_time_on_battery_crit']
-        LOGGER.debug('threshold_time_on_battery_crit = %s', threshold_time_on_battery_crit)
-        threshold_time_on_battery_warn = config['DaemonParameters']['threshold_time_on_battery_warn']
-        LOGGER.debug('threshold_time_on_battery_warn = %s', threshold_time_on_battery_warn)
-        threshold_battery_load_crit = config['DaemonParameters']['threshold_battery_load_crit']
-        LOGGER.debug('threshold_battery_load_crit = %s', threshold_battery_load_crit)
-        threshold_battery_load_warn = config['DaemonParameters']['threshold_battery_load_warn']
-        LOGGER.debug('threshold_battery_load_warn = %s', threshold_battery_load_warn)
-        threshold_battery_capacity_crit = config['DaemonParameters']['threshold_battery_capacity_crit']
-        LOGGER.debug('threshold_battery_capacity_crit = %s', threshold_battery_capacity_crit)
-        threshold_battery_capacity_warn = config['DaemonParameters']['threshold_battery_capacity_warn']
-        LOGGER.debug('threshold_battery_capacity_warn = %s', threshold_battery_capacity_warn)
-
         if env.UT_CONST.ERROR_config:
             print('Error in config.py file.  Using defaults')
             return
@@ -818,18 +803,26 @@ class UPSsnmp:
         # Set script definitions
         for script_name in self.daemon_scripts:
             if isinstance(config['DaemonScripts'][script_name], str):
-                self.daemon_params['suspend_script'] = config['DaemonScripts'][script_name]
+                self.daemon_params[script_name] = config['DaemonScripts'][script_name]
                 if self.daemon_params[script_name]:
                     if not os.path.isfile(self.daemon_params[script_name]):
-                        print('Missing {} script: {}'.format(script_name, self.daemon_params['suspend_script']))
+                        print('Missing {} script: {}'.format(script_name, self.daemon_params[script_name]))
                         sys.exit(-1)
 
-        # Set daemon read interval
-        if isinstance(read_interval, int):
-            if read_interval >= env.UT_CONST.READ_INTERVAL_LIMIT:
-                self.daemon_params['read_interval'] = read_interval
-            else:
-                print('Invalid read interval in config.py.  Using default.')
+        # Set script parameters
+        for parameter_name in self.daemon_parameters:
+            if isinstance(config['DaemonParameters'][parameter_name], str):
+                self.daemon_params[parameter_name] = config['DaemonParameters'][parameter_name]
+                if self.daemon_params[parameter_name]:
+                    if not os.path.isfile(self.daemon_params[parameter_name]):
+                        print('Missing {} parameter: {}'.format(parameter_name, self.daemon_params[parameter_name]))
+                        sys.exit(-1)
+
+        # Check daemon read interval
+        if self.daemon_params['read_interval'] < env.UT_CONST.READ_INTERVAL_LIMIT:
+            print('Invalid read interval [{}].  Using default [{}].'.format(self.daemon_params['read_interval'], env.UT_CONST.READ_INTERVAL_LIMIT))
+            self.daemon_params['read_interval'] = env.UT_CONST.DEFAULT_DAEMON_READ_INTERVAL
+            
 
         # Battery Time Remaining
         if isinstance(threshold_battery_time_rem_crit, int):
