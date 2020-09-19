@@ -230,14 +230,14 @@ def update_data(ups: UPS.UPSsnmp, header_list: list, command_list: list, devices
             if data_value == '-1':
                 data_value = ''
             if mib_name == 'mib_battery_capacity' and data_value.isnumeric():
-                if int(data_value) <= ups.daemon_params['threshold_battery_capacity_crit']:
+                if int(data_value) <= ups.daemon_params['threshold_battery_capacity']['crit']:
                     state_style = UPS.UPSsnmp.state_style.crit
-                elif int(data_value) <= ups.daemon_params['threshold_battery_capacity_warn']:
+                elif int(data_value) <= ups.daemon_params['threshold_battery_capacity']['warn']:
                     state_style = UPS.UPSsnmp.state_style.warn
             elif mib_name == 'mib_output_load' and data_value.isnumeric():
-                if int(data_value) >= ups.daemon_params['threshold_battery_load_crit']:
+                if int(data_value) >= ups.daemon_params['threshold_battery_load']['crit']:
                     state_style = UPS.UPSsnmp.state_style.crit
-                elif int(data_value) >= ups.daemon_params['threshold_battery_load_warn']:
+                elif int(data_value) >= ups.daemon_params['threshold_battery_load']['warn']:
                     state_style = UPS.UPSsnmp.state_style.warn
             elif mib_name == 'mib_battery_status':
                 if re.match(env.UT_CONST.PATTERNS['NORMAL'], data_value):
@@ -409,7 +409,7 @@ def main() -> None:
     parser.add_argument('--gui', help='Display GTK Version of Monitor', action='store_true', default=False)
     parser.add_argument('--log', help='Write all monitor data to logfile', action='store_true', default=False)
     parser.add_argument('--sleep', help='Number of seconds to sleep between updates',
-                        type=int, default=env.UT_CONST.DEFAULT_DAEMON_READ_INTERVAL)
+                        type=int, default=UPS.UPSsnmp.daemon_parameters_defaults['read_interval']['monitor'])
     parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
     args = parser.parse_args()
 
@@ -446,7 +446,7 @@ def main() -> None:
         print('    Check the config.json file.')
     print('')
 
-    if int(args.sleep) >= env.UT_CONST.READ_INTERVAL_LIMIT:
+    if int(args.sleep) >= UPS.UPSsnmp.daemon_parameters_defaults['read_interval']['limit']:
         env.UT_CONST.SLEEP = int(args.sleep)
     else:
         print('Invalid value for sleep specified.  Must be an integer >= {}'.format(

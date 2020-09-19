@@ -45,6 +45,7 @@ class UtConst:
     PATTERNS = {'HEXRGB': re.compile(r'^#[0-9a-fA-F]{6}'),
                 'SNMP_VALUE': re.compile(r'.*=.*:.*'),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
+                'INI': re.compile(r'^\([0-9]+,[0-9]+\)$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
     _local_icon_list = ['{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home())),
                         '/usr/share/rickslab-ups-utils/icons']
@@ -69,18 +70,8 @@ class UtConst:
             self.icon_path = None
 
         # Configuration Parameters
-        self.ERROR_config = False
         self.ERROR_json = False
         self.UPS_LIST_JSON_FILE = 'config.json'
-        # Config.py defaults
-        self.DEFAULT_MONITOR_READ_INTERVAL = 10
-        self.DEFAULT_DAEMON_READ_INTERVAL = 30
-        self.READ_INTERVAL_LIMIT = 5
-        # Daemon and Monitor defaults in tuples (critical, warning, limit)
-        self.def_threshold_battery_time_rem = (5, 10, 4)
-        self.def_threshold_time_on_battery = (5, 3, 1)
-        self.def_threshold_battery_load = (90, 80, 10)
-        self.def_threshold_battery_capacity = (10, 50, 5)
 
         # Utility Execution Flags
         self.show_unresponsive = False

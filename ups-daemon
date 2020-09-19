@@ -113,17 +113,17 @@ def main() -> None:
         ups.send_snmp_command(k, display=True)
 
     if args.daemon:
-        crit_bat_level = ups.daemon_params['threshold_battery_capacity_crit']
-        warn_bat_level = ups.daemon_params['threshold_battery_capacity_warn']
-        crit_load_level = ups.daemon_params['threshold_battery_load_crit']
-        warn_load_level = ups.daemon_params['threshold_battery_load_warn']
-        crit_runtime_rem = ups.daemon_params['threshold_battery_time_rem_crit']
-        warn_runtime_rem = ups.daemon_params['threshold_battery_time_rem_warn']
+        crit_bat_level = ups.daemon_params['threshold_battery_capacity']['crit']
+        warn_bat_level = ups.daemon_params['threshold_battery_capacity']['warn']
+        crit_load_level = ups.daemon_params['threshold_battery_load']['crit']
+        warn_load_level = ups.daemon_params['threshold_battery_load']['warn']
+        crit_runtime_rem = ups.daemon_params['threshold_battery_time_rem']['crit']
+        warn_runtime_rem = ups.daemon_params['threshold_battery_time_rem']['warn']
         overload_fault = False
         suspend_state = False
         shutting_down = False
-        normal_sleep = ups.daemon_params['read_interval']
-        fault_sleep = env.UT_CONST.READ_INTERVAL_LIMIT
+        normal_sleep = ups.daemon_params['read_interval']['daemon']
+        fault_sleep = UPS.UPSsnmp.daemon_parameters_defaults['read_interval']['limit']
         active_sleep = normal_sleep
         while True:
             time_str = datetime.now().strftime('%c')
@@ -197,7 +197,7 @@ def main() -> None:
                         ups.shutdown()
 
             if suspend_state:
-                if time_on_bat < ups.daemon_params['threshold_time_on_battery_crit'] and not overload_fault:
+                if time_on_bat < ups.daemon_params['threshold_time_on_battery']['crit'] and not overload_fault:
                     # Resume
                     print('{}: Resuming'.format(time_str))
                     ups.resume()
@@ -205,7 +205,7 @@ def main() -> None:
                     pass
 
             if not suspend_state:
-                if time_on_bat > ups.daemon_params['threshold_time_on_battery_crit'] or bat_load > crit_load_level:
+                if time_on_bat > ups.daemon_params['threshold_time_on_battery']['crit'] or bat_load > crit_load_level:
                     # Suspend
                     print('{}: Suspending'.format(time_str))
                     ups.suspend()

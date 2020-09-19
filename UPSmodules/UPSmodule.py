@@ -18,7 +18,7 @@
 """
 __author__ = "RueiKe"
 __copyright__ = "Copyright (C) 2019 RicksLab"
-__credits__ = []
+__credits__ = ['Natalya Langford - Configuration Parser']
 __license__ = "GNU General Public License"
 __program_name__ = "ups-utils"
 __maintainer__ = "RueiKe"
@@ -54,10 +54,13 @@ class UPSsnmp:
     """ Class definition for UPS communication object."""
 
     daemon_scripts = ['suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script']
-    daemon_parameters = ['read_interval', 'threshold_battery_time_rem_crit', 'threshold_battery_time_rem_warn',
-                         'threshold_time_on_battery_crit', 'threshold_time_on_battery_warn',
-                         'threshold_battery_load_crit', 'threshold_battery_load_warn',
-                         'threshold_battery_capacity_crit', 'threshold_battery_capacity_warn']
+    daemon_parameters = ['read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
+                         'threshold_battery_load', 'threshold_battery_capacity']
+    daemon_parameters_defaults = {'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
+                                  'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
+                                  'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
+                                  'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 10},
+                                  'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
     state_style = Enum('state', 'warn crit green bold normal')
 
     # UPS response bit string decoders
@@ -82,16 +85,11 @@ class UPSsnmp:
     # UPS from config.py for ups-daemon and monitor utilities.
     daemon_params = {'suspend_script': '', 'resume_script': '',
                      'shutdown_script': '', 'cancel_shutdown_script': '',
-                     'read_interval': env.UT_CONST.DEFAULT_DAEMON_READ_INTERVAL,
-                     'threshold_battery_time_rem_crit': env.UT_CONST.def_threshold_battery_time_rem[0],
-                     'threshold_battery_time_rem_warn': env.UT_CONST.def_threshold_battery_time_rem[1],
-                     'threshold_time_on_battery_crit': env.UT_CONST.def_threshold_time_on_battery[0],
-                     'threshold_time_on_battery_warn': env.UT_CONST.def_threshold_time_on_battery[1],
-                     'threshold_battery_load_crit': env.UT_CONST.def_threshold_battery_load[0],
-                     'threshold_battery_load_warn': env.UT_CONST.def_threshold_battery_load[1],
-                     'threshold_battery_capacity_crit': env.UT_CONST.def_threshold_battery_capacity[0],
-                     'threshold_battery_capacity_warn': env.UT_CONST.def_threshold_battery_capacity[1]
-                     }
+                     'read_interval': daemon_parameters_defaults['read_interval'].copy(),
+                     'threshold_battery_time_rem': daemon_parameters_defaults['threshold_battery_time_rem'].copy(),
+                     'threshold_time_on_battery': daemon_parameters_defaults['threshold_time_on_battery'].copy(),
+                     'threshold_battery_load': daemon_parameters_defaults['threshold_battery_load'].copy(),
+                     'threshold_battery_capacity': daemon_parameters_defaults['threshold_battery_capacity'].copy()}
     # UPS MiB Commands
     monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
                                    'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
@@ -790,15 +788,15 @@ class UPSsnmp:
 
         :return:  None
         """
-        # TODO - Use config parser
         config = configparser.ConfigParser()
-        config.read('ups-utils.ini')
+        try:
+            config.read('ups-utils.ini')
+        except configparser.Error as err:
+            LOGGER.exception('config parser error: %s', err)
+            print('Error in ups-utils.ini file.  Using defaults')
+            return
         LOGGER.debug('config[DaemonScripts]: %s', dict(config['DaemonScripts']))
         LOGGER.debug('config[DaemonParameters]: %s', dict(config['DaemonParameters']))
-
-        if env.UT_CONST.ERROR_config:
-            print('Error in config.py file.  Using defaults')
-            return
 
         # Set script definitions
         for script_name in self.daemon_scripts:
@@ -811,58 +809,51 @@ class UPSsnmp:
 
         # Set script parameters
         for parameter_name in self.daemon_parameters:
-            if isinstance(config['DaemonParameters'][parameter_name], str):
-                self.daemon_params[parameter_name] = config['DaemonParameters'][parameter_name]
-                if self.daemon_params[parameter_name]:
-                    if not os.path.isfile(self.daemon_params[parameter_name]):
-                        print('Missing {} parameter: {}'.format(parameter_name, self.daemon_params[parameter_name]))
-                        sys.exit(-1)
+            if re.search(env.UT_CONST.PATTERNS['INI'], config['DaemonParameters'][parameter_name]):
+                raw_param = re.sub(r'[\s\t\n]', '', config['DaemonParameters'][parameter_name])
+                params = tuple(int(x) for x in raw_param[1:-1].split(','))
+                if parameter_name == 'read_interval':
+                    self.daemon_params[parameter_name]['monitor'] = params[0]
+                    self.daemon_params[parameter_name]['daemon'] = params[1]
+                else:
+                    self.daemon_params[parameter_name]['crit'] = params[0]
+                    self.daemon_params[parameter_name]['warn'] = params[1]
+            else:
+                print('Incorrect format for {} parameter: {}'.format(parameter_name, config['DaemonParameters'][parameter_name]))
+                sys.exit(-1)
 
-        # Check daemon read interval
-        if self.daemon_params['read_interval'] < env.UT_CONST.READ_INTERVAL_LIMIT:
-            print('Invalid read interval [{}].  Using default [{}].'.format(self.daemon_params['read_interval'], env.UT_CONST.READ_INTERVAL_LIMIT))
-            self.daemon_params['read_interval'] = env.UT_CONST.DEFAULT_DAEMON_READ_INTERVAL
-            
-        # Battery Time Remaining
-        if self.daemon_params['threshold_battery_time_rem_crit'] >= env.UT_CONST.def_threshold_battery_time_rem[0]:
-            print('Invalid threshold_battery_time_rem_crit [{}].  Using default [{}].'.format(
-                self.daemon_params['threshold_battery_time_rem_crit'], env.UT_CONST.def_threshold_battery_time_rem[0]))
-            self.daemon_params['threshold_battery_time_rem_crit'] = env.UT_CONST.def_threshold_battery_time_rem[0]
-        if self.daemon_params['threshold_battery_time_rem_warn'] < env.UT_CONST.def_threshold_battery_time_rem[1]:
-            print('Invalid threshold_battery_time_rem_warn [{}].  Using default [{}].'.format(
-                self.daemon_params['threshold_battery_time_rem_warn'], env.UT_CONST.def_threshold_battery_time_rem[1]))
-            self.daemon_params['threshold_battery_time_rem_warn'] = env.UT_CONST.def_threshold_battery_time_rem[1]
-
-        # Time on Battery
-        if self.daemon_params['threshold_time_on_battery_warn'] >= env.UT_CONST.def_threshold_time_on_battery[1]:
-            print('Invalid threshold_time_on_battery_warn [{}].  Using default [{}].'.format(
-                self.daemon_params['threshold_time_on_battery_warn'], env.UT_CONST.def_threshold_time_on_battery[1]))
-            self.daemon_params['threshold_time_on_battery_warn'] = env.UT_CONST.def_threshold_time_on_battery[1]
-        if self.daemon_params['threshold_time_on_battery_crit'] > env.UT_CONST.def_threshold_time_on_battery[0]:
-            print('Invalid threshold_time_on_battery_crit [{}].  Using default [{}].'.format(
-                self.daemon_params['threshold_time_on_battery_crit'], env.UT_CONST.def_threshold_time_on_battery[0]))
-            self.daemon_params['threshold_time_on_battery_crit'] = env.UT_CONST.def_threshold_time_on_battery[0]
-
-        # Battery Load
-        if self.daemon_params['threshold_battery_load_warn'] < env.UT_CONST.def_threshold_battery_load[1] < 100:
-            print('Invalid threshold_battery_load_warn [{}].  Using default [{}].'.format(
-                self.daemon_params['threshold_battery_load_warn'], env.UT_CONST.def_threshold_battery_load[1]))
-            self.daemon_params['threshold_battery_load_warn'] = env.UT_CONST.def_threshold_battery_load[1]
-        if self.daemon_params['threshold_battery_load_crit'] < env.UT_CONST.def_threshold_battery_load[0] <= 100:
-            print('Invalid threshold_battery_load_crit [{}].  Using default [{}].'.format(
-                self.daemon_params['threshold_battery_load_crit'], env.UT_CONST.def_threshold_battery_load[0]))
-            self.daemon_params['threshold_battery_load_crit'] = env.UT_CONST.def_threshold_battery_load[0]
-
-        # Battery Capacity
-        if self.daemon_params['threshold_battery_capacity_crit'] < env.UT_CONST.def_threshold_battery_capacity[0] < 100:
-            print('Invalid threshold_battery_capacity_crit [{}].  Using default [{}].'.format(
-                self.daemon_params['threshold_battery_capacity_crit'], env.UT_CONST.def_threshold_battery_capacity[0]))
-            self.daemon_params['threshold_battery_capacity_crit'] = env.UT_CONST.def_threshold_battery_capacity[0]
-        if self.daemon_params['threshold_battery_capacity_warn'] < env.UT_CONST.def_threshold_battery_capacity[1] \
-                <= 100:
-            print('Invalid threshold_battery_capacity_warn [{}].  Using default [{}].'.format(
-                self.daemon_params['threshold_battery_capacity_warn'], env.UT_CONST.def_threshold_battery_capacity[1]))
-            self.daemon_params['threshold_battery_capacity_warn'] = env.UT_CONST.def_threshold_battery_capacity[1]
+        # Check Daemon Parameter Values
+        for parameter_name in self.daemon_parameters:
+            if parameter_name == 'read_interval':
+                for sub_parameter_name in ['monitor', 'daemon']:
+                    if self.daemon_params[parameter_name][sub_parameter_name] < self.daemon_params[parameter_name]['limit']:
+                        print('Warning invalid {}-{} value [{}], using defaults'.format(
+                            parameter_name, sub_parameter_name, self.daemon_params[parameter_name][sub_parameter_name]))
+            else:
+                reset = False
+                if self.daemon_parameters_defaults[parameter_name]['crit'] > \
+                        self.daemon_parameters_defaults[parameter_name]['warn']:
+                    if self.daemon_params[parameter_name]['crit'] <= self.daemon_params[parameter_name]['warn']:
+                        reset = True
+                        print('Warning crit must be > warn value, using defaults for {}'.format(parameter_name))
+                    if self.daemon_params[parameter_name]['crit'] < self.daemon_params[parameter_name]['limit']:
+                        reset = True
+                        print('Warning crit must be >= limit value, using defaults for {}'.format(parameter_name))
+                    if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
+                        reset = True
+                        print('Warning warn must be >= limit value, using defaults for {}'.format(parameter_name))
+                else:
+                    if self.daemon_params[parameter_name]['crit'] >= self.daemon_params[parameter_name]['warn']:
+                        reset = True
+                        print('Warning crit must be < warn value, using defaults for {}'.format(parameter_name))
+                    if self.daemon_params[parameter_name]['crit'] < self.daemon_params[parameter_name]['limit']:
+                        reset = True
+                        print('Warning crit must be >= limit value, using defaults for {}'.format(parameter_name))
+                    if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
+                        reset = True
+                        print('Warning warn must be >= limit value, using defaults for {}'.format(parameter_name))
+                if reset:
+                    self.daemon_params[parameter_name] = self.daemon_parameters_defaults[parameter_name].copy()
 
     def print_daemon_parameters(self) -> None:
         """ Print all daemon parameters.

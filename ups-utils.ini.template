@@ -1,16 +1,16 @@
 # Daemon/monitor parameter definitions
+
 [DaemonScripts]
-    suspend_script = '/home/rick/pydev/ups-utils/pauseBOINC.sh'
-    resume_script = '/home/rick/pydev/ups-utils/resumeBOINC.sh'
-    shutdown_script = '/home/rick/pydev/ups-utils/shutdownBOINC.sh'
-    cancel_shutdown_script = '/home/rick/pydev/ups-utils/cancelShutdownBOINC.sh'
+suspend_script = /home/rick/pydev/ups-utils/pauseBOINC.sh
+resume_script = /home/rick/pydev/ups-utils/resumeBOINC.sh
+shutdown_script = /home/rick/pydev/ups-utils/shutdownBOINC.sh
+cancel_shutdown_script = /home/rick/pydev/ups-utils/cancelShutdownBOINC.sh
+
 [DaemonParameters]
-    read_interval = 30
-    threshold_battery_time_rem_crit = 5
-    threshold_battery_time_rem_warn = 10
-    threshold_time_on_battery_crit = 3
-    threshold_time_on_battery_warn = 2
-    threshold_battery_load_crit = 90
-    threshold_battery_load_warn = 80
-    threshold_battery_capacity_crit = 10
-    threshold_battery_capacity_warn = 50
+# monitor,daemon
+read_interval = (10,30)
+# crit,warn
+threshold_battery_time_rem = (5,10)
+threshold_time_on_battery = (3,2)
+threshold_battery_load = (90,80)
+threshold_battery_capacity = (10,50)
