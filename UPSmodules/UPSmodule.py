@@ -844,30 +844,25 @@ class UPSsnmp:
             self.daemon_params['threshold_time_on_battery_crit'] = env.UT_CONST.def_threshold_time_on_battery[0]
 
         # Battery Load
-
-
-        if isinstance(threshold_battery_load_warn, int):
-            if env.UT_CONST.def_threshold_battery_load[2] < threshold_battery_load_warn < 100:
-                self.daemon_params['threshold_battery_load_warn'] = threshold_battery_load_warn
-            else:
-                print('Invalid threshold_battery_load_warn in config.py.  Using default.')
-        if isinstance(threshold_battery_load_crit, int):
-            if self.daemon_params['threshold_battery_load_warn'] < threshold_battery_load_crit <= 100:
-                self.daemon_params['threshold_battery_load_crit'] = threshold_battery_load_crit
-            else:
-                print('Invalid threshold_battery_load_crit in config.py.  Using default.')
+        if self.daemon_params['threshold_battery_load_warn'] < env.UT_CONST.def_threshold_battery_load[1] < 100:
+            print('Invalid threshold_battery_load_warn [{}].  Using default [{}].'.format(
+                self.daemon_params['threshold_battery_load_warn'], env.UT_CONST.def_threshold_battery_load[1]))
+            self.daemon_params['threshold_battery_load_warn'] = env.UT_CONST.def_threshold_battery_load[1]
+        if self.daemon_params['threshold_battery_load_crit'] < env.UT_CONST.def_threshold_battery_load[0] <= 100:
+            print('Invalid threshold_battery_load_crit [{}].  Using default [{}].'.format(
+                self.daemon_params['threshold_battery_load_crit'], env.UT_CONST.def_threshold_battery_load[0]))
+            self.daemon_params['threshold_battery_load_crit'] = env.UT_CONST.def_threshold_battery_load[0]
 
         # Battery Capacity
-        if isinstance(threshold_battery_capacity_crit, int):
-            if env.UT_CONST.def_threshold_battery_capacity[2] < threshold_battery_capacity_crit < 100:
-                self.daemon_params['threshold_battery_capacity_crit'] = threshold_battery_capacity_crit
-            else:
-                print('Invalid threshold_battery_capacity_crit in config.py.  Using default.')
-        if isinstance(threshold_battery_capacity_warn, int):
-            if self.daemon_params['threshold_battery_capacity_crit'] < threshold_battery_capacity_warn <= 100:
-                self.daemon_params['threshold_battery_capacity_warn'] = threshold_battery_capacity_warn
-            else:
-                print('Invalid threshold_battery_capacity_warn in config.py.  Using default.')
+        if self.daemon_params['threshold_battery_capacity_crit'] < env.UT_CONST.def_threshold_battery_capacity[0] < 100:
+            print('Invalid threshold_battery_capacity_crit [{}].  Using default [{}].'.format(
+                self.daemon_params['threshold_battery_capacity_crit'], env.UT_CONST.def_threshold_battery_capacity[0]))
+            self.daemon_params['threshold_battery_capacity_crit'] = env.UT_CONST.def_threshold_battery_capacity[0]
+        if self.daemon_params['threshold_battery_capacity_warn'] < env.UT_CONST.def_threshold_battery_capacity[1] \
+                <= 100:
+            print('Invalid threshold_battery_capacity_warn [{}].  Using default [{}].'.format(
+                self.daemon_params['threshold_battery_capacity_warn'], env.UT_CONST.def_threshold_battery_capacity[1]))
+            self.daemon_params['threshold_battery_capacity_warn'] = env.UT_CONST.def_threshold_battery_capacity[1]
 
     def print_daemon_parameters(self) -> None:
         """ Print all daemon parameters.
