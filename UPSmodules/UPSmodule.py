@@ -810,7 +810,8 @@ class UPSsnmp:
         # Set script parameters
         for parameter_name in self.daemon_parameters:
             if re.search(env.UT_CONST.PATTERNS['INI'], config['DaemonParameters'][parameter_name]):
-                params = tuple(int(x) for x in config['DaemonParameters'][parameter_name][1:-1].split(','))
+                raw_param = re.sub(r'\s+', '', config['DaemonParameters'][parameter_name])
+                params = tuple(int(x) for x in raw_param[1:-1].split(','))
                 if parameter_name == 'read_interval':
                     self.daemon_params[parameter_name]['monitor'] = params[0]
                     self.daemon_params[parameter_name]['daemon'] = params[1]

@@ -45,7 +45,7 @@ class UtConst:
     PATTERNS = {'HEXRGB': re.compile(r'^#[0-9a-fA-F]{6}'),
                 'SNMP_VALUE': re.compile(r'.*=.*:.*'),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
-                'INI': re.compile(r'^\([0-9]+,[0-9]+\)$'),
+                'INI': re.compile(r'^\(\s*[0-9]+\s*,\s*[0-9]+\s*\)\s*$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
     _local_icon_list = ['{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home())),
                         '/usr/share/rickslab-ups-utils/icons']
