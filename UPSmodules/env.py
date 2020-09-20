@@ -72,6 +72,7 @@ class UtConst:
         # Configuration Parameters
         self.ERROR_json = False
         self.UPS_LIST_JSON_FILE = 'config.json'
+        self.UPS_CONFIG_INI = 'ups-utils.ini'
 
         # Utility Execution Flags
         self.show_unresponsive = False

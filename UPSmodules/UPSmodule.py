@@ -790,7 +790,7 @@ class UPSsnmp:
         """
         config = configparser.ConfigParser()
         try:
-            config.read('ups-utils.ini')
+            config.read(env.UT_CONST.UPS_CONFIG_INI)
         except configparser.Error as err:
             LOGGER.exception('config parser error: %s', err)
             print('Error in ups-utils.ini file.  Using defaults')
@@ -819,9 +819,11 @@ class UPSsnmp:
                     self.daemon_params[parameter_name]['crit'] = params[0]
                     self.daemon_params[parameter_name]['warn'] = params[1]
             else:
+                LOGGER.debug('Incorrect format for %s parameter: %s',
+                             parameter_name, config['DaemonParameters'][parameter_name])
                 print('Incorrect format for {} parameter: {}'.format(
                     parameter_name, config['DaemonParameters'][parameter_name]))
-                sys.exit(-1)
+                print('Using default value: {}'.format(self.daemon_params[parameter_name]))
 
         # Check Daemon Parameter Values
         for parameter_name in self.daemon_parameters:
@@ -829,31 +831,46 @@ class UPSsnmp:
                 for sub_parameter_name in ['monitor', 'daemon']:
                     if self.daemon_params[parameter_name][sub_parameter_name] < \
                             self.daemon_params[parameter_name]['limit']:
-                        print('Warning invalid {}-{} value [{}], using defaults'.format(
-                            parameter_name, sub_parameter_name, self.daemon_params[parameter_name][sub_parameter_name]))
+                        message = 'Warning invalid {}-{} value [{}], using defaults'.format(
+                            parameter_name, sub_parameter_name, self.daemon_params[parameter_name][sub_parameter_name])
+                        LOGGER.debug(message)
+                        print(message)
+                        self.daemon_params[parameter_name] = self.daemon_parameters_defaults[parameter_name].copy()
             else:
                 reset = False
                 if self.daemon_parameters_defaults[parameter_name]['crit'] > \
                         self.daemon_parameters_defaults[parameter_name]['warn']:
                     if self.daemon_params[parameter_name]['crit'] <= self.daemon_params[parameter_name]['warn']:
                         reset = True
-                        print('Warning crit must be > warn value, using defaults for {}'.format(parameter_name))
+                        message = 'Warning crit must be > warn value, using defaults for {}'.format(parameter_name)
+                        LOGGER.debug(message)
+                        print(message)
                     if self.daemon_params[parameter_name]['crit'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        print('Warning crit must be >= limit value, using defaults for {}'.format(parameter_name))
+                        message = 'Warning crit must be >= limit value, using defaults for {}'.format(parameter_name)
+                        LOGGER.debug(message)
+                        print(message)
                     if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        print('Warning warn must be >= limit value, using defaults for {}'.format(parameter_name))
+                        message = 'Warning warn must be >= limit value, using defaults for {}'.format(parameter_name)
+                        LOGGER.debug(message)
+                        print(message)
                 else:
                     if self.daemon_params[parameter_name]['crit'] >= self.daemon_params[parameter_name]['warn']:
                         reset = True
-                        print('Warning crit must be < warn value, using defaults for {}'.format(parameter_name))
+                        message = 'Warning crit must be < warn value, using defaults for {}'.format(parameter_name)
+                        LOGGER.debug(message)
+                        print(message)
                     if self.daemon_params[parameter_name]['crit'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        print('Warning crit must be >= limit value, using defaults for {}'.format(parameter_name))
+                        message = 'Warning crit must be >= limit value, using defaults for {}'.format(parameter_name)
+                        LOGGER.debug(message)
+                        print(message)
                     if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        print('Warning warn must be >= limit value, using defaults for {}'.format(parameter_name))
+                        message = 'Warning warn must be >= limit value, using defaults for {}'.format(parameter_name)
+                        LOGGER.debug(message)
+                        print(message)
                 if reset:
                     self.daemon_params[parameter_name] = self.daemon_parameters_defaults[parameter_name].copy()
 
