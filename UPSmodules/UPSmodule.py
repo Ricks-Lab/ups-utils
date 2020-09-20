@@ -38,7 +38,7 @@ import subprocess
 import logging
 import configparser
 from enum import Enum
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict
 from uuid import uuid4
 from UPSmodules import __version__, __status__
 try:
@@ -53,16 +53,28 @@ LOGGER = logging.getLogger('ups-utils')
 class UPSsnmp:
     """ Class definition for UPS communication object."""
 
+    # Configuration details
+    daemon_paths = ['boinc_home', 'ups_utils_script_path']
     daemon_scripts = ['suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script']
-    daemon_parameters = ['read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
-                         'threshold_battery_load', 'threshold_battery_capacity']
-    daemon_parameters_defaults = {'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
-                                  'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
-                                  'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
-                                  'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 10},
-                                  'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
+    daemon_param_names = ['read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
+                          'threshold_battery_load', 'threshold_battery_capacity']
+    daemon_param_defaults = {'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
+                             'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
+                             'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
+                             'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 10},
+                             'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
+    # Set params to defaults
+    daemon_params: Dict[str, Union[str, dict]] = {
+        'boinc_home': None, 'ups_utils_script_path': None,
+        'suspend_script': None, 'resume_script': None,
+        'shutdown_script': None, 'cancel_shutdown_script': None,
+        'read_interval': daemon_param_defaults['read_interval'].copy(),
+        'threshold_battery_time_rem': daemon_param_defaults['threshold_battery_time_rem'].copy(),
+        'threshold_time_on_battery': daemon_param_defaults['threshold_time_on_battery'].copy(),
+        'threshold_battery_load': daemon_param_defaults['threshold_battery_load'].copy(),
+        'threshold_battery_capacity': daemon_param_defaults['threshold_battery_capacity'].copy()}
+    
     state_style = Enum('state', 'warn crit green bold normal')
-
     # UPS response bit string decoders
     decoders = {'apc_system_status': ['Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
                                       'SCE', 'AVR_Boost', 'AVR_Trim', 'OverLoad', 'RT_Calibration',
@@ -82,14 +94,6 @@ class UPSsnmp:
                                       'BypassPhaseFault', 'UPSinternalComFail', 'EffBoosterMode',
                                       'Off', 'Standby', 'Minor/EnvAlarm']}
 
-    # UPS from config.py for ups-daemon and monitor utilities.
-    daemon_params = {'suspend_script': '', 'resume_script': '',
-                     'shutdown_script': '', 'cancel_shutdown_script': '',
-                     'read_interval': daemon_parameters_defaults['read_interval'].copy(),
-                     'threshold_battery_time_rem': daemon_parameters_defaults['threshold_battery_time_rem'].copy(),
-                     'threshold_time_on_battery': daemon_parameters_defaults['threshold_time_on_battery'].copy(),
-                     'threshold_battery_load': daemon_parameters_defaults['threshold_battery_load'].copy(),
-                     'threshold_battery_capacity': daemon_parameters_defaults['threshold_battery_capacity'].copy()}
     # UPS MiB Commands
     monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
                                    'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
@@ -795,20 +799,34 @@ class UPSsnmp:
             LOGGER.exception('config parser error: %s', err)
             print('Error in ups-utils.ini file.  Using defaults')
             return
+        LOGGER.debug('config[DaemonPaths]: %s', dict(config['DaemonPaths']))
         LOGGER.debug('config[DaemonScripts]: %s', dict(config['DaemonScripts']))
         LOGGER.debug('config[DaemonParameters]: %s', dict(config['DaemonParameters']))
+
+        # Set path definitions
+        for path_name in self.daemon_paths:
+            if isinstance(config['DaemonPaths'][path_name], str):
+                self.daemon_params[path_name] = os.path.expanduser(config['DaemonPaths'][path_name])
+                if self.daemon_params[path_name]:
+                    if not os.path.isdir(self.daemon_params[path_name]):
+                        print('Missing directory for {} path_name: {}'.format(path_name, self.daemon_params[path_name]))
+                        sys.exit(-1)
+        # TODO need to verify this is accessible in bash sub-processes
+        if self.daemon_params['boinc_home']:
+            os.environ['BOINC_HOME'] = self.daemon_params['boinc_home']
 
         # Set script definitions
         for script_name in self.daemon_scripts:
             if isinstance(config['DaemonScripts'][script_name], str):
-                self.daemon_params[script_name] = config['DaemonScripts'][script_name]
+                self.daemon_params[script_name] = os.path.join(self.daemon_params['ups_utils_script_path'],
+                                                               config['DaemonScripts'][script_name])
                 if self.daemon_params[script_name]:
                     if not os.path.isfile(self.daemon_params[script_name]):
                         print('Missing {} script: {}'.format(script_name, self.daemon_params[script_name]))
                         sys.exit(-1)
 
         # Set script parameters
-        for parameter_name in self.daemon_parameters:
+        for parameter_name in self.daemon_param_names:
             if re.search(env.UT_CONST.PATTERNS['INI'], config['DaemonParameters'][parameter_name]):
                 raw_param = re.sub(r'\s+', '', config['DaemonParameters'][parameter_name])
                 params = tuple(int(x) for x in raw_param[1:-1].split(','))
@@ -826,7 +844,7 @@ class UPSsnmp:
                 print('Using default value: {}'.format(self.daemon_params[parameter_name]))
 
         # Check Daemon Parameter Values
-        for parameter_name in self.daemon_parameters:
+        for parameter_name in self.daemon_param_names:
             if parameter_name == 'read_interval':
                 for sub_parameter_name in ['monitor', 'daemon']:
                     if self.daemon_params[parameter_name][sub_parameter_name] < \
@@ -835,11 +853,11 @@ class UPSsnmp:
                             parameter_name, sub_parameter_name, self.daemon_params[parameter_name][sub_parameter_name])
                         LOGGER.debug(message)
                         print(message)
-                        self.daemon_params[parameter_name] = self.daemon_parameters_defaults[parameter_name].copy()
+                        self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
             else:
                 reset = False
-                if self.daemon_parameters_defaults[parameter_name]['crit'] > \
-                        self.daemon_parameters_defaults[parameter_name]['warn']:
+                if self.daemon_param_defaults[parameter_name]['crit'] > \
+                        self.daemon_param_defaults[parameter_name]['warn']:
                     if self.daemon_params[parameter_name]['crit'] <= self.daemon_params[parameter_name]['warn']:
                         reset = True
                         message = 'Warning crit must be > warn value, using defaults for {}'.format(parameter_name)
@@ -872,7 +890,7 @@ class UPSsnmp:
                         LOGGER.debug(message)
                         print(message)
                 if reset:
-                    self.daemon_params[parameter_name] = self.daemon_parameters_defaults[parameter_name].copy()
+                    self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
 
     def print_daemon_parameters(self) -> None:
         """ Print all daemon parameters.

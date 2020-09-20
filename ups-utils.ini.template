@@ -1,13 +1,18 @@
 # Daemon/monitor parameter definitions
 
+[DaemonPaths]
+boinc_home = /home/boinc/BOINC/
+# ups_utils_script_path = ~/.local/bin/
+ups_utils_script_path = ~/pydev/ups-utils/
+
 [DaemonScripts]
-suspend_script = /home/rick/pydev/ups-utils/pauseBOINC.sh
-resume_script = /home/rick/pydev/ups-utils/resumeBOINC.sh
-shutdown_script = /home/rick/pydev/ups-utils/shutdownBOINC.sh
-cancel_shutdown_script = /home/rick/pydev/ups-utils/cancelShutdownBOINC.sh
+suspend_script = pauseBOINC.sh
+resume_script = resumeBOINC.sh
+shutdown_script = shutdownBOINC.sh
+cancel_shutdown_script = cancelShutdownBOINC.sh
 
 [DaemonParameters]
-# param = (monitor,daemon)
+# read_interval = (monitor,daemon)
 read_interval = (10,30)
 # param = (crit,warn)
 threshold_battery_time_rem = (5,10)
