@@ -409,7 +409,7 @@ def main() -> None:
     parser.add_argument('--gui', help='Display GTK Version of Monitor', action='store_true', default=False)
     parser.add_argument('--log', help='Write all monitor data to logfile', action='store_true', default=False)
     parser.add_argument('--sleep', help='Number of seconds to sleep between updates',
-                        type=int, default=UPS.UPSsnmp.daemon_parameters_defaults['read_interval']['monitor'])
+                        type=int, default=UPS.UPSsnmp.daemon_param_defaults['read_interval']['monitor'])
     parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
     args = parser.parse_args()
 
@@ -446,7 +446,7 @@ def main() -> None:
         print('    Check the config.json file.')
     print('')
 
-    if int(args.sleep) >= UPS.UPSsnmp.daemon_parameters_defaults['read_interval']['limit']:
+    if int(args.sleep) >= UPS.UPSsnmp.daemon_param_defaults['read_interval']['limit']:
         env.UT_CONST.SLEEP = int(args.sleep)
     else:
         print('Invalid value for sleep specified.  Must be an integer >= {}'.format(

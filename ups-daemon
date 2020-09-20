@@ -123,7 +123,7 @@ def main() -> None:
         suspend_state = False
         shutting_down = False
         normal_sleep = ups.daemon_params['read_interval']['daemon']
-        fault_sleep = UPS.UPSsnmp.daemon_parameters_defaults['read_interval']['limit']
+        fault_sleep = UPS.UPSsnmp.daemon_param_defaults['read_interval']['limit']
         active_sleep = normal_sleep
         while True:
             time_str = datetime.now().strftime('%c')
