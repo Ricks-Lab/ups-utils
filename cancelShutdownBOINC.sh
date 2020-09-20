@@ -2,7 +2,7 @@
 #
 #   ups-utils  -  A set of utilities for the management of UPS from a linux host
 #
-#   cancelShutdownSETI.sh  -  A sample shutdown script for a BOINC client
+#   cancelShutdownBOINC.sh  -  A sample shutdown script for a BOINC client
 #
 #   Copyright (C) 2019  RueiKe
 #
@@ -19,7 +19,17 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-LOG_FILE="BOINC_Power.log"
+if [ -z "${BOINC_HOME}" ]; then
+  echo "BOINC_HOME not set."
+  exit
+  fi
 
+if ! cd "${BOINC_HOME}"; then
+  echo "Not able to cd to ${BOINC_HOME}."
+  exit
+  fi
+
+LOG_FILE="BOINC_Power.log"
 echo "$(date): Cancelling shutdown" >> $LOG_FILE
+
 shutdown -c 'System power restored, canceling shutdown'

@@ -2,7 +2,7 @@
 #
 #   ups-utils  -  A set of utilities for the management of UPS from a linux host
 #
-#   pauseSETI.sh  -  A sample pause script for a BOINC client
+#   quitBOINC.sh  -  A sample pause script for a BOINC client
 #
 #   Copyright (C) 2019  RicksLab
 #
@@ -19,14 +19,26 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+if [ -z "${BOINC_HOME}" ]; then
+  echo "BOINC_HOME not set."
+  exit
+  fi
+
+if ! cd "${BOINC_HOME}"; then
+  echo "Not able to cd to ${BOINC_HOME}."
+  exit
+  fi
+
 LOG_FILE="BOINC_Power.log"
-BOINC_HOME="/home/boinc/BOINC/"
+echo "$(date): quitting BOINC" >> ${LOG_FILE}
+
 BOINCCMD="${BOINC_HOME}boinccmd"
-cd $BOINC_HOME || exit
-echo "$(date): pausing BOINC" >> $LOG_FILE
+[ -x "${BOINCCMD}" ] || echo "${BOINCCMD} executable not found." >> "${LOG_FILE}"
+
 $BOINCCMD --get_project_status \
 	  | sed -n -e '/master URL:/s/.\+URL://p' \
 	  | while read ; do \
 	    $BOINCCMD --project $REPLY suspend \
 	  ; done
+
 $BOINCCMD --quit >> $LOG_FILE

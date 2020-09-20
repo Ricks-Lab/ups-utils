@@ -811,7 +811,6 @@ class UPSsnmp:
                     if not os.path.isdir(self.daemon_params[path_name]):
                         print('Missing directory for {} path_name: {}'.format(path_name, self.daemon_params[path_name]))
                         sys.exit(-1)
-        # TODO need to verify this is accessible in bash sub-processes
         if self.daemon_params['boinc_home']:
             os.environ['BOINC_HOME'] = self.daemon_params['boinc_home']
 
@@ -916,9 +915,9 @@ class UPSsnmp:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
-        except:
-            print('Error: could not execute shutdown script: {}'.format(self.daemon_params['shutdown_script']),
-                  file=sys.stderr)
+        except subprocess.CalledProcessError as err:
+            print('Error [{}]: could not execute shutdown script: {}'.format(err,
+                  self.daemon_params['shutdown_script']), file=sys.stderr)
 
     def cancel_shutdown(self) -> None:
         """ Execute the cancel shutdown script as defined in the daemon parameters.
@@ -935,8 +934,8 @@ class UPSsnmp:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
-        except:
-            print('Error: could not execute cancel shutdown script: {}'.format(
+        except subprocess.CalledProcessError as err:
+            print('Error [{}]: could not execute cancel shutdown script: {}'.format(err,
                   self.daemon_params['cancel_shutdown_script']), file=sys.stderr)
 
     def resume(self) -> None:
@@ -954,8 +953,8 @@ class UPSsnmp:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
-        except:
-            print('Error: could not execute resume script: {}'.format(self.daemon_params['resume_script']),
+        except subprocess.CalledProcessError as err:
+            print('Error [{}]: could not execute resume script: {}'.format(err, self.daemon_params['resume_script']),
                   file=sys.stderr)
 
     def suspend(self) -> None:
@@ -973,8 +972,8 @@ class UPSsnmp:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
-        except:
-            print('Error: could not execute suspend script: {}'.format(self.daemon_params['suspend_script']),
+        except subprocess.CalledProcessError as err:
+            print('Error [{}]: could not execute suspend script: {}'.format(err, self.daemon_params['suspend_script']),
                   file=sys.stderr)
     # End of set parameters required for daemon mode.
 

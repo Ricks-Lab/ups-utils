@@ -2,7 +2,7 @@
 #
 #   ups-utils  -  A set of utilities for the management of UPS from a linux host
 #
-#   resumeSETI.sh  -  A sample resume script for a BOINC client
+#   resumeBOINC.sh  -  A sample resume script for a BOINC client
 #
 #   Copyright (C) 2019  RueiKe
 #
@@ -19,11 +19,22 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+if [ -z "${BOINC_HOME}" ]; then
+  echo "BOINC_HOME not set."
+  exit
+  fi
+
+if ! cd "${BOINC_HOME}"; then
+  echo "Not able to cd to ${BOINC_HOME}."
+  exit
+  fi
+
 LOG_FILE="BOINC_Power.log"
-BOINC_HOME="/home/boinc/BOINC/"
+echo "$(date): resuming BOINC" >> ${LOG_FILE}
+
 BOINCCMD="${BOINC_HOME}boinccmd"
-cd $BOINC_HOME || exit
-echo "$(date): resuming BOINC" >> $LOG_FILE
+[ -x "${BOINCCMD}" ] || echo "${BOINCCMD} executable not found." >> "${LOG_FILE}"
+
 $BOINCCMD --get_project_status \
 	  | sed -n -e '/master URL:/s/.\+URL://p' \
 	  | while read ; do \
