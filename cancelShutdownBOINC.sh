@@ -21,15 +21,17 @@
 
 if [ -z "${BOINC_HOME}" ]; then
   echo "BOINC_HOME not set."
-  exit
+  exit 1
   fi
 
 if ! cd "${BOINC_HOME}"; then
   echo "Not able to cd to ${BOINC_HOME}."
-  exit
+  exit 1
   fi
 
 LOG_FILE="BOINC_Power.log"
 echo "$(date): Cancelling shutdown" >> $LOG_FILE
 
 shutdown -c 'System power restored, canceling shutdown'
+
+exit 0

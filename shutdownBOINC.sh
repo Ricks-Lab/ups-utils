@@ -21,12 +21,12 @@
 
 if [ -z "${BOINC_HOME}" ]; then
   echo "BOINC_HOME not set."
-  exit
+  exit 1
   fi
 
 if ! cd "${BOINC_HOME}"; then
   echo "Not able to cd to ${BOINC_HOME}."
-  exit
+  exit 1
   fi
 
 LOG_FILE="BOINC_Power.log"
@@ -34,3 +34,5 @@ echo "$(date): shutting down" >> $LOG_FILE
 
 quitBOINC.sh
 shutdown +2 'UPS battery depleted.  System will shutdown in 2min.'
+
+exit 0

@@ -21,22 +21,27 @@
 
 if [ -z "${BOINC_HOME}" ]; then
   echo "BOINC_HOME not set."
-  exit
+  exit 1
   fi
 
 if ! cd "${BOINC_HOME}"; then
   echo "Not able to cd to ${BOINC_HOME}."
-  exit
+  exit 1
   fi
 
 LOG_FILE="BOINC_Power.log"
 echo "$(date): pausing BOINC" >> ${LOG_FILE}
 
 BOINCCMD="${BOINC_HOME}boinccmd"
-[ -x "${BOINCCMD}" ] || echo "${BOINCCMD} executable not found." >> "${LOG_FILE}"
+if ! [ -x "${BOINCCMD}" ]; then
+  echo "${BOINCCMD} executable not found." >> "${LOG_FILE}"
+  exit 1
+  fi
 
 $BOINCCMD --get_project_status \
 	  | sed -n -e '/master URL:/s/.\+URL://p' \
 	  | while read ; do \
 	    $BOINCCMD --project $REPLY suspend \
 	  ; done
+
+exit 0
