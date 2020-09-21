@@ -1,19 +1,26 @@
 # ups-utils
+
 A set of utilities to monitor and react to the status of a supported UPS
 
 ## Getting Started
-A set of configuration parameters are used when the config.py file is not provided.  These can be viewed with
-the command *ups-daemon --list_params*. Alternatives to these defaults can be specified in the config.py file 
-using the config.py.template file as a template.
 
-Also, a UPS list must be specified in the config.json file using config.json.template as a template.  This file
+Application configuration parameters can be specified in the `ups-utils.ini` file.  A template files is 
+provided: `ups-utils.ini.template`.  You can verify the values of the configuration settings by executing
+`usp-daemon --list_params`.
+
+
+Also, a UPS list must be specified in the `config.json` file using `config.json.template` as a template.  This file
 contains details about each UPS that make snmp communication possible.  The utility requires snmp v2c in order
 to communicate with the network accessible UPSs.  As a result, you must configure your target Network attached 
 UPS devices to use SNMPv2 with a known Private Community String.
 
-The ups-utils rely on the command *snmpget* which is part of the snmp package that must be installed.
+The ups-utils rely on the command *snmpget* which is part of the snmp package that must be installed:
+```
+sudo apt install snmp
+```
 
 ## ups-daemon
+
 With no options specified, the utility will give the current status of the UPS configured with *daemon = true*
 in the config.json file. With the *--daemon* option, *ups-daemon* will continuously check the status of the
 UPS.  When it detects that the UPS is sourcing powering from the battery, it will check the amount of time it
@@ -28,12 +35,14 @@ but is not implemented at this time.  The threshold and script definitions must 
 using config.py.template as a template.
 
 ## ups-ls
+
 This utility displays most relevant parameters for installed and compatible UPSs
 listed in the config.json file.  By default, all available parameters are displayed.
 The *--input* and *--output* options can be used to get relevant UPS input and output 
 parameters.
 
 ## ups-monitor
+
 A utility to give the current state of all compatible UPSs. The default behavior
 is to continuously update a text based table in the current window until Ctrl-C is
 pressed.  With the *--gui* option, a table of relevant parameters will be updated
@@ -47,9 +56,11 @@ informational parameters. By default, unresponsive UPSs will not be displayed, b
 *--show_unresponsive* can be used to force their display.
 
 ## New in the Release  -  [v0.9.0](https://github.com/Ricks-Lab/ups-utils/releases/tag/v0.9.0)
+
 * Initial Beta Release - Please feedback your question/issues in the project's issues.  Thanks!
 
 ## Under Development
+
 The utility currently supports:
 * APC UPS with AP9630 NMC 
 * EATON UPS with PowerWalker NMC
@@ -60,6 +71,7 @@ in this [code](https://github.com/Ricks-Lab/ups-utils/blob/master/UPSmodules/UPS
 free to make a pull request.
 
 ## Reference Material
+
 * [apc-ups-snmp](https://github.com/phillipsnick/apc-ups-snmp)
 * [Partial List of OIDs for APC UPS](https://www.opsview.com/resources/monitoring/blog/monitoring-apc-ups-useful-oids)
 * [Another Partial List of OIDs for APC UPS](https://www.itninja.com/blog/view/snmp-oids-for-apc-smart-ups-3000-rm-xl)
