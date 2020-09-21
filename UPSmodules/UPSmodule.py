@@ -901,124 +901,34 @@ class UPSsnmp:
         for param_name, param_value in self.daemon_params.items():
             print('    {}: {}'.format(param_name, param_value))
 
-    def script_execution(self) -> None:
+    def execute_script(self, script_name: str) -> bool:
         """ Execute script defined in the daemon parameters
 
-        :return:  None
+        :param: script_name: name of script to be executed
+        :return:  True on success
         """
-        for script_name in self.daemon_scripts:
-            if not self.daemon_params[script_name]:
-                print('No {} defined'.format(script_name))
-                return
-            try:
-                cmd = subprocess.Popen(shlex.split(self.daemon_params[script_name]),
-                                       shell=False, stdout=subprocess.PIPE)
-                while True:
-                    if cmd.poll() is not None:
-                        break
-                    time.sleep(1)
-                if cmd.returncode:
-                    message = '{} failed with return code: [{}]'.format(script_name, cmd.returncode)
-                    print(message)
-                    LOGGER.debug(message)
-            except subprocess.CalledProcessError as err:
-                print('Error [{}]: could not execute script: {}'.format(err,
-                                                                        self.daemon_params[
-                                                                                     'shutdown_script']),
-                      file=sys.stderr)
-
-    def shutdown(self) -> None:
-        """ Execute the shutdown script as defined in the daemon parameters.
-
-        :return:  None
-        """
-        if not self.daemon_params['shutdown_script']:
-            print('No shutdown script defined')
-            return
+        if script_name not in self.daemon_scripts:
+            raise AttributeError('Error: {} no valid script name: [{}]'.format(script_name, self.daemon_scripts))
+        if not self.daemon_params[script_name]:
+            print('No {} defined'.format(script_name))
+            return False
         try:
-            cmd = subprocess.Popen(shlex.split(self.daemon_params['shutdown_script']),
+            cmd = subprocess.Popen(shlex.split(self.daemon_params[script_name]),
                                    shell=False, stdout=subprocess.PIPE)
             while True:
                 if cmd.poll() is not None:
                     break
-                time.sleep(1)
+                time.sleep(0.2)
             if cmd.returncode:
-                message = 'shutdown script failed with return code: [{}]'.format(cmd.returncode)
+                message = '{} failed with return code: [{}]'.format(script_name, cmd.returncode)
                 print(message)
                 LOGGER.debug(message)
+                return False
         except subprocess.CalledProcessError as err:
-            print('Error [{}]: could not execute shutdown script: {}'.format(err,
-                  self.daemon_params['shutdown_script']), file=sys.stderr)
-
-    def cancel_shutdown(self) -> None:
-        """ Execute the cancel shutdown script as defined in the daemon parameters.
-
-        :return:  None
-        """
-        if not self.daemon_params['cancel_shutdown_script']:
-            print('No cancel shutdown script defined')
-            return
-        try:
-            cmd = subprocess.Popen(shlex.split(self.daemon_params['cancel_shutdown_script']),
-                                   shell=False, stdout=subprocess.PIPE)
-            while True:
-                if cmd.poll() is not None:
-                    break
-                time.sleep(1)
-            if cmd.returncode:
-                message = 'cancelShutdown script failed with return code: [{}]'.format(cmd.returncode)
-                print(message)
-                LOGGER.debug(message)
-        except subprocess.CalledProcessError as err:
-            print('Error [{}]: could not execute cancel shutdown script: {}'.format(err,
-                  self.daemon_params['cancel_shutdown_script']), file=sys.stderr)
-
-    def resume(self) -> None:
-        """ Execute the resume script as defined in the daemon parameters.
-
-        :return:  None
-        """
-        if not self.daemon_params['resume_script']:
-            print('No resume script defined')
-            return
-        try:
-            cmd = subprocess.Popen(shlex.split(self.daemon_params['resume_script']),
-                                   shell=False, stdout=subprocess.PIPE)
-            while True:
-                if cmd.poll() is not None:
-                    break
-                time.sleep(1)
-            if cmd.returncode:
-                message = 'resume script failed with return code: [{}]'.format(cmd.returncode)
-                print(message)
-                LOGGER.debug(message)
-        except subprocess.CalledProcessError as err:
-            print('Error [{}]: could not execute resume script: {}'.format(err, self.daemon_params['resume_script']),
-                  file=sys.stderr)
-
-    def suspend(self) -> None:
-        """ Execute the suspend script as defined in the daemon parameters.
-
-        :return:  None
-        """
-        if not self.daemon_params['suspend_script']:
-            print('No suspend script defined')
-            return
-        try:
-            cmd = subprocess.Popen(shlex.split(self.daemon_params['suspend_script']),
-                                   shell=False, stdout=subprocess.PIPE)
-            while True:
-                if cmd.poll() is not None:
-                    break
-                time.sleep(1)
-            if cmd.returncode:
-                message = 'suspend script failed with return code: [{}]'.format(cmd.returncode)
-                print(message)
-                LOGGER.debug(message)
-        except subprocess.CalledProcessError as err:
-            print('Error [{}]: could not execute suspend script: {}'.format(err, self.daemon_params['suspend_script']),
-                  file=sys.stderr)
-    # End of set parameters required for daemon mode.
+            print('Error [{}]: could not execute script: {}'.format(err,
+                  self.daemon_params[script_name]), file=sys.stderr)
+            return False
+        return True
 
 
 def about() -> None:
