@@ -901,6 +901,32 @@ class UPSsnmp:
         for param_name, param_value in self.daemon_params.items():
             print('    {}: {}'.format(param_name, param_value))
 
+    def script_execution(self) -> None:
+        """ Execute script defined in the daemon parameters
+
+        :return:  None
+        """
+        for script_name in self.daemon_scripts:
+            if not self.daemon_params[script_name]:
+                print('No {} defined'.format(script_name))
+                return
+            try:
+                cmd = subprocess.Popen(shlex.split(self.daemon_params[script_name]),
+                                       shell=False, stdout=subprocess.PIPE)
+                while True:
+                    if cmd.poll() is not None:
+                        break
+                    time.sleep(1)
+                if cmd.returncode:
+                    message = '{} failed with return code: [{}]'.format(script_name, cmd.returncode)
+                    print(message)
+                    LOGGER.debug(message)
+            except subprocess.CalledProcessError as err:
+                print('Error [{}]: could not execute script: {}'.format(err,
+                                                                        self.daemon_params[
+                                                                                     'shutdown_script']),
+                      file=sys.stderr)
+
     def shutdown(self) -> None:
         """ Execute the shutdown script as defined in the daemon parameters.
 
