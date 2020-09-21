@@ -58,14 +58,15 @@ class UPSsnmp:
     daemon_scripts = ['suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script']
     daemon_param_names = ['read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
                           'threshold_battery_load', 'threshold_battery_capacity']
-    daemon_param_defaults = {'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
+    daemon_param_defaults = {'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
+                             'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
                              'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
                              'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
                              'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 10},
                              'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
     # Set params to defaults
     daemon_params: Dict[str, Union[str, dict]] = {
-        'boinc_home': None, 'ups_utils_script_path': None,
+        'boinc_home': None, 'ups_utils_script_path': daemon_param_defaults['ups_utils_script_path'],
         'suspend_script': None, 'resume_script': None,
         'shutdown_script': None, 'cancel_shutdown_script': None,
         'read_interval': daemon_param_defaults['read_interval'].copy(),
@@ -915,6 +916,10 @@ class UPSsnmp:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
+            if cmd.returncode:
+                message = 'shutdown script failed with return code: [{}]'.format(cmd.returncode)
+                print(message)
+                LOGGER.debug(message)
         except subprocess.CalledProcessError as err:
             print('Error [{}]: could not execute shutdown script: {}'.format(err,
                   self.daemon_params['shutdown_script']), file=sys.stderr)
@@ -934,6 +939,10 @@ class UPSsnmp:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
+            if cmd.returncode:
+                message = 'cancelShutdown script failed with return code: [{}]'.format(cmd.returncode)
+                print(message)
+                LOGGER.debug(message)
         except subprocess.CalledProcessError as err:
             print('Error [{}]: could not execute cancel shutdown script: {}'.format(err,
                   self.daemon_params['cancel_shutdown_script']), file=sys.stderr)
@@ -953,6 +962,10 @@ class UPSsnmp:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
+            if cmd.returncode:
+                message = 'resume script failed with return code: [{}]'.format(cmd.returncode)
+                print(message)
+                LOGGER.debug(message)
         except subprocess.CalledProcessError as err:
             print('Error [{}]: could not execute resume script: {}'.format(err, self.daemon_params['resume_script']),
                   file=sys.stderr)
@@ -972,6 +985,10 @@ class UPSsnmp:
                 if cmd.poll() is not None:
                     break
                 time.sleep(1)
+            if cmd.returncode:
+                message = 'suspend script failed with return code: [{}]'.format(cmd.returncode)
+                print(message)
+                LOGGER.debug(message)
         except subprocess.CalledProcessError as err:
             print('Error [{}]: could not execute suspend script: {}'.format(err, self.daemon_params['suspend_script']),
                   file=sys.stderr)
