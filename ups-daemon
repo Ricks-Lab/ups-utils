@@ -148,7 +148,7 @@ def main() -> None:
             # Not on Battery
             if time_on_bat == 0.0:
                 if shutting_down:
-                    ups.cancel_shutdown()
+                    ups.execute_script('cancel_shutdown_script')
                     print('{}: Cancelling Shutdown'.format(time_str))
                     shutting_down = False
                 if active_sleep != normal_sleep:
@@ -188,19 +188,19 @@ def main() -> None:
                         print('{}: Battery Low Signal'.format(time_str))
                         print('{}: Calling Shutdown Script'.format(time_str))
                         shutting_down = True
-                        ups.shutdown()
+                        ups.execute_script('shutdown_script')
                     if bat_capacity < crit_bat_level or remain_run_time < crit_runtime_rem:
                         # Call shutdown script
                         print('{}: Battery Nearly Exhausted'.format(time_str))
                         print('{}: Calling Shutdown Script'.format(time_str))
                         shutting_down = True
-                        ups.shutdown()
+                        ups.execute_script('shutdown_script')
 
             if suspend_state:
                 if time_on_bat < ups.daemon_params['threshold_time_on_battery']['crit'] and not overload_fault:
                     # Resume
                     print('{}: Resuming'.format(time_str))
-                    ups.resume()
+                    ups.execute_script('resume_script')
                     suspend_state = False
                     pass
 
@@ -208,7 +208,7 @@ def main() -> None:
                 if time_on_bat > ups.daemon_params['threshold_time_on_battery']['crit'] or bat_load > crit_load_level:
                     # Suspend
                     print('{}: Suspending'.format(time_str))
-                    ups.suspend()
+                    ups.execute_script('suspend_script')
                     suspend_state = True
                     pass
 
