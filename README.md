@@ -13,7 +13,7 @@ template files is provided: `ups-utils.ini.template`.  You can verify the values
 the configuration settings by executing
 
 ```
-usp-daemon --list_params
+ups-daemon --list_params
 ```
 
 Also, a UPS list must be specified in the `config.json` file using `config.json.template` as a
