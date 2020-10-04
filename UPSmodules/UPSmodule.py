@@ -351,8 +351,15 @@ class UPSsnmp:
         """
         daemon_cnt = 0
         ups_cnt = 0
+        error_flag = False
         for ups in self.ups_list.values():
             ups['uuid'] = uuid4().hex
+            if not re.search(env.UT_CONST.PATTERNS['IPV4'], ups['ups_IP']):
+                message = 'ERROR: IP Address entry [{}]'.format(ups['ups_IP'])
+                print(message)
+                LOGGER.debug(message)
+                error_flag = True
+                continue
             ups['accessible'] = False
             ups['responsive'] = False
             ups['mib_commands'] = None
@@ -372,6 +379,9 @@ class UPSsnmp:
                 ups['mib_commands'] = None
         if not quiet:
             print('config.json contains {} total UPSs and {} daemon UPS'.format(ups_cnt, daemon_cnt))
+        if error_flag:
+            print('FATAL ERROR: Invalid entry in config.json')
+            sys.exit(-1)
     # End of read and check the UPS list.
 
     # Methods to get, check, and list UPSs
