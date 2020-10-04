@@ -44,6 +44,7 @@ class UtConst:
     """ Class definition for UPS Utils environment"""
     PATTERNS = {'HEXRGB': re.compile(r'^#[0-9a-fA-F]{6}'),
                 'SNMP_VALUE': re.compile(r'.*=.*:.*'),
+                'IPV4': re.compile(r'^([0-9]{1,3})(.[0-9]{1,3}){3}$'),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
                 'INI': re.compile(r'^\(\s*[0-9]+\s*,\s*[0-9]+\s*\)\s*$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
