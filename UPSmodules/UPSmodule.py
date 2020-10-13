@@ -665,13 +665,17 @@ class UPSsnmp:
         """
         if not tups:
             tups = self.active_ups
-        results = {'display_name': self.ups_name(tups=tups),
+        results = {'valid': True,
+                   'display_name': self.ups_name(tups=tups),
                    'name': self.ups_name(tups=tups),
                    'uuid': self.ups_uuid(tups=tups),
                    'ups_IP': self.ups_ip(tups=tups),
                    'ups_type': self.ups_type(tups=tups)}
         for cmd in command_list:
             results[cmd] = self.send_snmp_command(cmd, tups=tups)
+            if not results[cmd]:
+                results['valid'] = False
+                break
         # Since PowerWalker NMC is not intended for 110V UPSs, the following correction to output current is needed.
         if self.ups_type(tups=tups) == 'eaton-pw':
             if 'mib_output_current' in results.keys() and 'mib_output_voltage' in results.keys():
@@ -680,7 +684,7 @@ class UPSsnmp:
         return results
 
     def send_snmp_command(self, command_name: str, tups: dict = None,
-                          display: bool = False) -> Union[str, int, List[Union[float, str]], float]:
+                          display: bool = False) -> Union[str, int, List[Union[float, str]], float, None]:
         """ Read the specified mib commands results for specified UPS or active UPS if not specified.
 
         :param command_name:  A command to be read from the target UPS
@@ -700,9 +704,9 @@ class UPSsnmp:
         try:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
-        except:
-            print('Error executing snmp command to {} at {}.'.format(self.ups_name(), self.ups_ip()))
-            return 'UPS Not Responding'
+        except subprocess.CalledProcessError:
+            LOGGER.debug('Error executing snmp command to %s at %s.', self.ups_name(), self.ups_ip())
+            return None
 
         value = ''
         value_minute = -1

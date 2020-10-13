@@ -57,6 +57,21 @@ def signal_handler(_sig: Any, _frame: Any) -> None:
     quit_signal = True
 
 
+def daemon_sleep(sleep_time: int = 30) -> None:
+    """
+    Interruptable sleep routine for daemon loop.
+
+    :param sleep_time:  Sleep time in seconds
+    :return: None
+    """
+    global quit_signal
+    for sleep_index in range(0, sleep_time):
+        time.sleep(1)
+        if quit_signal:
+            print('{}: Received Quit Signal'.format(datetime.now().strftime('%c')))
+            sys.exit(0)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--about", help="README", action="store_true", default=False)
@@ -91,6 +106,9 @@ def main() -> None:
         sys.exit(-1)
 
     ups = UPS.UPSsnmp()
+    if not ups.active_ups['responsive']:
+        print('Fatal error: daemon UPS [{}] is unresponsive.'.format(ups.active_ups['display_name']))
+        sys.exit(-1)
     ups.set_daemon_parameters()
     if not ups.check_ups_type(ups.active_ups['ups_type']):
         print('Invalid UPS type: {}, Valid entries: '.format(ups.active_ups['ups_type']), ups.list_valid_ups_types())
@@ -128,6 +146,10 @@ def main() -> None:
         while True:
             time_str = datetime.now().strftime('%c')
             bat_status = ups.send_snmp_command('mib_battery_status')
+            if not bat_status:
+                print('{}: UPS [{}] is unresponsive'.format(time_str, ups.active_ups['display_name']))
+                daemon_sleep(active_sleep)
+                continue
             bat_load = int(ups.send_snmp_command('mib_output_load'))
             bat_capacity = int(ups.send_snmp_command('mib_battery_capacity'))
             time_on_bat = ups.send_snmp_command('mib_time_on_battery')[0]
@@ -212,11 +234,7 @@ def main() -> None:
                     suspend_state = True
                     pass
 
-            for sleep_index in range(0, active_sleep):
-                time.sleep(1)
-                if quit_signal:
-                    print('{}: Received Quit Signal'.format(time_str))
-                    sys.exit(0)
+            daemon_sleep(active_sleep)
 
 
 if __name__ == "__main__":
