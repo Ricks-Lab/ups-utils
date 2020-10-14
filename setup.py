@@ -41,6 +41,7 @@ setup(name='rickslab-ups-utils',
       install_requires=['pytz>=2019.3'],
       data_files=[('share/rickslab-ups-utils/icons', ['icons/ups-utils-monitor.icon.png']),
                   ('share/rickslab-ups-utils/doc', ['README.md', 'LICENSE']),
+                  ('share/rickslab-ups-utils/config', ['ups-utils.ini.template', 'config.json.template']),
                   ('share/man/man1', ['man/ups-ls.1',
                                       'man/ups-daemon.1',
                                       'man/ups-monitor.1'])]
