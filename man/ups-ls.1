@@ -1,0 +1,75 @@
+.TH UPS\-LS 1 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
+.nh
+.SH NAME
+ups-ls \- displays most relevant parameters for installed, accessible, and compatible UPSs.
+
+.SH SYNOPSIS
+.B ups-ls
+.RB [ \-\-help " | " \-\-about "]"
+.br
+.B ups-ls
+.RB [ \-\-input "] [" \-\-output "] [" \-\-debug "]"
+
+.SH DESCRIPTION
+.B ups-ls
+displays most relevant parameters for installed and compatible UPSs
+listed in the config.json file.  By default, all available parameters are displayed.
+The \fB--input\fR and \fB--output\fR options can be used to get relevant UPS input and output
+parameters.
+
+.SH OPTIONS
+.TP
+.BR " \-\-about"
+Will display details about 
+.B ups-ls\fP.
+.TP
+.BR \-d , " \-\-debug"
+Will run in debug mode which enables the logger at debug level.
+.TP
+.BR " \-\-input"
+Will display short list of configured UPSs with input power parameters.
+.TP
+.BR " \-\-output"
+Will display short list of configured UPSs with output power parameters.
+.TP
+.BR \-h , " \-\-help"
+Display help text and exit.
+
+.SH "EXAMPLES"
+.nf
+.B ups-ls
+
+.fi
+This will display the results of sending all available MiB commands via snmp to all configured UPSs.
+This includes UPS general information, serial number, firmware version, model type, model number, contact,
+location, up time, UPS manufacture date, UPS name, percentage of total capacity, battery temperature,
+UPS system status, battery status, time on battery, run time remaining, battery replacement, input voltage,
+input frequency, last transfer event, output voltage, output frequency, load percentage, output power,
+output current, communication status, last self test results, and date of last self test.  The actual
+listing contents will UPS and NMC dependent.
+.P
+
+.SH CONFIGURATION
+Before \fBups-utils\fR can be used, the \fBups-utils.ini\fR and \fBconfig.json\fR files must be populated
+with details specific to the user's environment.
+
+.SH "FILES"
+.PP
+.TP
+\fB~/share/rickslab-ups-utils/config/ups-utils.ini\fR
+This file is used to define required directory paths, script names, and script parameters.
+.TP
+\fB~/share/rickslab-ups-utils/config/config.json\fR
+This file is used to define ups communication parameters for all UPSs intended to be monitored.
+
+.SH BUGS
+Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
+
+.SH "SEE ALSO"
+.BR ups-mon (1),
+.BR ups-daemon (1),
+.BR smnp (8)
+
+.SH AVAILABILITY
+The ups-ls command is part of the rickslab-ups-utils package and is available from
+https://github.com/Ricks-Lab/ups-utils
