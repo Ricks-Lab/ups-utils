@@ -1,0 +1,76 @@
+.TH UPS\-UTILS.INI 4 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities File Formats"
+.nh
+.SH NAME
+ups-utils.ini \- defines required directory paths, script names, and script parameters
+
+.SH SYNOPSIS
+.ul
+~/share/rickslab-ups-utils/config/ups-utils.ini
+
+.SH DESCRIPTION
+The file \fBups-utils.ini\fR contains the definitions of parameters critical to the functioning
+of \fBups-utils\fR. A template for the creation of this file is provided in the distribution
+package as
+.ul
+~/share/rickslab-ups-utils/config/ups-utils.ini.template
+and should be used as a base for creating a usable \fBups-utils.ini\fR file.
+
+.TP
+First section defines path names:
+[DaemonPaths]
+.br
+boinc_home = /home/boinc/BOINC/
+.br
+ups_utils_script_path = ~/pydev/ups-utils/
+
+.TP
+Second section defines script names:
+[DaemonScripts]
+.br
+suspend_script = pauseBOINC.sh
+.br
+resume_script = resumeBOINC.sh
+.br
+shutdown_script = shutdownBOINC.sh
+.br
+cancel_shutdown_script = cancelShutdownBOINC.sh
+
+.TP
+Third section defines ups-utility parameters:
+[DaemonParameters]
+.br
+# read_interval = (monitor,daemon)
+.br
+read_interval = (10,30)
+.br
+threshold_battery_time_rem = (5,10)
+.br
+threshold_time_on_battery = (3,2)
+.br
+threshold_battery_load =  (90,80)
+.br
+threshold_battery_capacity = (10,50)
+
+.SH "FILES"
+.PP
+.TP
+.ul
+~/share/rickslab-ups-utils/config/ups-utils.ini
+This file is used to define required directory paths, script names, and script parameters.
+.TP
+.ul
+~/share/rickslab-ups-utils/config/ups-config.json
+This file is used to define ups communication parameters for all UPSs intended to be monitored.
+
+.SH BUGS
+Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
+
+.SH "SEE ALSO"
+.BR ups-mon (1),
+.BR ups-daemon (1),
+.BR ups-config.json (4),
+.BR smnp (8)
+
+.SH AVAILABILITY
+Setup of the \fBups-utils.ini\fR file is a requirement of the rickslab-ups-utils package and is
+available from https://github.com/Ricks-Lab/ups-utils
