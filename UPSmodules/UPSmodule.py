@@ -308,7 +308,7 @@ class UPSsnmp:
                                                  'decode': None}}}
 
     def __init__(self):
-        # UPS list from config.json for monitor and ls utils.
+        # UPS list from ups-config.json for monitor and ls utils.
         self.ups_list = {}
         self.active_ups = {}
 
@@ -332,7 +332,7 @@ class UPSsnmp:
 
     # Read and check the UPS list.
     def read_ups_list(self) -> bool:
-        """Reads the config.json file which contains parameters for UPSs to be used by utility.
+        """Reads the ups-config.json file which contains parameters for UPSs to be used by utility.
 
         :return: boolean True if no problems reading list
         """
@@ -381,9 +381,10 @@ class UPSsnmp:
                 ups['compatible'] = False
                 ups['mib_commands'] = None
         if not quiet:
-            print('config.json contains {} total UPSs and {} daemon UPS'.format(ups_cnt, daemon_cnt))
+            print('{} contains {} total UPSs and {} daemon UPS'.format(env.UT_CONST.UPS_LIST_JSON_FILE,
+                                                                       ups_cnt, daemon_cnt))
         if error_flag:
-            print('FATAL ERROR: Invalid entry in config.json')
+            print('FATAL ERROR: Invalid entry in {}'.format(env.UT_CONST.UPS_LIST_JSON_FILE))
             sys.exit(-1)
     # End of read and check the UPS list.
 
