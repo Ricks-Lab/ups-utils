@@ -16,43 +16,63 @@ package as
 and should be used as a base for creating a usable \fBups-utils.ini\fR file.
 
 .TP
-First section defines path names:
-[DaemonPaths]
+\fBFirst section defines path names:\fR
+These path names are required in order to access scripts
+defined in the second section.  When using \fBups-utils\fR to manage a machine running BOINC,
+\fBboinc_home\fR must define the location of root of BOINC where executables are located.
+
+.RS 12
+\fB[DaemonPaths]\fR
 .br
-boinc_home = /home/boinc/BOINC/
+\fBboinc_home\fR = /home/boinc/BOINC/
 .br
-ups_utils_script_path = ~/pydev/ups-utils/
+\fBups_utils_script_path\fR = ~/pydev/ups-utils/
+.RE
 
 .TP
-Second section defines script names:
-[DaemonScripts]
+\fBSecond section defines script names:\fR
+There are 4 scripts that need to be defined which are meant
+to suspend high power usage jobs when on battery or overloading the batter and to resume them when power
+returns.  A shutdown script is defined for when the battery level is critical and a cancel shutdown script
+is used if power is recovered before shutdown completes.
+
+.RS 12
+\fB[DaemonScripts]\fR
 .br
-suspend_script = pauseBOINC.sh
+\fBsuspend_script\fR = pauseBOINC.sh
 .br
-resume_script = resumeBOINC.sh
+\fBresume_script\fR = resumeBOINC.sh
 .br
-shutdown_script = shutdownBOINC.sh
+\fBshutdown_script\fR = shutdownBOINC.sh
 .br
-cancel_shutdown_script = cancelShutdownBOINC.sh
+\fBcancel_shutdown_script\fR = cancelShutdownBOINC.sh
+.RE
 
 .TP
-Third section defines ups-utility parameters:
-[DaemonParameters]
+\fBThird section defines ups-utility parameters:\fR
+These parameters are in pairs with the read_interval specifying both \fBups-monitor\fR and \fBups-daemon\fR
+read intervals in seconds. The remaining UPS related parameters specify critical and warning levels used by
+both \fBups-monitor\fR and \fBups-daemon\fR. The \fBups-monitor\fR utility will color relevant items
+red/yellow when tripping critical/warning levels. If running, \fBups-daemon --daemon\fR, will decrease
+update interval for \fBthreshold_battery_time_rem\fR or \fBthreshold_battery_capacity\fR reaching warning
+level and execute \fBshutdown_script\fR if critical level is reached.  For \fBthreshold_time_on_battery\fR
+and \fBthreshold_battery_load\fR, the \fBsuspend_script\fR will be executed on tripping critical limit.
+
+.RS 12
+\fB[DaemonParameters]\fR
 .br
-# read_interval = (monitor,daemon)
+\fBread_interval\fR = (10,30)
 .br
-read_interval = (10,30)
+\fBthreshold_battery_time_rem\fR = (5,10)
 .br
-threshold_battery_time_rem = (5,10)
+\fBthreshold_time_on_battery\fR = (3,2)
 .br
-threshold_time_on_battery = (3,2)
+\fBthreshold_battery_load\fR = (90,80)
 .br
-threshold_battery_load =  (90,80)
-.br
-threshold_battery_capacity = (10,50)
+\fBthreshold_battery_capacity\fR = (10,50)
+.RE
 
 .SH "FILES"
-.PP
 .TP
 .ul
 ~/share/rickslab-ups-utils/config/ups-utils.ini
@@ -66,7 +86,8 @@ This file is used to define ups communication parameters for all UPSs intended t
 Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
 
 .SH "SEE ALSO"
-.BR ups-mon (1),
+.BR ups-ls (1),
+.BR ups-monitor (1),
 .BR ups-daemon (1),
 .BR ups-config.json (4),
 .BR smnp (8)

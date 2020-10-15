@@ -19,17 +19,17 @@ parameters.
 
 .SH OPTIONS
 .TP
-.BR " \-\-about"
+.BR "\-\-about"
 Will display details about 
 .B ups-ls\fP.
 .TP
 .BR \-d , " \-\-debug"
 Will run in debug mode which enables the logger at debug level.
 .TP
-.BR " \-\-input"
+.BR "\-\-input"
 Will display short list of configured UPSs with input power parameters.
 .TP
-.BR " \-\-output"
+.BR "\-\-output"
 Will display short list of configured UPSs with output power parameters.
 .TP
 .BR \-h , " \-\-help"
@@ -38,8 +38,9 @@ Display help text and exit.
 .SH "EXAMPLES"
 .nf
 .B ups-ls
-
+.br
 .fi
+
 This will display the results of sending all available MiB commands via snmp to all configured UPSs.
 This includes UPS general information, serial number, firmware version, model type, model number, contact,
 location, up time, UPS manufacture date, UPS name, percentage of total capacity, battery temperature,
@@ -47,7 +48,6 @@ UPS system status, battery status, time on battery, run time remaining, battery 
 input frequency, last transfer event, output voltage, output frequency, load percentage, output power,
 output current, communication status, last self test results, and date of last self test.  The actual
 listing contents will UPS and NMC dependent.
-.P
 
 .SH CONFIGURATION
 Before \fBups-utils\fR can be used, the
@@ -59,7 +59,6 @@ ups-config.json
 files must be populated with details specific to the user's environment.
 
 .SH "FILES"
-.PP
 .TP
 .ul
 ~/share/rickslab-ups-utils/config/ups-utils.ini
@@ -67,17 +66,17 @@ This file is used to define required directory paths, script names, and script p
 .TP
 .ul
 ~/share/rickslab-ups-utils/config/ups-config.json
-This file is used to define ups communication parameters for all UPSs intended to be monitored.
+This file is used to define UPS identification and communication parameters for all UPSs intended to be monitored.
 
 .SH BUGS
 Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
 
 .SH "SEE ALSO"
-.BR ups-mon (1),
+.BR ups-monitor (1),
 .BR ups-daemon (1),
 .BR ups-utils.ini (4),
 .BR ups-config.json (4),
-.BR smnp (8)
+.BR snmp (8)
 
 .SH AVAILABILITY
 The ups-ls command is part of the rickslab-ups-utils package and is available from

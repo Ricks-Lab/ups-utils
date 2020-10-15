@@ -1,0 +1,85 @@
+.TH UPS\-CONFIG.JSON 4 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities File Formats"
+.nh
+.SH NAME
+ups-config.json \- defines UPS identification and communication parameters
+
+.SH SYNOPSIS
+.ul
+~/share/rickslab-ups-utils/config/ups-config.json
+
+.SH DESCRIPTION
+The file \fBups-config.json\fR contains the definitions of parameters critical to the functioning
+of \fBups-utils\fR. A template for the creation of this file is provided in the distribution
+package as
+.ul
+~/share/rickslab-ups-utils/config/ups-config.json.template
+and should be used as a base for creating a usable \fBups-config.json\fR file.  The file is in
+standard JSON format, with an entry for each UPS intended to be used with \fBusp-utils\fR.
+Each entry begins with a text key as a unique UPS identifier.  In the sample below, these
+identifiers are "1", "2", and "3".  Each identifier is followed by a dictionary of key/value
+pairs that define identification/communication parameters for each UPS.  The \fB"ups_IP"\fR value
+is the IP address or FQDN of the UPS.  The \fB"display_name"\fR value is the name of the UPS as expected
+to be displayed by \fBups-utils\fR.  The \fB"ups_type"\fR value indicates the UPS/NMC combination of the
+given UPS.  Currently, only "apc-ap9630" and "eaton-pw" are supported.  Other values will be treated
+as incompatible. The \fB"daemon"\fR value should be true if it is the UPS that supplies power to the machine
+running the utility.  The \fB"snmp_community"\fR is the shared secret used in the snmp v2 protocol.
+
+.TP
+{
+.RS 4
+    "1": {"ups_IP": "192.168.1.241",
+.br
+          "display_name": "UPS1",
+.br
+          "ups_type": "apc-ap9630",
+.br
+          "daemon": true,
+.br
+          "snmp_community": "secret"},
+.br
+    "2": {"ups_IP": "192.168.1.242",
+.br
+          "display_name": "UPS2",
+.br
+          "ups_type": "eaton-pw",
+.br
+          "daemon": false,
+.br
+          "snmp_community": "secret"},
+.br
+    "3": {"ups_IP": "192.168.1.243",
+.br
+          "display_name": "UPS3",
+.br
+          "ups_type": "apc-ap9630",
+.br
+          "daemon": false,
+.br
+          "snmp_community": "secret"}
+.br
+.RE
+}
+
+.SH "FILES"
+.TP
+.ul
+~/share/rickslab-ups-utils/config/ups-utils.ini
+This file is used to define required directory paths, script names, and script parameters.
+.TP
+.ul
+~/share/rickslab-ups-utils/config/ups-config.json
+This file is used to define UPS identification and communication parameters for all UPSs intended to be monitored.
+
+.SH BUGS
+Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
+
+.SH "SEE ALSO"
+.BR ups-ls (1),
+.BR ups-monitor (1),
+.BR ups-daemon (1),
+.BR ups-utils.ini (4),
+.BR snmp (8)
+
+.SH AVAILABILITY
+Setup of the \fBups-utils.ini\fR file is a requirement of the rickslab-ups-utils package and is
+available from https://github.com/Ricks-Lab/ups-utils
