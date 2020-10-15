@@ -27,6 +27,7 @@ __docformat__ = 'reStructuredText'
 # pylint: disable=line-too-long
 # pylint: disable=bad-continuation
 
+import argparse
 import platform
 import sys
 import os
@@ -96,7 +97,7 @@ class UtConst:
         self.USELTZ = False
         self.LTZ = datetime.utcnow().astimezone().tzinfo
 
-    def set_env_args(self, args) -> None:
+    def set_env_args(self, args: argparse.Namespace) -> None:
         """
         Set arguments for the give args object.
 
@@ -127,12 +128,11 @@ class UtConst:
         LOGGER.debug('Icon path set to: %s', self.icon_path)
 
     @staticmethod
-    def now(ltz=False):
+    def now(ltz: bool = False) -> datetime:
         """ Get current time
+
         :param ltz:  Set to True to use local time zone.
-        :type ltz: bool
         :return:  Returns current time as datetime object
-        :rtype: datetime
         """
         if ltz:
             return datetime.now()
