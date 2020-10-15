@@ -355,11 +355,14 @@ class UPSsnmp:
         for ups in self.ups_list.values():
             ups['uuid'] = uuid4().hex
             if not re.search(env.UT_CONST.PATTERNS['IPV4'], ups['ups_IP']):
-                message = 'ERROR: IP Address entry [{}]'.format(ups['ups_IP'])
-                print(message)
-                LOGGER.debug(message)
-                error_flag = True
-                continue
+                if not re.search(env.UT_CONST.PATTERNS['FQDN'], ups['ups_IP']):
+                    if not re.search(env.UT_CONST.PATTERNS['IPV6'], ups['ups_IP']):
+                        message = 'ERROR: IP Address entry [{}]'.format(ups['ups_IP'])
+                        print(message)
+                        LOGGER.debug(message)
+                        error_flag = True
+                        continue
+            ups['compatible'] = False
             ups['accessible'] = False
             ups['responsive'] = False
             ups['mib_commands'] = None
