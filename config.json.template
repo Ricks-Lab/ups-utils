@@ -2,13 +2,11 @@
     "1": {"ups_IP": "xxx.xxx.xxx.xxx",
           "display_name": "UPS1",
           "ups_type": "apc-ap9630",
-          "compatible": true,
           "daemon": true,
           "snmp_community": "xxxxx"},
     "2": {"ups_IP": "xxx.xxx.xxx.xxx",
           "display_name": "UPS2",
           "ups_type": "eaton-pw",
-          "compatible": true,
           "daemon": false,
           "snmp_community": "xxxxx"}
 }
