@@ -19,3 +19,6 @@ config.py.eaton
 ups-utils-env/
 ups-utils.ini
 ups-config.json
+dist/
+build/
+*.egg-info/
