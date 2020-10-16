@@ -1,4 +1,6 @@
 ![](https://img.shields.io/github/license/Ricks-Lab/ups-utils)
+[![PyPI version](https://badge.fury.io/py/rickslab-ups-utils.svg)](https://badge.fury.io/py/rickslab-ups-utils)
+[![Downloads](https://pepy.tech/badge/rickslab-ups-utils)](https://pepy.tech/project/rickslab-ups-utils)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/Ricks-Lab/ups-utils)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ricks-Lab/ups-utils)
 
@@ -17,11 +19,6 @@ The uninstall is required to make sure all modules are updated.  If you still ge
 then specify not to use cached files:
 ```
 pip3 install --no-cache-dir rickslab-ups-utils
-```
-
-The snmp package is also required.  It can be installed on Ubuntu with the following command:
-```
-sudo apt install snmp
 ```
 
 ## Getting Started
