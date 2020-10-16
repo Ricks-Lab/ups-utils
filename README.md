@@ -6,6 +6,24 @@
 
 A set of utilities to monitor and react to the status of a supported UPS
 
+Install the latest package from [PyPI](https://pypi.org/project/rickslab-ups-utils/) with the following
+commands:
+
+```
+pip3 uninstall rickslab-ups-utils
+pip3 install rickslab-ups-utils
+```
+The uninstall is required to make sure all modules are updated.  If you still get an old version,
+then specify not to use cached files:
+```
+pip3 install --no-cache-dir rickslab-ups-utils
+```
+
+The snmp package is also required.  It can be installed on Ubuntu with the following command:
+```
+sudo apt install snmp
+```
+
 ## Getting Started
 
 Application configuration parameters can be specified in the `ups-utils.ini` file.  A

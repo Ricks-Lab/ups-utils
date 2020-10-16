@@ -92,6 +92,8 @@ class UtConst:
         else:
             self.ups_json_file = None
             self.ups_config_ini = None
+            print('Missing required configuration files.  Exiting...')
+            sys.exit(-1)
 
         # Set Icon Path
         self._local_icon_list.append(os.path.join(self.repository_path, 'icons'))
