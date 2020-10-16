@@ -1,0 +1,95 @@
+.TH UPS\-DAEMON 1 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
+.nh
+.SH NAME
+ups-daemon \- enables the monitoring of and response to UPS events
+
+.SH SYNOPSIS
+.B ups-daemon
+.RB [ \-\-help "] [" \-\-about "] [" \-\-daemon "] [" \-\-list_commands "] [" \-\-list_params "]"
+.RB [ \-\-list_decoders "] [" \-\-logfile " LOGFILE ] [" \-\-debug "]"
+
+.SH DESCRIPTION
+.B ups-daemon
+With no options specified, the utility will give the current status of the UPS configured with \fBdaemon = true\fR
+in the
+.ul
+ups-config.json
+file. With the \fB--daemon\fR option, \fBups-daemon\fR will continuously check the status
+of the UPS.  When it detects that the UPS is sourcing powering from the battery, it will check the amount of time
+it has been running on battery and run the specified suspend script when the specified threshold is exceeded.  It
+will execute the specified resume script when it detects power has resumed.  When the utility detects a Battery
+Low event from the UPS or that time remaining for battery or the battery charge is below specified thresholds,
+then the shutdown script will be executed. If \fBups-daemon\fR detects a return to line power has occurred before
+the shutdown has completed, it will execute the cancel shutdown script.  With the \fB--list_commands\fR option, the
+utility will list all available SNMP commands for the configured UPS.  With the \fB--list_params\fR option, the
+daemon configuration parameters will be listed. The \fB--logfile LOGFILE\fR option is used to specify a logfile,
+but is not implemented at this time.  The threshold and script definitions must be made in the
+.ul
+ups-utils.ini
+file using
+.ul
+ups-utils.ini.template
+as a template.
+
+.SH OPTIONS
+.TP
+.BR "\-\-about"
+Will display details about 
+.B ups-ls\fP.
+.TP
+.BR \-d , " \-\-debug"
+Will run in debug mode which enables the logger at debug level.
+.TP
+.BR "\-\-daemon"
+Run in daemon mode which is meant to run as a system service.
+.TP
+.BR "\-\-list_commands"
+Will display list of all MiB commands available for the UPS defined with \fBdaemon = true\fR.
+.TP
+.BR "\-\-list_params"
+Will display list of all configuration parameters read from the
+.ul
+ups-config.ini
+file
+.TP
+.BR "\-\-list_decoders"
+Will display list of all MiB decoders available for the UPS defined with \fBdaemon = true\fR.
+.TP
+.BR "\-\-logfile LOGFILE"
+Will set the logfile used in daemon mode.  By default, stdout is used.
+.TP
+.BR \-h , " \-\-help"
+Display help text and exit.
+
+.SH CONFIGURATION
+Before \fBups-utils\fR can be used, the
+.ul
+ups-utils.ini
+and
+.ul
+ups-config.json
+files must be populated with details specific to the user's environment.
+
+.SH "FILES"
+.TP
+.ul
+~/share/rickslab-ups-utils/config/ups-utils.ini
+This file is used to define required directory paths, script names, and script parameters.
+.TP
+.ul
+~/share/rickslab-ups-utils/config/ups-config.json
+This file is used to define UPS identification and communication parameters for all UPSs intended to be monitored.
+
+.SH BUGS
+Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
+
+.SH "SEE ALSO"
+.BR ups-monitor (1),
+.BR ups-ls (1),
+.BR ups-utils.ini (4),
+.BR ups-config.json (4),
+.BR snmp (8)
+
+.SH AVAILABILITY
+The ups-ls command is part of the rickslab-ups-utils package and is available from
+https://github.com/Ricks-Lab/ups-utils
