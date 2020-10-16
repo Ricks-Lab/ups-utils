@@ -74,7 +74,7 @@ class UPSsnmp:
         'threshold_time_on_battery': daemon_param_defaults['threshold_time_on_battery'].copy(),
         'threshold_battery_load': daemon_param_defaults['threshold_battery_load'].copy(),
         'threshold_battery_capacity': daemon_param_defaults['threshold_battery_capacity'].copy()}
-    
+
     state_style = Enum('state', 'warn crit green bold normal')
     # UPS response bit string decoders
     decoders = {'apc_system_status': ['Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
@@ -315,7 +315,7 @@ class UPSsnmp:
         if self.read_ups_list():
             self.check_ups_list()
         else:
-            print('Fatal Error: could not read json configuration file: {}'.format(env.UT_CONST.UPS_LIST_JSON_FILE))
+            print('Fatal Error: could not read json configuration file: {}'.format(env.UT_CONST.ups_json_file))
             sys.exit(-1)
         # End of init
 
@@ -336,10 +336,10 @@ class UPSsnmp:
 
         :return: boolean True if no problems reading list
         """
-        if not os.path.isfile(env.UT_CONST.UPS_LIST_JSON_FILE):
-            print('Error: UPS List file not found: {}'.format(env.UT_CONST.UPS_LIST_JSON_FILE))
+        if not os.path.isfile(env.UT_CONST.ups_json_file):
+            print('Error: UPS List file not found: {}'.format(env.UT_CONST.ups_json_file))
             return False
-        with open(env.UT_CONST.UPS_LIST_JSON_FILE, 'r') as ups_list_file:
+        with open(env.UT_CONST.ups_json_file, 'r') as ups_list_file:
             self.ups_list = json.load(ups_list_file)
         return True
 
@@ -381,10 +381,10 @@ class UPSsnmp:
                 ups['compatible'] = False
                 ups['mib_commands'] = None
         if not quiet:
-            print('{} contains {} total UPSs and {} daemon UPS'.format(env.UT_CONST.UPS_LIST_JSON_FILE,
+            print('{} contains {} total UPSs and {} daemon UPS'.format(env.UT_CONST.ups_json_file,
                                                                        ups_cnt, daemon_cnt))
         if error_flag:
-            print('FATAL ERROR: Invalid entry in {}'.format(env.UT_CONST.UPS_LIST_JSON_FILE))
+            print('FATAL ERROR: Invalid entry in {}'.format(env.UT_CONST.ups_json_file))
             sys.exit(-1)
     # End of read and check the UPS list.
 
@@ -574,10 +574,7 @@ class UPSsnmp:
         """
         if not tups:
             tups = self.active_ups
-        # TODO use asbool
-        if not os.system('ping -c 1 {} > /dev/null'.format(tups['ups_IP'])):
-            return True
-        return False
+        return not bool(os.system('ping -c 1 {} > /dev/null'.format(tups['ups_IP'])))
 
     def check_snmp(self, tups: dict = None) -> bool:
         """ check if the IP address for the target UPS or active UPS if target is None, responds to snmp command.
@@ -813,7 +810,7 @@ class UPSsnmp:
         """
         config = configparser.ConfigParser()
         try:
-            config.read(env.UT_CONST.UPS_CONFIG_INI)
+            config.read(env.UT_CONST.ups_config_ini)
         except configparser.Error as err:
             LOGGER.exception('config parser error: %s', err)
             print('Error in ups-utils.ini file.  Using defaults')
@@ -821,6 +818,8 @@ class UPSsnmp:
         LOGGER.debug('config[DaemonPaths]: %s', dict(config['DaemonPaths']))
         LOGGER.debug('config[DaemonScripts]: %s', dict(config['DaemonScripts']))
         LOGGER.debug('config[DaemonParameters]: %s', dict(config['DaemonParameters']))
+        self.daemon_params['ups_ini_file'] = env.UT_CONST.ups_config_ini
+        self.daemon_params['ups_json_file'] = env.UT_CONST.ups_json_file
 
         # Set path definitions
         for path_name in self.daemon_paths:

@@ -49,49 +49,62 @@ class UtConst:
                 'SNMP_VALUE': re.compile(r'.*=.*:.*'),
                 'IPV4': re.compile(r'^([0-9]{1,3})(.[0-9]{1,3}){3}$'),
                 'IPV6': re.compile(r'^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|'
-                                   '([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}'
-                                   '(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|'
-                                   '([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}'
-                                   '(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|'
-                                   ':((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|'
-                                   '::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}'
-                                   '(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|'
-                                   '(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$'),
+                                   r'([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}'
+                                   r'(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|'
+                                   r'([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}'
+                                   r'(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|'
+                                   r':((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|'
+                                   r'::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}'
+                                   r'(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|'
+                                   r'(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])'
+                                   r'{0,1}[0-9]))$'),
                 'FQDN': re.compile(r'^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9]))*$',
                                    re.IGNORECASE),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
                 'INI': re.compile(r'^\(\s*[0-9]+\s*,\s*[0-9]+\s*\)\s*$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
+
+    # Constant path and file names
+    _UPS_JSON_FILE = 'ups-config.json'
+    _UPS_CONFIG_INI = 'ups-utils.ini'
     _local_icon_list = ['{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home())),
                         '/usr/share/rickslab-ups-utils/icons']
+    _local_config_list = ['{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home())),
+                          '/usr/share/rickslab-ups-utils/']
     gui_window_title = 'Ricks-Lab UPS Utilities'
+    gui_monitor_icon_file = 'ups-utils-monitor.icon.png'
 
     def __init__(self):
         self.args = None
-        # Utility Path Definitions
+        # Utility Repository Path Definitions
         self.repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
         self.repository_path = os.path.join(self.repository_module_path, '..')
-        self.config_dir = os.path.join(os.getenv('HOME'), '.ups-utils/')
-        self.dist_share = '/usr/share/ricks-ups-utils/'
-        self.dist_icons = os.path.join(self.dist_share, 'icons')
+
+        # Set config Path
+        self._local_config_list.append(self.repository_path)
+        for try_config_path in UtConst._local_config_list:
+            if os.path.isdir(try_config_path):
+                if os.path.isfile(os.path.join(try_config_path, self._UPS_CONFIG_INI)) and \
+                   os.path.isfile(os.path.join(try_config_path, self._UPS_JSON_FILE)):
+                    self.ups_json_file = os.path.join(try_config_path, self._UPS_JSON_FILE)
+                    self.ups_config_ini = os.path.join(try_config_path, self._UPS_CONFIG_INI)
+                    break
+        else:
+            self.ups_json_file = None
+            self.ups_config_ini = None
 
         # Set Icon Path
         self._local_icon_list.append(os.path.join(self.repository_path, 'icons'))
         for try_icon_path in UtConst._local_icon_list:
             if os.path.isdir(try_icon_path):
-                self.icon_path = try_icon_path
-                break
+                if os.path.isfile(os.path.join(try_icon_path, self.gui_monitor_icon_file)):
+                    self.icon_path = try_icon_path
+                    break
         else:
             self.icon_path = None
 
-        # Configuration Parameters
-        self.ERROR_json = False
-        self.UPS_LIST_JSON_FILE = 'ups-config.json'
-        self.UPS_CONFIG_INI = 'ups-utils.ini'
-
         # Utility Execution Flags
         self.show_unresponsive = False
-        self.DEBUG = False
         self.LOG = False
         self.log_file_ptr = ''
         self.USELTZ = False
@@ -105,8 +118,7 @@ class UtConst:
         """
         self.args = args
         for target_arg in vars(self.args):
-            if target_arg == 'debug': self.DEBUG = self.args.debug
-            elif target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
+            if target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
             elif target_arg == 'log': self.LOG = self.args.log
             elif target_arg == 'ltz': self.USELTZ = self.args.ltz
         LOGGER.propagate = False
@@ -116,7 +128,7 @@ class UtConst:
         stream_handler.setLevel(logging.WARNING)
         LOGGER.addHandler(stream_handler)
         LOGGER.setLevel(logging.WARNING)
-        if self.DEBUG:
+        if self.args.debug:
             LOGGER.setLevel(logging.DEBUG)
             file_handler = logging.FileHandler(
                 'debug_ups-utils_{}.log'.format(datetime.now().strftime("%Y%m%d-%H%M%S")), 'w')
