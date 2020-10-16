@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """ups-daemon  -  Utility for interacting with compatible UPSs with network management cards
 
-    With no options specified, the utility will give the current status of the UPS configured with *daemon = true*
-    in the config.json file. With the *--daemon* option, *ups-daemon* will continuously check the status of the
-    UPS.  When it detects that the UPS is sourcing powering from the battery, it will check the amount of time it
-    has been running on battery and run the specified suspend script when the specified threshold is exceeded.  It
-    will execute the specified resume script when it detects power has resumed.  When the utility detects a Battery
-    Low event from the UPS or that time remaining for battery or the battery charge is below specified thresholds,
-    then the shutdown script will be executed. If *ups-daemon* detects a return to line power has occurred before
-    the shutdown has completed, it will execute the cancel shutdown script.  With the *--list_commands* option, the
-    utility will list all available SNMP commands for the configured UPS.  With the *--list_params* option, the
-    daemon configuration parameters will be listed. The *--logfile filename* option is used to specify a logfile,
-    but is not implemented at this time.  The threshold and script definitions must be made in the config.py file
-    using config.py.template as a template.
+    With no options specified, the utility will give the current status of the UPS configured with
+    *daemon = true* in the ups-config.json file. With the *--daemon* option, *ups-daemon* will
+    continuously check the status of the UPS.  When it detects that the UPS is sourcing powering
+    from the battery, it will check the amount of time it has been running on battery and run the
+    specified suspend script when the specified threshold is exceeded.  It will execute the
+    specified resume script when it detects power has resumed.  When the utility detects a
+    Battery Low event from the UPS or that time remaining for battery or the battery charge is
+    below specified thresholds, then the shutdown script will be executed. If *ups-daemon* detects
+    a return to line power has occurred before the shutdown has completed, it will execute the
+    cancel shutdown script.  With the *--list_commands* option, the utility will list all available
+    SNMP commands for the configured UPS.  With the *--list_params* option, the daemon configuration
+    parameters will be listed. The *--logfile filename* option is used to specify a logfile, but is
+    not implemented at this time.  The threshold and script definitions must be made in the
+    ups-utils.ini file using ups-utils.ini.template as a template.
 
     Copyright (C) 2019  RicksLab
 
@@ -35,6 +37,10 @@ __credits__ = []
 __license__ = "GNU General Public License"
 __program_name__ = "ups-daemon"
 __maintainer__ = "RueiKe"
+__docformat__ = 'reStructuredText'
+# pylint: disable=multiple-statements
+# pylint: disable=line-too-long
+# pylint: disable=bad-continuation
 
 import argparse
 import sys
@@ -49,12 +55,19 @@ from UPSmodules import __version__, __status__
 
 
 LOGGER = logging.getLogger('ups-utils')
-quit_signal = False
+QUIT_SIGNAL = False
 
 
 def signal_handler(_sig: Any, _frame: Any) -> None:
-    global quit_signal
-    quit_signal = True
+    """
+    Manage quit signal.
+
+    :param _sig:
+    :param _frame:
+    :return:  None
+    """
+    global QUIT_SIGNAL
+    QUIT_SIGNAL = True
 
 
 def daemon_sleep(sleep_time: int = 30) -> None:
@@ -64,15 +77,20 @@ def daemon_sleep(sleep_time: int = 30) -> None:
     :param sleep_time:  Sleep time in seconds
     :return: None
     """
-    global quit_signal
-    for sleep_index in range(0, sleep_time):
+    global QUIT_SIGNAL
+    for _sleep_index in range(0, sleep_time):
         time.sleep(1)
-        if quit_signal:
+        if QUIT_SIGNAL:
             print('{}: Received Quit Signal'.format(datetime.now().strftime('%c')))
             sys.exit(0)
 
 
 def main() -> None:
+    """
+    Main function.
+
+    :return: None
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--about", help="README", action="store_true", default=False)
     parser.add_argument("--daemon", help="Run in daemon mode", action="store_true", default=False)
@@ -84,7 +102,7 @@ def main() -> None:
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, signal_handler)
-    global quit_signal
+    global QUIT_SIGNAL
 
     # About me
     if args.about:
@@ -127,8 +145,8 @@ def main() -> None:
         sys.exit(0)
 
     # Display current status of target UPS
-    for k, v in ups.get_mib_commands().items():
-        ups.send_snmp_command(k, display=True)
+    for mib_command in ups.get_mib_commands().keys():
+        ups.send_snmp_command(mib_command, display=True)
 
     if args.daemon:
         crit_bat_level = ups.daemon_params['threshold_battery_capacity']['crit']
@@ -155,7 +173,7 @@ def main() -> None:
             time_on_bat = ups.send_snmp_command('mib_time_on_battery')[0]
             remain_run_time = ups.send_snmp_command('mib_battery_runtime_remain')[0]
 
-            if quit_signal:
+            if QUIT_SIGNAL:
                 print('{}: Received Quit Signal'.format(time_str))
                 sys.exit(0)
 
@@ -224,7 +242,6 @@ def main() -> None:
                     print('{}: Resuming'.format(time_str))
                     ups.execute_script('resume_script')
                     suspend_state = False
-                    pass
 
             if not suspend_state:
                 if time_on_bat > ups.daemon_params['threshold_time_on_battery']['crit'] or bat_load > crit_load_level:
@@ -232,7 +249,6 @@ def main() -> None:
                     print('{}: Suspending'.format(time_str))
                     ups.execute_script('suspend_script')
                     suspend_state = True
-                    pass
 
             daemon_sleep(active_sleep)
 

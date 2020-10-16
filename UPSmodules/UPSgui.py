@@ -32,7 +32,6 @@ import sys
 import re
 import logging
 import warnings
-
 try:
     import gi
     gi.require_version('Gtk', '3.0')
@@ -43,12 +42,11 @@ except ModuleNotFoundError as error:
     print('   In a venv, first install vext:  pip install --no-cache-dir vext')
     print('   Then install vext.gi:  pip install --no-cache-dir vext.gi')
     sys.exit(0)
-
+from UPSmodules import __version__, __status__
 try:
     from UPSmodules import env
 except ImportError:
     import env
-from UPSmodules import __version__, __status__
 
 ColorDict = Dict[str, str]
 LOGGER = logging.getLogger('ups-utils')

@@ -27,6 +27,10 @@ __credits__ = []
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-ls'
 __maintainer__ = 'RueiKe'
+__docformat__ = 'reStructuredText'
+# pylint: disable=multiple-statements
+# pylint: disable=line-too-long
+# pylint: disable=bad-continuation
 
 import argparse
 import sys
@@ -39,6 +43,11 @@ LOGGER = logging.getLogger('ups-utils')
 
 
 def main() -> None:
+    """
+    Main function
+
+    :return: None
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README',
                         action='store_true', default=False)
@@ -79,22 +88,19 @@ def main() -> None:
     print('    {} are compatible, {} are accessible, {} are responsive'.format(num_ups[1], num_ups[2], num_ups[3]))
     print('')
 
-    for k, v in ups.ups_list.items():
-        ups.set_active_ups(v)
-        if not ups.is_compatible(v):
+    for ups_item in ups.ups_list.values():
+        ups.set_active_ups(ups_item)
+        if not ups.is_compatible(ups_item):
             print('ERROR: {} is not compatible type: {}'.format(ups.ups_name(), ups.ups_type()))
-            print('       Check the config.json file.')
-            print('')
+            print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
             continue
-        if not ups.is_accessible(v):
+        if not ups.is_accessible(ups_item):
             print('ERROR: {} is not an accessible IP: {}'.format(ups.ups_name(), ups.ups_ip()))
-            print('       Check the config.json file.')
-            print('')
+            print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
             continue
-        if not ups.is_responsive(v):
+        if not ups.is_responsive(ups_item):
             print('ERROR: {} is not responsive to snmp IP: {}'.format(ups.ups_name(), ups.ups_ip()))
-            print('       Check the config.json file.')
-            print('')
+            print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
             continue
         print('UPS Name: {}'.format(ups.ups_name()))
         print('UPS IP: {}'.format(ups.ups_ip()))
@@ -110,8 +116,8 @@ def main() -> None:
                         print('Giving up on {}'.format(ups.ups_name()))
                         break
         else:
-            for k2, v2 in ups.get_mib_commands(v).items():
-                if ups.send_snmp_command(k2, display=True) == 'UPS Not Responding':
+            for mib_name in ups.get_mib_commands(ups_item).keys():
+                if ups.send_snmp_command(mib_name, display=True) == 'UPS Not Responding':
                     print('Giving up on {}'.format(ups.ups_name()))
                     break
         print('')

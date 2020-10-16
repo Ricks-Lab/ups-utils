@@ -34,6 +34,10 @@ __credits__ = ['']
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-monitor'
 __maintainer__ = 'RueiKe'
+__docformat__ = 'reStructuredText'
+# pylint: disable=multiple-statements
+# pylint: disable=line-too-long
+# pylint: disable=bad-continuation
 
 import argparse
 import threading
@@ -43,20 +47,20 @@ import re
 import time
 import logging
 from typing import TextIO, List, Any, Callable
-from UPSmodules import UPSmodule as UPS
-from UPSmodules import env
-from UPSmodules import UPSgui
-from UPSmodules import __version__, __status__
 try:
     import gi
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import GLib, Gtk
 except ModuleNotFoundError as error:
     print('gi import error: {}'.format(error))
     print('gi is required for %s', __program_name__)
     print('   In a venv, first install vext:  pip install --no-cache-dir vext')
     print('   Then install vext.gi:  pip install --no-cache-dir vext.gi')
     sys.exit(0)
-gi.require_version('Gtk', '3.0')
-from gi.repository import GLib, Gtk, Gdk
+from UPSmodules import UPSmodule as UPS
+from UPSmodules import env
+from UPSmodules import UPSgui
+from UPSmodules import __version__, __status__
 
 set_gtk_prop = UPSgui.GuiProps.set_gtk_prop
 LOGGER = logging.getLogger('ups-utils')
@@ -64,6 +68,9 @@ MAX_WIDTH = 23
 
 
 class MonitorWindow(Gtk.Window):
+    """
+    Class defining Monitor Window
+    """
     def __init__(self, ups: UPS.UPSsnmp, non_mib_params: list, mib_params: list, devices: dict):
         """ Initialize the main UPS monitor window.
 
@@ -84,8 +91,8 @@ class MonitorWindow(Gtk.Window):
         self.set_border_width(0)
         UPSgui.GuiProps.set_style()
 
-        icon_file = os.path.join(env.UT_CONST.icon_path, 'ups-utils-monitor.icon.png')
-        LOGGER.debug('Icon file: [%s]' % icon_file)
+        icon_file = os.path.join(env.UT_CONST.icon_path, env.UtConst.gui_monitor_icon_file)
+        LOGGER.debug('Icon file: [%s]', icon_file)
         if os.path.isfile(icon_file):
             self.set_icon_from_file(icon_file)
 
@@ -97,7 +104,7 @@ class MonitorWindow(Gtk.Window):
         num_ups = ups.get_num_ups_tuple()[0] if env.UT_CONST.show_unresponsive else ups.get_num_ups_tuple()[3]
 
         # Set logging details at top of table if logging enabled
-        if env.UT_CONST.DEBUG:
+        if LOGGER.getEffectiveLevel() == logging.DEBUG:
             log_label = Gtk.Label(name='warn_label')
             log_label.set_markup('<big><b> DEBUG Logger Active </b></big>')
             lbox = Gtk.Box(spacing=6, name='warn_box')
@@ -193,7 +200,7 @@ class MonitorWindow(Gtk.Window):
                 else: log_message = '{}:\n\n'.format(k)
                 for k2, v2 in v.items():
                     log_message = '{}\n    {}:{}'.format(log_message, k2, v2)
-            LOGGER.debug('Device dict:\n %s' % log_message)
+            LOGGER.debug('Device dict:\n %s', log_message)
 
     def set_quit(self, _arg2: Any, _arg3: Any) -> None:
         """ Function called when quit monitor is executed.  Sets flag to end update loop.
@@ -214,7 +221,6 @@ def update_data(ups: UPS.UPSsnmp, header_list: list, command_list: list, devices
     :param devices: A dictionary of Gtk components and values
     :return: None
     """
-    irw = 23
     ups_data = ups.read_all_ups_list_items(command_list, errups=env.UT_CONST.show_unresponsive)
     if env.UT_CONST.LOG:
         print_log(env.UT_CONST.log_file_ptr, header_list, command_list, ups_data)
@@ -303,7 +309,7 @@ def refresh(refresh_time: int, updater: Callable, ups: UPS.UPSsnmp, header_list:
             Gtk.main_quit()
             sys.exit(0)
         GLib.idle_add(updater, ups, header_list, command_list, devices)
-        for sleep_increment in range(0, refresh_time):
+        for _sleep_cnt in range(0, refresh_time):
             if umonitor.quit:
                 print('Quitting...')
                 Gtk.main_quit()
@@ -325,7 +331,7 @@ def print_monitor_table(ups: UPS.UPSsnmp, header_list: list, cmd_list: list, ups
         return -1
 
     hrw = 29  # Row header item width
-    irw = 24  # Row data item width
+    irw = MAX_WIDTH + 1  # Row data item width
 
     print('┌', '─'.ljust(hrw, '─'), sep='', end='')
     for _, _ in ups_data.items():
@@ -333,8 +339,8 @@ def print_monitor_table(ups: UPS.UPSsnmp, header_list: list, cmd_list: list, ups
     print('┐')
 
     print('│', '\x1b[1;36m' + 'UPS Parameters'.ljust(hrw, ' ') + '\x1b[0m', sep='', end='')
-    for k, v in ups_data.items():
-        print('│', '\x1b[1;36m' + v['display_name'].ljust(irw, ' ') + '\x1b[0m',
+    for value in ups_data.values():
+        print('│', '\x1b[1;36m' + value['display_name'].ljust(irw, ' ') + '\x1b[0m',
               sep='', end='')
     print('│')
 
@@ -346,30 +352,30 @@ def print_monitor_table(ups: UPS.UPSsnmp, header_list: list, cmd_list: list, ups
     for info_item in header_list:
         print('│', '\x1b[1;36m' + info_item.ljust(hrw, ' ')[:hrw] + '\x1b[0m',
               sep='', end='')
-        for k, v in ups_data.items():
-            print('│', str(v[info_item]).ljust(irw, ' ')[:irw], sep='', end='')
+        for values in ups_data.items():
+            print('│', str(values[info_item]).ljust(irw, ' ')[:irw], sep='', end='')
         print('│')
     for table_item in cmd_list:
         print('│', '\x1b[1;36m' + ups.get_mib_name_for_type(table_item, 'apc-ap9630').ljust(hrw, ' ')[:hrw] + '\x1b[0m',
               sep='', end='')
-        for k, v in ups_data.items():
+        for value in ups_data.values():
             if table_item == 'mib_system_status':
-                if re.match(env.UT_CONST.PATTERNS['ONLINE'], v[table_item]):
-                    item_str = '\x1b[1;30;42m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+                if re.match(env.UT_CONST.PATTERNS['ONLINE'], value[table_item]):
+                    item_str = '\x1b[1;30;42m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
                 else:
-                    item_str = '\x1b[1;37;41m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+                    item_str = '\x1b[1;37;41m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
             elif table_item == 'mib_battery_status':
-                if re.match(env.UT_CONST.PATTERNS['NORMAL'], v[table_item]):
-                    item_str = '\x1b[1;30;42m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+                if re.match(env.UT_CONST.PATTERNS['NORMAL'], value[table_item]):
+                    item_str = '\x1b[1;30;42m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
                 else:
-                    item_str = '\x1b[1;37;41m' + v[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+                    item_str = '\x1b[1;37;41m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
             else:
-                item_str = str(v[table_item]).ljust(irw, ' ')[:irw]
+                item_str = str(value[table_item]).ljust(irw, ' ')[:irw]
             print('│', item_str, sep='', end='')
         print('│')
 
     print('└', '─'.ljust(hrw, '─'), sep='', end='')
-    for _, _ in ups_data.items():
+    for _ in ups_data.keys():
         print('┴', '─'.ljust(irw, '─'), sep='', end='')
     print('┘')
     return 0
@@ -385,12 +391,12 @@ def print_log(fileptr: TextIO, header_list: list, command_list: list, ups_data: 
     :return: None
     """
     time_str = (str(env.UT_CONST.now(ltz=True).strftime('%c')).strip())
-    for k, v in ups_data.items():
+    for values in ups_data.values():
         print('{}'.format(time_str), file=fileptr, end='')
         for item in header_list:
-            print('|{}'.format(v[item]), file=fileptr, end='')
+            print('|{}'.format(values[item]), file=fileptr, end='')
         for item in command_list:
-            print('|{}'.format(v[item]), file=fileptr, end='')
+            print('|{}'.format(values[item]), file=fileptr, end='')
         print('', file=fileptr)
 
 
@@ -411,6 +417,11 @@ def print_log_header(fileptr: TextIO, header_list: List[str], command_list: list
 
 
 def main() -> None:
+    """
+    Main function
+
+    :return: None
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README', action='store_true', default=False)
     parser.add_argument('--status', help='Display table of current status of UPSs', action='store_true', default=False)
@@ -452,7 +463,7 @@ def main() -> None:
         sys.exit(-1)
     print('{} UPSs listed in config.json file.'.format(num_ups[0]))
     print('    {} are compatible, {} are accessible, {} are responsive'.format(num_ups[1], num_ups[2], num_ups[3]))
-    if not num_ups[0] == num_ups[3]:
+    if num_ups[0] != num_ups[3]:
         print('    Check the config.json file.')
     print('')
 
@@ -460,7 +471,7 @@ def main() -> None:
         env.UT_CONST.SLEEP = int(args.sleep)
     else:
         print('Invalid value for sleep specified.  Must be an integer >= {}'.format(
-              env.UT_CONST.DEFAULT_MONITOR_UPDATE_INTERVAL))
+            UPS.UPSsnmp.daemon_param_defaults['read_interval']['limit']))
         sys.exit(-1)
 
     header_list = ['ups_type', 'ups_IP']
@@ -469,10 +480,7 @@ def main() -> None:
     else:
         command_list = ups.get_monitor_mib_commands()
 
-    if args.show_unresponsive:
-        env.UT_CONST.show_unresponsive = True
-    else:
-        env.UT_CONST.show_unresponsive = False
+    env.UT_CONST.show_unresponsive = args.show_unresponsive
 
     if args.log:
         env.UT_CONST.LOG = True
@@ -489,8 +497,8 @@ def main() -> None:
         umonitor.show_all()
 
         # Start thread to update Monitor
-        monthread = threading.Thread(target=refresh, daemon=True, args=[env.UT_CONST.SLEEP,
-                                     update_data, ups, header_list, command_list, devices, umonitor]).start()
+        _monthread = threading.Thread(target=refresh, daemon=True, args=[env.UT_CONST.SLEEP,
+                                      update_data, ups, header_list, command_list, devices, umonitor]).start()
 
         Gtk.main()
     else:
@@ -501,7 +509,9 @@ def main() -> None:
                 if args.status:
                     print_monitor_table(ups, header_list, command_list, ups_data)
                     sys.exit(0)
-                #if not env.UT_CONST.DEBUG: os.system('clear')
+                os.system('clear')
+                if LOGGER.getEffectiveLevel() == logging.DEBUG:
+                    print('%sDebug Logger Active%s' % ('\033[31m \033[01m', '\033[0m'))
                 if env.UT_CONST.LOG:
                     print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.UT_CONST.log_file, '\033[0m'))
                     print_log(env.UT_CONST.log_file_ptr, header_list, command_list, ups_data)
