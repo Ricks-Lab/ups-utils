@@ -1,0 +1,115 @@
+.TH UPS\-MONITOR 1 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
+.nh
+.SH NAME
+ups-monitor \- displays continuously updating status of all active UPSs
+
+.SH SYNOPSIS
+.B ups-monitor
+.RB [ \-\-help "] [" \-\-about "] [" \-\-status "] [" \-\-long "] [" \-\-show_unresponsive " ] [" \-\-gui "]"
+.RB [ \-\-log "] [" \-\-sleep " N ] [" \-\-debug "]"
+.br
+
+.SH DESCRIPTION
+.B ups-monitor
+A utility to give the current state of all compatible UPSs. The default behavior
+is to continuously update a text based table in the current window until Ctrl-C is
+pressed.  With the \fB--gui\fR option, a table of relevant parameters will be updated
+in a Gtk window.  You can specify the delay between updates with the \fB--sleep N\fR
+option where N is an integer > 10 that specifies the number of seconds to sleep
+between updates.  The \fB--log\fR option is used to write all monitor data to a psv log
+file.  When writing to a log file, the utility will indicate this in red at the top of
+the window with a message that includes the log file name.  The \fB--status\fR option will
+output a table of the current status.  The \fB--long\fR option will include additional
+informational parameters. By default, unresponsive UPSs will not be displayed, but the
+\fB--show_unresponsive\fR can be used to force their display.
+
+.SH OPTIONS
+.TP
+.BR "\-\-about"
+Will display details about 
+.B ups-monitor\fP.
+.TP
+.BR \-d , " \-\-debug"
+Will run in debug mode which enables the logger at debug level.
+.TP
+.BR "\-\-status"
+Will display a snapshot of the current status of configured UPSs.
+.TP
+.BR "\-\-long"
+Will use the full list of MiB commands in a more comprehensive view of the configured UPSs.
+.TP
+.BR "\-\-show_unresponsive"
+Will result in unresponsive configured UPSs to be included in the summary.
+.TP
+.BR "\-\-gui"
+Will use Gtk gui instead of a text table in the current terminal.
+.TP
+.BR "\-\-log"
+Will output the continuous stream of data to a log file to facilitate offline analytics.
+.TP
+.BR "\-\-sleep" N
+Specifies the update interval for the continuously updating status.
+.TP
+.BR \-h , " \-\-help"
+Display help text and exit.
+
+.SH "EXAMPLES"
+.nf
+.B ups-monitor
+.br
+Reading and verifying UPSs listed in config.json
+3 UPSs listed in config.json file.
+    3 are compatible, 3 are accessible, 3 are responsive
+
+┌─────────────────────────────┬────────────────────────┬────────────────────────┬────────────────────────┐
+│UPS Parameters               │UPS1                    │UPS2                    │UPS3                    │
+├─────────────────────────────┼────────────────────────┼────────────────────────┼────────────────────────┤
+│ups_type                     │apc-ap9630              │eaton-pw                │apc-ap9630              │
+│ups_IP                       │192.168.1.241           │192.168.1.242           │UPS3.rickslab.com       │
+│Percentage of Total Capacity │100                     │100                     │100                     │
+│Time on Battery              │(0.0, ' 0:00:00.00')    │[0.0, '0:00:00']        │(0.0, ' 0:00:00.00')    │
+│Runtime Remaining            │(153.61, ' 1:32:10.00') │[47.0, '0:47:00']       │(37.36, ' 0:22:25.00')  │
+│Input Voltage                │115                     │118.1                   │115                     │
+│Input Frequency Hz           │60                      │60.0                    │60                      │
+│Output Voltage               │120                     │110.0                   │120                     │
+│Output Frequency Hz          │60                      │60.0                    │60                      │
+│Output Load as % of Capacity │27                      │20                      │25                      │
+│Output Current in Amps       │6                       │4.6                     │6                       │
+│Output Power in W            │733                     │474                     │660                     │
+│UPS System Status            │OnLine-SCE-On           │Standby                 │OnLine-SCE-On           │
+│Battery Status               │Battery Normal          │Battery Normal          │Battery Normal          │
+└─────────────────────────────┴────────────────────────┴────────────────────────┴────────────────────────┘
+.fi
+
+.SH CONFIGURATION
+Before \fBups-utils\fR can be used, the
+.ul
+ups-utils.ini
+and
+.ul
+ups-config.json
+files must be populated with details specific to the user's environment.
+
+.SH "FILES"
+.TP
+.ul
+~/share/rickslab-ups-utils/config/ups-utils.ini
+This file is used to define required directory paths, script names, and script parameters.
+.TP
+.ul
+~/share/rickslab-ups-utils/config/ups-config.json
+This file is used to define UPS identification and communication parameters for all UPSs intended to be monitored.
+
+.SH BUGS
+Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
+
+.SH "SEE ALSO"
+.BR ups-ls (1),
+.BR ups-daemon (1),
+.BR ups-utils.ini (4),
+.BR ups-config.json (4),
+.BR snmp (8)
+
+.SH AVAILABILITY
+The ups-monitor command is part of the rickslab-ups-utils package and is available from
+https://github.com/Ricks-Lab/ups-utils
