@@ -803,18 +803,19 @@ class UPSsnmp:
     # End of commands to read from UPS using snmp protocol.
 
     # Set parameters required for daemon mode.
-    def set_daemon_parameters(self) -> None:
+    def set_daemon_parameters(self) -> bool:
         """ Set all daemon parameters based on defaults in env.UT_CONST and the config.py file.
 
-        :return:  None
+        :return:  True on success
         """
+        read_status = True
         config = configparser.ConfigParser()
         try:
             config.read(env.UT_CONST.ups_config_ini)
         except configparser.Error as err:
             LOGGER.exception('config parser error: %s', err)
             print('Error in ups-utils.ini file.  Using defaults')
-            return
+            return True
         LOGGER.debug('config[DaemonPaths]: %s', dict(config['DaemonPaths']))
         LOGGER.debug('config[DaemonScripts]: %s', dict(config['DaemonScripts']))
         LOGGER.debug('config[DaemonParameters]: %s', dict(config['DaemonParameters']))
@@ -828,7 +829,7 @@ class UPSsnmp:
                 if self.daemon_params[path_name]:
                     if not os.path.isdir(self.daemon_params[path_name]):
                         print('Missing directory for {} path_name: {}'.format(path_name, self.daemon_params[path_name]))
-                        sys.exit(-1)
+                        read_status = False
         if self.daemon_params['boinc_home']:
             os.environ['BOINC_HOME'] = self.daemon_params['boinc_home']
 
@@ -840,7 +841,7 @@ class UPSsnmp:
                 if self.daemon_params[script_name]:
                     if not os.path.isfile(self.daemon_params[script_name]):
                         print('Missing {} script: {}'.format(script_name, self.daemon_params[script_name]))
-                        sys.exit(-1)
+                        read_status = False
 
         # Set script parameters
         for parameter_name in self.daemon_param_names:
@@ -908,6 +909,7 @@ class UPSsnmp:
                         print(message)
                 if reset:
                     self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
+        return read_status
 
     def print_daemon_parameters(self) -> None:
         """ Print all daemon parameters.
