@@ -127,7 +127,10 @@ def main() -> None:
     if not ups.active_ups['responsive']:
         print('Fatal error: daemon UPS [{}] is unresponsive.'.format(ups.active_ups['display_name']))
         sys.exit(-1)
-    ups.set_daemon_parameters()
+    if not ups.set_daemon_parameters():
+        ups.print_daemon_parameters()
+        print("Fatal error in %s file: exiting".format(env.UtConst.UPS_CONFIG_INI))
+        sys.exit(-1)
     if not ups.check_ups_type(ups.active_ups['ups_type']):
         print('Invalid UPS type: {}, Valid entries: '.format(ups.active_ups['ups_type']), ups.list_valid_ups_types())
         sys.exit(-1)
