@@ -82,7 +82,7 @@ output a table of the current status.  The *--long* option will include addition
 informational parameters. By default, unresponsive UPSs will not be displayed, but the
 *--show_unresponsive* can be used to force their display.
 
-## New in the Release  -  [v0.9.0](https://github.com/Ricks-Lab/ups-utils/releases/tag/v0.9.0)
+## New in this Beta Release  -  v0.11.0
 
 * Initial Beta Release - Please feedback your question/issues in the project's issues.  Thanks!
 
