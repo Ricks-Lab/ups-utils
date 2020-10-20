@@ -65,29 +65,30 @@ class UtConst:
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
 
     # Constant path and file names
-    _UPS_JSON_FILE = 'ups-config.json'
-    _UPS_CONFIG_INI = 'ups-utils.ini'
-    _local_icon_list = ['{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home())),
-                        '/usr/share/rickslab-ups-utils/icons']
-    _local_config_list = ['{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home())),
-                          '/usr/share/rickslab-ups-utils/']
+    UPS_JSON_FILE = 'ups-config.json'
+    UPS_CONFIG_INI = 'ups-utils.ini'
+    # Utility Repository Path Definitions
+    _repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
+    _repository_path = os.path.join(_repository_module_path, '..')
+    _local_icon_list = [os.path.join(_repository_path, 'icons'),
+                        '/usr/share/rickslab-ups-utils/icons',
+                        '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))]
+    _local_config_list = [_repository_path,
+                          '/usr/share/rickslab-ups-utils/',
+                          '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))]
     gui_window_title = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file = 'ups-utils-monitor.icon.png'
 
     def __init__(self):
         self.args = None
-        # Utility Repository Path Definitions
-        self.repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
-        self.repository_path = os.path.join(self.repository_module_path, '..')
 
         # Set config Path
-        self._local_config_list.append(self.repository_path)
         for try_config_path in UtConst._local_config_list:
             if os.path.isdir(try_config_path):
-                if os.path.isfile(os.path.join(try_config_path, self._UPS_CONFIG_INI)) and \
-                   os.path.isfile(os.path.join(try_config_path, self._UPS_JSON_FILE)):
-                    self.ups_json_file = os.path.join(try_config_path, self._UPS_JSON_FILE)
-                    self.ups_config_ini = os.path.join(try_config_path, self._UPS_CONFIG_INI)
+                if os.path.isfile(os.path.join(try_config_path, self.UPS_CONFIG_INI)) and \
+                   os.path.isfile(os.path.join(try_config_path, self.UPS_JSON_FILE)):
+                    self.ups_json_file = os.path.join(try_config_path, self.UPS_JSON_FILE)
+                    self.ups_config_ini = os.path.join(try_config_path, self.UPS_CONFIG_INI)
                     break
         else:
             self.ups_json_file = None
@@ -96,7 +97,6 @@ class UtConst:
             sys.exit(-1)
 
         # Set Icon Path
-        self._local_icon_list.append(os.path.join(self.repository_path, 'icons'))
         for try_icon_path in UtConst._local_icon_list:
             if os.path.isdir(try_icon_path):
                 if os.path.isfile(os.path.join(try_icon_path, self.gui_monitor_icon_file)):
