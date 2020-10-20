@@ -352,7 +352,7 @@ def print_monitor_table(ups: UPS.UPSsnmp, header_list: list, cmd_list: list, ups
     for info_item in header_list:
         print('│', '\x1b[1;36m' + info_item.ljust(hrw, ' ')[:hrw] + '\x1b[0m',
               sep='', end='')
-        for values in ups_data.items():
+        for values in ups_data.values():
             print('│', str(values[info_item]).ljust(irw, ' ')[:irw], sep='', end='')
         print('│')
     for table_item in cmd_list:
@@ -456,7 +456,8 @@ def main() -> None:
     print('Reading and verifying UPSs listed in config.json')
     ups = UPS.UPSsnmp()
     num_ups = ups.get_num_ups_tuple()
-    ups.set_daemon_parameters()
+    if not ups.set_daemon_parameters():
+        print("Warning: invalid entry in %s file.".format(env.UtConst.UPS_CONFIG_INI))
 
     if num_ups[0] == 0:
         print('No UPSs specified in config.json, exiting...')
