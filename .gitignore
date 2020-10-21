@@ -22,3 +22,7 @@ ups-config.json
 dist/
 build/
 *.egg-info/
+conf/
+db/
+dists/
+pool/
