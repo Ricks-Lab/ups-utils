@@ -74,7 +74,7 @@ class UtConst:
                         '/usr/share/rickslab-ups-utils/icons',
                         '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))]
     _local_config_list = [_repository_path,
-                          '/usr/share/rickslab-ups-utils/',
+                          '/usr/share/rickslab-ups-utils/config',
                           '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))]
     gui_window_title = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file = 'ups-utils-monitor.icon.png'
