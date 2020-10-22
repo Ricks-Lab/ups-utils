@@ -26,3 +26,7 @@ conf/
 db/
 dists/
 pool/
+rickslab-ups-utils_*
+rickslab-ups-utils*/
+*.tar.gz
+*.tar
