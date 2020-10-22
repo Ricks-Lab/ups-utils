@@ -94,6 +94,8 @@ class UtConst:
             self.ups_json_file = None
             self.ups_config_ini = None
             print('Missing required configuration files.  Exiting...')
+            print('     See man pages for {} or {} for more information.'.format(self.UPS_JSON_FILE,
+                                                                                 self.UPS_CONFIG_INI))
             sys.exit(-1)
 
         # Set Icon Path
@@ -188,7 +190,7 @@ class UtConst:
 
         # Check if snmp tools are installed
         if not shutil.which('snmpget'):
-            print('Missing dependency: sudo apt install snmp')
+            print('Missing dependency: `sudo apt install snmp`')
             return -3
 
         return 0

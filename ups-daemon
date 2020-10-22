@@ -129,7 +129,8 @@ def main() -> None:
         sys.exit(-1)
     if not ups.set_daemon_parameters():
         ups.print_daemon_parameters()
-        print("Fatal error in %s file: exiting".format(env.UtConst.UPS_CONFIG_INI))
+        print('Fatal error in {0} file.  '
+              'For more information: `man {0}`'.format(env.UtConst.UPS_CONFIG_INI))
         sys.exit(-1)
     if not ups.check_ups_type(ups.active_ups['ups_type']):
         print('Invalid UPS type: {}, Valid entries: '.format(ups.active_ups['ups_type']), ups.list_valid_ups_types())

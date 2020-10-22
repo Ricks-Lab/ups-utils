@@ -453,19 +453,21 @@ def main() -> None:
         print('Error in environment. Exiting...')
         sys.exit(-1)
 
-    print('Reading and verifying UPSs listed in config.json')
+    print('Reading and verifying UPSs listed in {}. '.format(env.UtConst.UPS_JSON_FILE))
     ups = UPS.UPSsnmp()
     num_ups = ups.get_num_ups_tuple()
     if not ups.set_daemon_parameters():
-        print("Warning: invalid entry in %s file.".format(env.UtConst.UPS_CONFIG_INI))
+        print('Warning: Invalid entry in {0} file.  '
+              'For more information: `man {0}`'.format(env.UtConst.UPS_CONFIG_INI))
 
     if num_ups[0] == 0:
-        print('No UPSs specified in config.json, exiting...')
+        print('No UPSs specified in {0}, for more information: `man {0}`, exiting...'.format(
+            env.UtConst.UPS_JSON_FILE))
         sys.exit(-1)
-    print('{} UPSs listed in config.json file.'.format(num_ups[0]))
+    print('{} UPSs listed in {} file.'.format(num_ups[0], env.UtConst.UPS_JSON_FILE))
     print('    {} are compatible, {} are accessible, {} are responsive'.format(num_ups[1], num_ups[2], num_ups[3]))
     if num_ups[0] != num_ups[3]:
-        print('    Check the config.json file.')
+        print('    Check the {} file.'.format(env.UtConst.UPS_JSON_FILE))
     print('')
 
     if int(args.sleep) >= UPS.UPSsnmp.daemon_param_defaults['read_interval']['limit']:
