@@ -3,7 +3,7 @@
 import sys
 import os
 import pathlib
-from setuptools import setup
+from setuptools import setup, find_packages
 from UPSmodules import __version__, __status__
 
 if sys.version_info < (3, 6):
@@ -23,12 +23,12 @@ setup(name='rickslab-ups-utils',
       platforms='posix',
       author_email='rueikes.homelab@gmail.com',
       url='https://github.com/Ricks-Lab/ups-utils',
-      packages=['UPSmodules'],
+      packages=find_packages(include=['UPSmodules']),
       include_package_data=True,
       scripts=['ups-ls', 'ups-daemon', 'ups-monitor', 'cancelShutdownBOINC.sh', 'pauseBOINC.sh',
                'quitBOINC.sh', 'resumeBOINC.sh', 'shutdownBOINC.sh'],
       license='GPL-3',
-      python_requires='==3.6',
+      python_requires='>=3.6',
       project_urls={'Bug Tracker':   'https://github.com/Ricks-Lab/ups-utils/issues',
                     'Documentation': 'https://github.com/Ricks-Lab/ups-utils/',
                     'Source Code':   'https://github.com/Ricks-Lab/ups-utils'},
