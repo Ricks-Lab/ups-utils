@@ -58,12 +58,26 @@ files must be populated with details specific to the user's environment.
 .SH "FILES"
 .TP
 .ul
-~/share/rickslab-ups-utils/config/ups-utils.ini
+ups-utils.ini
 This file is used to define required directory paths, script names, and script parameters.
 .TP
 .ul
-~/share/rickslab-ups-utils/config/ups-config.json
-This file is used to define UPS identification and communication parameters for all UPSs intended to be monitored.
+ups-config.json
+This file is used to define ups communication parameters for all UPSs intended to be monitored.
+
+.SH "FILE LOCATIONS"
+.TP
+.nr step 1 1
+The configuration files of \fBrickslab-ups-utils\fR can be located in 3 possible locations and are
+selected with the following order of priority:
+.RS 7
+.IP \n[step] 3
+repository directory  - Chosen only if executed from repository directory.
+.IP \n+[step]
+/usr/share/rickslab-ups-utils/config/  -  Used with install from debian package.
+.IP \n+[step]
+~/share/rickslab-ups-utils/config/   -  Used with pip install, if above is not available.
+.RE
 
 .SH BUGS
 Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
