@@ -15,6 +15,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.12.3'
-#__status__ = 'Development Status :: 5 - Production/Stable'
-__status__ = 'Development Status :: 4 - Beta'
+__version__ = '1.0.0'
+__status__ = 'Development Status :: 5 - Production/Stable'
+#__status__ = 'Development Status :: 4 - Beta'

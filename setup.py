@@ -1,4 +1,30 @@
 #!/usr/bin/python3
+""" setup.py used in producing source and binary distributions.
+
+    Usage: python3 setup.py sdist bdist_wheel
+
+    Copyright (C) 2020  RicksLab
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+__author__ = 'RicksLabs'
+__copyright__ = 'Copyright (C) 2020 RicksLab'
+__credits__ = []
+__license__ = 'GPL-3'
+__program_name__ = 'setup.py'
+__maintainer__ = 'RueiKe'
+__docformat__ = 'reStructuredText'
 
 import sys
 import os
@@ -18,7 +44,7 @@ setup(name='rickslab-ups-utils',
       description='Ricks-Lab UPS Utilities',
       long_description_content_type='text/markdown',
       long_description=long_description,
-      author='RicksLabs',
+      author=__author__,
       keywords='ups system monitoring apc eaton linux boinc',
       platforms='posix',
       author_email='rueikes.homelab@gmail.com',
@@ -27,7 +53,7 @@ setup(name='rickslab-ups-utils',
       include_package_data=True,
       scripts=['ups-ls', 'ups-daemon', 'ups-monitor', 'cancelShutdownBOINC.sh', 'pauseBOINC.sh',
                'quitBOINC.sh', 'resumeBOINC.sh', 'shutdownBOINC.sh'],
-      license='GPL-3',
+      license=__license__,
       python_requires='>=3.6',
       project_urls={'Bug Tracker':   'https://github.com/Ricks-Lab/ups-utils/issues',
                     'Documentation': 'https://github.com/Ricks-Lab/ups-utils/',
@@ -42,10 +68,10 @@ setup(name='rickslab-ups-utils',
       install_requires=['pytz>=2019.3'],
       data_files=[('share/rickslab-ups-utils/icons', ['icons/ups-utils-monitor.icon.png']),
                   ('share/rickslab-ups-utils/doc', ['README.md', 'LICENSE']),
-                  ('share/rickslab-ups-utils/config', ['ups-utils.ini.template', 'ups-config.json.template']),
+                  ('share/rickslab-ups-utils/config', ['ups-utils.ini.template',
+                                                       'ups-config.json.template']),
                   ('share/man/man1', ['man/ups-ls.1',
                                       'man/ups-daemon.1',
                                       'man/ups-monitor.1']),
                   ('share/man/man4', ['man/ups-config.json.4',
-                                      'man/ups-util.ini.4'])]
-      )
+                                      'man/ups-util.ini.4'])])

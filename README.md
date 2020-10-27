@@ -8,6 +8,30 @@
 
 A set of utilities to monitor and react to the status of a supported UPS
 
+## Installation
+
+### Debian Package Installation
+
+First, remove any previous PyPI installation and exit that terminal:
+```
+pip uninstall rickslab-ups-utils
+exit
+```
+Next, add the *rickslab-ups-utils* repository:
+```
+wget -q -O - https://debian.rickslab.com/PUBLIC.KEY | sudo apt-key add -
+
+echo 'deb [arch=amd64] https://debian.rickslab.com/ups-utils/ stable main' | sudo tee /etc/apt/sources.list.d/rickslab-ups-utils.list
+
+sudo apt update
+```
+Then install the package with apt:
+```
+sudo apt install rickslab-ups-utils
+```
+
+### PyPI Installation
+
 Install the latest package from [PyPI](https://pypi.org/project/rickslab-ups-utils/) with the following
 commands:
 
