@@ -30,13 +30,14 @@ Then install the package with apt:
 sudo apt install rickslab-ups-utils
 ```
 
-After installation, you will need to create a new group, upsutils, and add trusted users to this group.
+After installation, you will need to create a new group, *upsutils*, and add trusted users to this group.
 This required for this type of installation in order to secure the snmp share secret stored in the ini
 file.
 ```
 sudo groupadd upsutils
 sudo usermod -a -G upsutils $LOGNAME
 ```
+After adding the user to a new group, the user must logout and relogin before the change is in effect.
 
 ### PyPI Installation
 
