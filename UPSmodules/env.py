@@ -41,6 +41,32 @@ from UPSmodules import __version__, __status__
 LOGGER = logging.getLogger('ups-utils')
 
 
+def check_file(filename: str) -> bool:
+    """
+    Check if file is readable.
+
+    :param filename:  Name of file to be checked
+    :return: True if ok
+    """
+    try:
+        with open(filename, 'r') as _file_ptr:
+            pass
+    except PermissionError as error:
+        message = "Error: permission error for [{}]: {}".format(filename, error)
+        fail = True
+    except FileNotFoundError as error:
+        message = "Error: file not found error for [{}]: {}".format(filename, error)
+        fail = True
+    else:
+        message = ""
+        fail = False
+    if fail:
+        print(message)
+        LOGGER.debug(message)
+        return False
+    return True
+
+
 class UtConst:
     """ Class definition for UPS Utils environment"""
     # FQDN regex credit: https://stackoverflow.com/questions/2532053/validate-a-hostname-string
@@ -89,6 +115,10 @@ class UtConst:
                    os.path.isfile(os.path.join(try_config_path, self.UPS_JSON_FILE)):
                     self.ups_json_file = os.path.join(try_config_path, self.UPS_JSON_FILE)
                     self.ups_config_ini = os.path.join(try_config_path, self.UPS_CONFIG_INI)
+                    if not check_file(self.ups_json_file) or not check_file(self.ups_config_ini):
+                        print('     See man pages for {} or {} for more information.'.format(self.UPS_JSON_FILE,
+                                                                                             self.UPS_CONFIG_INI))
+                        sys.exit(-1)
                     break
         else:
             self.ups_json_file = None

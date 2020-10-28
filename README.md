@@ -30,6 +30,14 @@ Then install the package with apt:
 sudo apt install rickslab-ups-utils
 ```
 
+After installation, you will need to create a new group, upsutils, and add trusted users to this group.
+This required for this type of installation in order to secure the snmp share secret stored in the ini
+file.
+```
+sudo groupadd upsutils
+sudo usermod -a -G upsutils $LOGNAME
+```
+
 ### PyPI Installation
 
 Install the latest package from [PyPI](https://pypi.org/project/rickslab-ups-utils/) with the following
@@ -55,11 +63,20 @@ the configuration settings by executing
 ups-daemon --list_params
 ```
 
-Also, a UPS list must be specified in the `config.json` file using `config.json.template` as a
-template.  This file contains details about each UPS that make snmp communication possible.  The
-utility requires snmp v2c in order to communicate with the network accessible UPSs.  As a result,
-you must configure your target Network attached UPS devices to use SNMPv2 with a known Private
-Community String.
+Also, a UPS list must be specified in the `ups-config.json` file using `ups-config.json.template`
+as a template.  This file contains details about each UPS that make snmp communication possible.
+The utility requires snmp v2c in order to communicate with the network accessible UPSs.  As a
+result, you must configure your target Network attached UPS devices to use SNMPv2 with a known
+Private Community String.
+
+If you installed from a package, the template configuration files will be owned by root.  When
+you create you configuration files from the templates, you should change group ownership to
+*upsutils* and change permissions to 660.
+```
+cd /usr/share/rickslab-ups-utils/config/
+sudo chgrp upsutils ups-utils.ini ups-config.json
+sudo chmod 660 ups-utils.ini ups-config.json
+```
 
 The ups-utils rely on the command *snmpget* which is part of the snmp package that must
 be installed:
@@ -71,7 +88,7 @@ sudo apt install snmp
 ## ups-daemon
 
 With no options specified, the utility will give the current status of the UPS configured
-with *daemon = true* in the config.json file. With the *--daemon* option, *ups-daemon*
+with *daemon = true* in the ups-config.json file. With the *--daemon* option, *ups-daemon*
 will continuously check the status of the UPS.  When it detects that the UPS is sourcing
 powering from the battery, it will check the amount of time it has been running on battery
 and run the specified suspend script when the specified threshold is exceeded.  It will
@@ -88,7 +105,7 @@ definitions must be made in the config.py file using config.py.template as a tem
 ## ups-ls
 
 This utility displays most relevant parameters for installed and compatible UPSs
-listed in the config.json file.  By default, all available parameters are displayed.
+listed in the ups-config.json file.  By default, all available parameters are displayed.
 The *--input* and *--output* options can be used to get relevant UPS input and output
 parameters.
 

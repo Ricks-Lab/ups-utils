@@ -88,7 +88,17 @@ selected with the following order of priority:
 .IP \n[step] 3
 repository directory  - Chosen only if executed from repository directory.
 .IP \n+[step]
-/usr/share/rickslab-ups-utils/config/  -  Used with install from debian package.
+/usr/share/rickslab-ups-utils/config/  -  Used with install from debian package.  In this case, file
+permissions and group ownership must be managed.  The
+.ul
+ups-utils.ini
+contains sensitive information, snmp shared secret, and should be readable only by root and a group
+who's members are trusted with this secret.  It is suggested to create a upsutils group and add
+trusted members and then chgrp of
+.ul
+ups-utils.ini
+to this new group.  You must finally change permissions to be readable and writeable by only group
+and root (660).
 .IP \n+[step]
 ~/share/rickslab-ups-utils/config/   -  Used with pip install, if above is not available.
 .RE
@@ -97,6 +107,11 @@ repository directory  - Chosen only if executed from repository directory.
 Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
 
 .SH "SEE ALSO"
+.BR groupadd (1),
+.BR chgrp (1),
+.BR chmod (1),
+.BR adduser (1),
+.BR usermod (1),
 .BR ups-ls (1),
 .BR ups-monitor (1),
 .BR ups-daemon (1),
