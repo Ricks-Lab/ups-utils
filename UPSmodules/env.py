@@ -103,9 +103,9 @@ class UtConst:
     # Utility Repository Path Definitions
     _repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
     _repository_path = os.path.join(_repository_module_path, '..')
-    _local_icon_list = [os.path.join(_repository_path, 'icons'),
-                        '/usr/share/rickslab-ups-utils/icons',
-                        '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))]
+    _local_icon_list = {'repository': os.path.join(_repository_path, 'icons'),
+                        'debian': '/usr/share/rickslab-ups-utils/icons',
+                        'pypi': '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))}
     _local_config_list = {'repository': _repository_path,
                           'debian': '/usr/share/rickslab-ups-utils/config',
                           'pypi': '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))}
@@ -122,14 +122,17 @@ class UtConst:
         self.ups_config_ini = None
 
         if '/usr/share/rickslab-ups-utils' in inspect.getfile(inspect.currentframe()):
-            config_list = {'debian': self._local_config_list['debian']}
+            self.installation = 'debian'
+        elif '/.local/lib/' in inspect.getfile(inspect.currentframe()):
+            self.installation = 'pypi'
         else:
-            config_list = self._local_config_list
+            self.installation = 'repository'
+        config_list = {self.installation: self._local_config_list[self.installation]}
+        icon_list = {self.installation: self._local_icon_list[self.installation]}
 
         # Set config Path
-        for install_type, try_config_path in config_list.items():
+        for try_config_path in config_list.values():
             if os.path.isdir(try_config_path):
-                self.installation = install_type
                 if os.path.isfile(os.path.join(try_config_path, self.UPS_JSON_FILE)):
                     self.ups_json_file = os.path.join(try_config_path, self.UPS_JSON_FILE)
                     if not check_file(self.ups_json_file):
@@ -148,7 +151,7 @@ class UtConst:
             self.fatal = True
 
         # Set Icon Path
-        for try_icon_path in UtConst._local_icon_list:
+        for try_icon_path in icon_list.values():
             if os.path.isdir(try_icon_path):
                 if os.path.isfile(os.path.join(try_icon_path, self.gui_monitor_icon_file)):
                     self.icon_path = try_icon_path
