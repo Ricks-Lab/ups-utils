@@ -71,22 +71,26 @@ def main() -> None:
         print('Status: ', __status__)
         sys.exit(0)
 
-    env.UT_CONST.set_env_args(args)
+    env.UT_CONST.set_env_args(args, __program_name__)
     LOGGER.debug('########## %s %s', __program_name__, __version__)
 
-    if env.UT_CONST.check_env() < 0:
-        print('Error in environment. Exiting...')
+    if not env.UT_CONST.check_env():
+        env.UT_CONST.log_print('Error in environment. Exiting...')
         sys.exit(-1)
 
     ups = UPS.UPSsnmp()
     num_ups = ups.get_num_ups_tuple()
 
+    if env.UT_CONST.fatal:
+        env.UT_CONST.log_print('Fatal Error. Exiting...')
+        sys.exit(-1)
+
     if num_ups[0] == 0:
-        print('No UPSs specified in {0}, for more information: `man {0}`, exiting...'.format(env.UtConst.UPS_JSON_FILE))
+        env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UtConst.UPS_JSON_FILE))
+        print('    For more information: `man {0}`, exiting...'.format(env.UtConst.UPS_JSON_FILE))
         sys.exit(-1)
     print('{} UPSs listed in {}.'.format(num_ups[0], env.UtConst.UPS_JSON_FILE))
-    print('    {} are compatible, {} are accessible, {} are responsive'.format(num_ups[1], num_ups[2], num_ups[3]))
-    print('')
+    print('    {} are compatible, {} are accessible, {} are responsive\n'.format(num_ups[1], num_ups[2], num_ups[3]))
 
     for ups_item in ups.ups_list.values():
         ups.set_active_ups(ups_item)

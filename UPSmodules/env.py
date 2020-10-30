@@ -31,7 +31,9 @@ import argparse
 import platform
 import sys
 import os
+import grp
 import re
+import inspect
 import logging
 from pathlib import Path
 import shutil
@@ -52,17 +54,21 @@ def check_file(filename: str) -> bool:
         with open(filename, 'r') as _file_ptr:
             pass
     except PermissionError as error:
-        message = "Error: permission error for [{}]: {}".format(filename, error)
-        fail = True
+        UtConst.log_print("Error: permission error for [{}]: {}".format(filename, error))
+        return False
     except FileNotFoundError as error:
-        message = "Error: file not found error for [{}]: {}".format(filename, error)
-        fail = True
-    else:
-        message = ""
-        fail = False
-    if fail:
-        print(message)
-        LOGGER.debug(message)
+        UtConst.log_print("Error: file not found error for [{}]: {}".format(filename, error))
+        return False
+    file_st = os.stat(filename)
+    file_grp = grp.getgrgid(file_st.st_gid)
+    file_mode = oct(file_st.st_mode)
+    LOGGER.debug('%s: %s', filename, file_mode)
+    if file_grp != 'upsutils' and file_mode[-2:-1] != '0':
+        UtConst.log_print('Error: group readable when group not set to '
+                          'upsutils is not allowed for:\n     [{}]: {}'.format(filename, file_mode))
+        return False
+    if file_mode[-1] != '0':
+        UtConst.log_print("Error: world readable not allowed for:\n     [{}]: {}".format(filename, file_mode))
         return False
     return True
 
@@ -93,40 +99,53 @@ class UtConst:
     # Constant path and file names
     UPS_JSON_FILE = 'ups-config.json'
     UPS_CONFIG_INI = 'ups-utils.ini'
+    CONFIG_FILES = [UPS_CONFIG_INI, UPS_JSON_FILE]
     # Utility Repository Path Definitions
     _repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
     _repository_path = os.path.join(_repository_module_path, '..')
     _local_icon_list = [os.path.join(_repository_path, 'icons'),
                         '/usr/share/rickslab-ups-utils/icons',
                         '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))]
-    _local_config_list = [_repository_path,
-                          '/usr/share/rickslab-ups-utils/config',
-                          '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))]
+    _local_config_list = {'repository': _repository_path,
+                          'debian': '/usr/share/rickslab-ups-utils/config',
+                          'pypi': '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))}
     gui_window_title = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file = 'ups-utils-monitor.icon.png'
 
     def __init__(self):
         self.args = None
+        self.program_name = None
+        self.fatal = False
+        self.no_ini = False
+        self.installation = 'unknown'
+        self.ups_json_file = None
+        self.ups_config_ini = None
+
+        if '/usr/share/rickslab-ups-utils' in inspect.getfile(inspect.currentframe()):
+            config_list = {'debian': self._local_config_list['debian']}
+        else:
+            config_list = self._local_config_list
 
         # Set config Path
-        for try_config_path in UtConst._local_config_list:
+        for install_type, try_config_path in config_list.items():
             if os.path.isdir(try_config_path):
-                if os.path.isfile(os.path.join(try_config_path, self.UPS_CONFIG_INI)) and \
-                   os.path.isfile(os.path.join(try_config_path, self.UPS_JSON_FILE)):
+                self.installation = install_type
+                if os.path.isfile(os.path.join(try_config_path, self.UPS_JSON_FILE)):
                     self.ups_json_file = os.path.join(try_config_path, self.UPS_JSON_FILE)
+                    if not check_file(self.ups_json_file):
+                        print('     See man page for {} for more information.'.format(self.UPS_JSON_FILE))
+                        self.fatal = True
+                if os.path.isfile(os.path.join(try_config_path, self.UPS_CONFIG_INI)):
                     self.ups_config_ini = os.path.join(try_config_path, self.UPS_CONFIG_INI)
-                    if not check_file(self.ups_json_file) or not check_file(self.ups_config_ini):
-                        print('     See man pages for {} or {} for more information.'.format(self.UPS_JSON_FILE,
-                                                                                             self.UPS_CONFIG_INI))
-                        sys.exit(-1)
-                    break
+                    if not check_file(self.ups_config_ini):
+                        print('     See man page for {} for more information.'.format(self.UPS_CONFIG_INI))
+                        self.no_ini = True
+                break
         else:
-            self.ups_json_file = None
-            self.ups_config_ini = None
             print('Missing required configuration files.  Exiting...')
             print('     See man pages for {} or {} for more information.'.format(self.UPS_JSON_FILE,
                                                                                  self.UPS_CONFIG_INI))
-            sys.exit(-1)
+            self.fatal = True
 
         # Set Icon Path
         for try_icon_path in UtConst._local_icon_list:
@@ -144,13 +163,17 @@ class UtConst:
         self.USELTZ = False
         self.LTZ = datetime.utcnow().astimezone().tzinfo
 
-    def set_env_args(self, args: argparse.Namespace) -> None:
+    def set_env_args(self, args: argparse.Namespace, prog_name: str = None) -> None:
         """
         Set arguments for the give args object.
 
         :param args: The object return by args parser.
+        :param prog_name: Name of calling program.
         """
         self.args = args
+        self.program_name = prog_name
+        if self.no_ini and prog_name == 'ups-daemon':
+            self.fatal = True
         for target_arg in vars(self.args):
             if target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
             elif target_arg == 'log': self.LOG = self.args.log
@@ -170,8 +193,20 @@ class UtConst:
             file_handler.setLevel(logging.DEBUG)
             LOGGER.addHandler(file_handler)
         LOGGER.debug('Command line arguments:\n  %s', args)
+        LOGGER.debug('Module directory: %s', inspect.getfile(inspect.currentframe()))
+        LOGGER.debug('Install type: %s', self.installation)
         LOGGER.debug('Local TZ: %s', self.LTZ)
         LOGGER.debug('Icon path set to: %s', self.icon_path)
+
+    @staticmethod
+    def log_print(message) -> None:
+        """ Print and log message
+
+        :param message:  message to be processed
+        :return:  None
+        """
+        print(message)
+        LOGGER.debug(message)
 
     @staticmethod
     def now(ltz: bool = False) -> datetime:
@@ -184,13 +219,13 @@ class UtConst:
             return datetime.now()
         return datetime.utcnow()
 
-    @staticmethod
-    def check_env() -> int:
+    def check_env(self) -> bool:
         """ Check the user's environment for compatibility.
 
-        :return: Returns an integer indicating env error code: 0 for passes.
+        :return: True if ok
         """
         # Check python version
+        fatal = False
         required_pversion = [3, 6]
         (python_major, python_minor, python_patch) = platform.python_version_tuple()
         LOGGER.debug('Using python %s.%s.%s', python_major, python_minor, python_patch)
@@ -198,12 +233,12 @@ class UtConst:
             print('Using python' + python_major + ', but ' + __program_name__ +
                   ' requires python ' + str(required_pversion[0]) + '.' + str(required_pversion[1]) + ' or higher.',
                   file=sys.stderr)
-            return -1
+            fatal = True
         elif int(python_major) == required_pversion[0] and int(python_minor) < required_pversion[1]:
             print('Using python ' + python_major + '.' + python_minor + '.' + python_patch + ', but ' +
                   __program_name__ + ' requires python ' + str(required_pversion[0]) + '.' +
                   str(required_pversion[1]) + ' or higher.', file=sys.stderr)
-            return -1
+            fatal = True
 
         # Check Linux Kernel version
         required_kversion = [4, 8]
@@ -211,19 +246,19 @@ class UtConst:
         if int(linux_version.split('.')[0]) < required_kversion[0]:
             print('Using Linux Kernel ' + linux_version + ', but ' + __program_name__ + ' requires > ' +
                   str(required_kversion[0]) + '.' + str(required_kversion[1]), file=sys.stderr)
-            return -2
+            fatal = True
         elif int(linux_version.split('.')[0]) == required_kversion[0] and \
                                                  int(linux_version.split('.')[1]) < required_kversion[1]:
             print('Using Linux Kernel ' + linux_version + ', but ' + __program_name__ + ' requires > ' +
                   str(required_kversion[0]) + '.' + str(required_kversion[1]), file=sys.stderr)
-            return -2
+            fatal = True
 
         # Check if snmp tools are installed
         if not shutil.which('snmpget'):
             print('Missing dependency: `sudo apt install snmp`')
-            return -3
-
-        return 0
+            fatal = True
+        self.fatal = self.fatal or fatal
+        return not fatal
 
 
 UT_CONST = UtConst()

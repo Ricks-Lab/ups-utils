@@ -5,7 +5,7 @@ ups-daemon \- enables the monitoring of and response to UPS events
 
 .SH SYNOPSIS
 .B ups-daemon
-.RB [ \-\-help "] [" \-\-about "] [" \-\-daemon "] [" \-\-list_commands "] [" \-\-list_params "]"
+.RB [ \-\-help "] [" \-\-about "] [" \-\-daemon "] [" \-\-verbose "] [" \-\-list_commands "] [" \-\-list_params "]"
 .RB [ \-\-list_decoders "] [" \-\-logfile " LOGFILE ] [" \-\-debug "]"
 
 .SH DESCRIPTION
@@ -42,6 +42,9 @@ Will run in debug mode which enables the logger at debug level.
 .TP
 .BR "\-\-daemon"
 Run in daemon mode which is meant to run as a system service.
+.TP
+.BR "\-\-verbose"
+Output messages for normal events.
 .TP
 .BR "\-\-list_commands"
 Will display list of all MiB commands available for the UPS defined with \fBdaemon = true\fR.

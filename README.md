@@ -31,8 +31,8 @@ sudo apt install rickslab-ups-utils
 ```
 
 After installation, you will need to create a new group, *upsutils*, and add trusted users to this group.
-This required for this type of installation in order to secure the snmp share secret stored in the ini
-file.
+This required for this type of installation in order to secure the snmp shared secret stored in the configuration
+files:
 ```
 sudo groupadd upsutils
 sudo usermod -a -G upsutils $LOGNAME
@@ -58,7 +58,7 @@ pip3 install --no-cache-dir rickslab-ups-utils
 
 Application configuration parameters can be specified in the `ups-utils.ini` file.  A
 template files is provided: `ups-utils.ini.template`.  You can verify the values of
-the configuration settings by executing
+the configuration settings by executing:
 
 ```
 ups-daemon --list_params
@@ -70,9 +70,9 @@ The utility requires snmp v2c in order to communicate with the network accessibl
 result, you must configure your target Network attached UPS devices to use SNMPv2 with a known
 Private Community String.
 
-If you installed from a package, the template configuration files will be owned by root.  When
-you create you configuration files from the templates, you should change group ownership to
-*upsutils* and change permissions to 660.
+If you installed from debian package, the template configuration files will be owned by root.  When
+you create your configuration files from the templates, you MUST change group ownership to
+*upsutils* and change permissions to 660:
 ```
 cd /usr/share/rickslab-ups-utils/config/
 sudo chgrp upsutils ups-utils.ini ups-config.json
@@ -97,11 +97,13 @@ execute the specified resume script when it detects power has resumed.  When the
 detects a Battery Low event from the UPS or that time remaining for battery or the battery
 charge is below specified thresholds, then the shutdown script will be executed. If
 *ups-deamon* detects a return to line power has occurred before the shutdown has completed,
-it will execute the cancel shutdown script.  With the *--list_commands* option, the utility
-will list all available SNMP commands for the configured UPS.  With the *--list_params*
-option, the daemon configuration parameters will be listed. The *--logfile filename* option
-is used to specify a logfile, but is not implemented at this time.  The threshold and script
-definitions must be made in the config.py file using config.py.template as a template.
+it will execute the cancel shutdown script.  With the *--verbose* option set, no event 
+update messages will be output, otherwise, only events are output.  With the *--list_commands*
+option, the utility will list all available SNMP commands for the configured UPS.  With the
+*--list_params* option, the daemon configuration parameters will be listed. The
+*--logfile filename* option is used to specify a logfile, but is not implemented at this
+time.  The threshold and script definitions must be made in the config.py file using
+*config.py.template* as a template.
 
 ## ups-ls
 
@@ -124,11 +126,19 @@ output a table of the current status.  The *--long* option will include addition
 informational parameters. By default, unresponsive UPSs will not be displayed, but the
 *--show_unresponsive* can be used to force their display.
 
-## New in this Beta Release  -  v0.11.0
+## New in Development
 
-* Initial Beta Release - Please feedback your question/issues in the project's issues.  Thanks!
+* Delay sys exit on failure to allow more information to be available for user to troubleshoot.
+* Check file permissions for security issues and exit if not secure.
+* Determine installation type (Local Git Repository, PyPI, or Debian), and force use
+of Debian location for configuration files if it is a debian installation.
+* The ups-utils.ini file is now only required for ups-daemon.  Other utilities will
+use defaults if missing.
+* Added verbose option to ups-daemon to output status message for normal readings.
+* Changes in documentation to describe steps necessary to secure snmp shared secret.
+* Added check of configuration files readability.
 
-## Under Development
+## Known Issues
 
 The utility currently supports:
 
@@ -150,3 +160,7 @@ free to make a pull request.
 * [snmp utilities](http://www.net-snmp.org/docs/man/)
 * [MIB Browser](http://www.ireasoning.com/)
 * [Eaton PowerWalker NMC](https://powerwalker.com/?page=nmc&lang=en)
+
+## New in Previous Release  -  v1.0.0
+
+* Initial Release - Full functionality and working debian package!
