@@ -13,11 +13,14 @@ A set of utilities to monitor and react to the status of a supported UPS
 ### Debian Package Installation
 
 First, remove any previous PyPI installation and exit that terminal:
+
 ```
 pip uninstall rickslab-ups-utils
 exit
 ```
+
 Next, add the *rickslab-ups-utils* repository:
+
 ```
 wget -q -O - https://debian.rickslab.com/PUBLIC.KEY | sudo apt-key add -
 
@@ -25,7 +28,9 @@ echo 'deb [arch=amd64] https://debian.rickslab.com/ups-utils/ stable main' | sud
 
 sudo apt update
 ```
+
 Then install the package with apt:
+
 ```
 sudo apt install rickslab-ups-utils
 ```
@@ -33,10 +38,12 @@ sudo apt install rickslab-ups-utils
 After installation, you will need to create a new group, *upsutils*, and add trusted users to this group.
 This required for this type of installation in order to secure the snmp shared secret stored in the configuration
 files:
+
 ```
 sudo groupadd upsutils
 sudo usermod -a -G upsutils $LOGNAME
 ```
+
 After adding the user to a new group, the user must logout and relogin before the change is in effect.
 
 ### PyPI Installation
@@ -45,20 +52,23 @@ Install the latest package from [PyPI](https://pypi.org/project/rickslab-ups-uti
 commands:
 
 ```
-pip3 uninstall rickslab-ups-utils
 pip3 install rickslab-ups-utils
 ```
-The uninstall is required to make sure all modules are updated.  If you still get an old version,
-then specify not to use cached files:
+
+For an install from PyPI, all files will be installed in a subdirectory of
+`~/.local/share/rickslab-ups-utils/config`. Files will be owned by you and there is no
+need to setup a special group, but permissions will need to be read only by you.
+
 ```
-pip3 install --no-cache-dir rickslab-ups-utils
+cd ~/.local/share/rickslab-ups-utils/config
+chmod 600 ups-utils.ini ups-config.json
 ```
 
-## Getting Started
+## Configuration
 
-Application configuration parameters can be specified in the `ups-utils.ini` file.  A
-template files is provided: `ups-utils.ini.template`.  You can verify the values of
-the configuration settings by executing:
+Application configuration parameters must be specified in the `ups-utils.ini` file.  A
+template files is provided: `ups-utils.ini.template`. You can verify the values of the
+configuration settings by executing:
 
 ```
 ups-daemon --list_params
@@ -73,11 +83,15 @@ Private Community String.
 If you installed from debian package, the template configuration files will be owned by root.  When
 you create your configuration files from the templates, you MUST change group ownership to
 *upsutils* and change permissions to 660:
+
 ```
 cd /usr/share/rickslab-ups-utils/config/
 sudo chgrp upsutils ups-utils.ini ups-config.json
 sudo chmod 660 ups-utils.ini ups-config.json
 ```
+
+To assure the use of the utilities only with secure configuration files, all utilities should
+exit with an error if not properly secured.
 
 The ups-utils rely on the command *snmpget* which is part of the snmp package that must
 be installed:
