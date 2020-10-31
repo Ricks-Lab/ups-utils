@@ -10,6 +10,16 @@ A set of utilities to monitor and react to the status of a supported UPS
 
 ## Installation
 
+There are currently 3 possible ways of installing *rickslab-ups-utils*.  These are summarized in
+order of preference as:
+
+* Debian Package - This will install a Debian package file from my public server.  It is signed and verified
+with my GPG key.  This will be installed as root and can be removed and updated with apt tools.
+* PyPI - Uses the Python Package Index as the source.  This should work on systems other than Debian based
+but I have ony verified Ubuntu.  Feel free to report any issues and I will work them out to support other distros.
+* Repository - You can always clone the repository and run that version.  This is useful if you want to contribute 
+to the project.
+
 ### Debian Package Installation
 
 First, remove any previous PyPI installation and exit that terminal:
@@ -59,11 +69,6 @@ For an install from PyPI, all files will be installed in a subdirectory of
 `~/.local/share/rickslab-ups-utils/config`. Files will be owned by you and there is no
 need to setup a special group, but permissions will need to be read only by you.
 
-```
-cd ~/.local/share/rickslab-ups-utils/config
-chmod 600 ups-utils.ini ups-config.json
-```
-
 ## Configuration
 
 Application configuration parameters must be specified in the `ups-utils.ini` file.  A
@@ -88,6 +93,14 @@ you create your configuration files from the templates, you MUST change group ow
 cd /usr/share/rickslab-ups-utils/config/
 sudo chgrp upsutils ups-utils.ini ups-config.json
 sudo chmod 660 ups-utils.ini ups-config.json
+```
+
+If you installed from PyPI, you will be the owner of the file, so there is not need to change
+group ownership, but the configuration files must be readable by only you:
+
+```
+cd ~/.local/share/rickslab-ups-utils/config
+chmod 600 ups-utils.ini ups-config.json
 ```
 
 To assure the use of the utilities only with secure configuration files, all utilities should
