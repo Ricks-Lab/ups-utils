@@ -60,15 +60,16 @@ def check_file(filename: str) -> bool:
         UtConst.log_print("Error: file not found error for [{}]: {}".format(filename, error))
         return False
     file_st = os.stat(filename)
-    file_grp = grp.getgrgid(file_st.st_gid)
+    file_grp = grp.getgrgid(file_st.st_gid).gr_name
     file_mode = oct(file_st.st_mode)
     LOGGER.debug('%s: %s', filename, file_mode)
     if file_grp != 'upsutils' and file_mode[-2:-1] != '0':
-        UtConst.log_print('Error: group readable when group not set to '
-                          'upsutils is not allowed for:\n     [{}]: {}'.format(filename, file_mode))
+        UtConst.log_print('Error: group readable when group not set to upsutils is not allowed for:\n'
+                          '     [{}]: gid: {} permissions: {}'.format(filename, file_grp, file_mode))
         return False
     if file_mode[-1] != '0':
-        UtConst.log_print("Error: world readable not allowed for:\n     [{}]: {}".format(filename, file_mode))
+        UtConst.log_print('Error: world readable not allowed for:\n'
+                          '     [{}]: gid: {} permissions: {}'.format(filename, file_grp, file_mode))
         return False
     return True
 
@@ -121,7 +122,7 @@ class UtConst:
         self.ups_json_file = None
         self.ups_config_ini = None
 
-        if '/usr/share/rickslab-ups-utils' in inspect.getfile(inspect.currentframe()):
+        if 'dist-packages' in inspect.getfile(inspect.currentframe()):
             self.installation = 'debian'
         elif '/.local/lib/' in inspect.getfile(inspect.currentframe()):
             self.installation = 'pypi'
