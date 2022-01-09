@@ -101,7 +101,7 @@ class UPSsnmp:
     monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
                                    'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
                                    'mib_ups_uptime'],
-                        'dynamic': ['mib_battery_capacity', 'mib_time_on_battery',
+                        'dynamic': ['mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
                                     'mib_battery_runtime_remain', 'mib_input_voltage',
                                     'mib_input_frequency', 'mib_output_voltage', 'mib_output_frequency',
                                     'mib_output_load', 'mib_output_current', 'mib_output_power',
@@ -112,7 +112,7 @@ class UPSsnmp:
 
     all_mib_cmds = {
         # MiBs for APC UPS with AP9630 NMC
-        'apc-ap9630': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
+        'apc-ap96xx': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                         'name': 'General UPS Information',
                                         'decode': None},
                        'mib_bios_serial_number': {'iso': 'iso.3.6.1.4.1.318.1.1.1.1.2.3.0',
@@ -130,6 +130,9 @@ class UPSsnmp:
                        'mib_ups_contact': {'iso': 'iso.3.6.1.2.1.1.4.0',
                                            'name': 'UPS Contact',
                                            'decode': None},
+                       'mib_ups_env_temp': {'iso': 'iso.3.6.1.4.1.318.1.1.25.1.2.1.6.1.1',
+                                            'name': 'UPS Environment Temp',
+                                            'decode': None},
                        'mib_ups_location': {'iso': 'iso.3.6.1.2.1.1.6.0',
                                             'name': 'UPS Location',
                                             'decode': None},
@@ -317,7 +320,7 @@ class UPSsnmp:
         if self.read_ups_list():
             self.check_ups_list()
         else:
-            print('Error reading {} file: {}'.format(env.UT_CONST.UPS_JSON_FILE, env.UT_CONST.ups_json_file))
+            print('Error reading {} file: [{}]'.format(env.UT_CONST.UPS_JSON_FILE, env.UT_CONST.ups_json_file))
             sys.exit(-1)
         # End of init
 
@@ -714,7 +717,8 @@ class UPSsnmp:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
         except subprocess.CalledProcessError:
-            LOGGER.debug('Error executing snmp command to %s at %s.', self.ups_name(), self.ups_ip())
+            LOGGER.debug('Error executing snmp %s command [%s] to %s at %s.', command_name, cmd_mib, self.ups_name(),
+                         self.ups_ip())
             return None
 
         value = ''
@@ -738,7 +742,7 @@ class UPSsnmp:
                 value = int(value) / 10.0
             elif command_name == 'mib_system_temperature':
                 value = int(value) / 10.0
-        if command_name == 'mib_system_status' and tups['ups_type'] == 'apc-ap9630':
+        if command_name == 'mib_system_status' and tups['ups_type'] == 'apc-ap96xx':
             value = self.bit_str_decoder(value, self.decoders['apc_system_status'])
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
@@ -819,6 +823,7 @@ class UPSsnmp:
         """
         read_status = True
         if not env.UT_CONST.ups_config_ini:
+            print('Error ups-utils.ini filename not set.')
             return False
         config = configparser.ConfigParser()
         try:
@@ -838,8 +843,11 @@ class UPSsnmp:
                 self.daemon_params[path_name] = os.path.expanduser(config['DaemonPaths'][path_name])
                 if self.daemon_params[path_name]:
                     if not os.path.isdir(self.daemon_params[path_name]):
-                        print('Missing directory for {} path_name: {}'.format(path_name, self.daemon_params[path_name]))
-                        read_status = False
+                        if path_name == 'boinc_home':
+                            print('BOINC_HOME directory [{}] not found. Set to None'.format(self.daemon_params[path_name]))
+                        else:
+                            print('Missing directory for {} path_name: {}'.format(path_name, self.daemon_params[path_name]))
+                            read_status = False
         if self.daemon_params['boinc_home']:
             os.environ['BOINC_HOME'] = self.daemon_params['boinc_home']
 
