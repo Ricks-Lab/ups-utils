@@ -669,6 +669,7 @@ class UPSsnmp:
 
         :param command_list:  A list of mib commands to be read from the active UPS
         :param errups: Flag to indicate if error UPS should be included.
+        :param display: Flag to indicate if parameters should be displayed as read.
         :return:  dict of results from the reading of all commands from all UPSs.
         """
         results = {}
@@ -685,6 +686,7 @@ class UPSsnmp:
 
         :param command_list:  A list of mib commands to be read from the active UPS
         :param tups:  The target ups dictionary from list or None.
+        :param display: Flag to indicate if parameters should be displayed as read.
         :return:  dict of results from the reading of all commands target UPS.
         """
         if not tups:
@@ -701,12 +703,15 @@ class UPSsnmp:
             if not results[cmd]:
                 results['valid'] = False
                 break
-            if cmd == 'mib_ups_info' and results['ups_type'] == 'apc-ap96xx':
-                try:
-                    results['ups_nmc_model'] = re.sub(r'.*MN:', '', results[cmd]).split()[0]
-                    tups['ups_nmc_model'] = results['ups_nmc_model']
-                except:
-                    pass
+            if cmd == 'mib_ups_info':
+                if results['ups_type'] == 'apc-ap96xx':
+                    try:
+                        results['ups_nmc_model'] = re.sub(r'.*MN:', '', results[cmd]).split()[0]
+                        tups['ups_nmc_model'] = results['ups_nmc_model']
+                    except:
+                        results['ups_nmc_model'] = None
+                else:
+                    results['ups_nmc_model'] = self.ups_type(tups=tups)
         # Since PowerWalker NMC is not intended for 110V UPSs, the following correction to output current is needed.
         if self.ups_type(tups=tups) == 'eaton-pw':
             if 'mib_output_current' in results.keys() and 'mib_output_voltage' in results.keys():
