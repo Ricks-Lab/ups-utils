@@ -79,7 +79,7 @@ class MonitorWindow(Gtk.Window):
         :param mib_params:  A list of mib parameter results
         :param devices: A dictionary of Gtk components and values
         """
-        self.quit = False
+        self.quit: bool = False
 
         # RuntimeError: Gtk couldn't be initialized. Use Gtk.init_check() if you want to handle this case.
         Gtk.Window.__init__(self, title='{} - Monitor'.format(env.UT_CONST.gui_window_title))

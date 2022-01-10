@@ -26,6 +26,8 @@ __program_name__ = 'setup.py'
 __maintainer__ = 'RueiKe'
 __docformat__ = 'reStructuredText'
 
+# pylint: disable=line-too-long
+
 import sys
 import os
 import pathlib
