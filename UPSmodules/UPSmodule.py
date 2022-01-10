@@ -111,7 +111,7 @@ class UPSsnmp:
     input_mib_cmds = ['mib_input_voltage', 'mib_input_frequency']
 
     all_mib_cmds = {
-        # MiBs for APC UPS with AP9630 NMC
+        # MiBs for APC UPS with AP96xx NMC
         'apc-ap96xx': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                         'name': 'General UPS Information',
                                         'decode': None},
@@ -347,6 +347,8 @@ class UPSsnmp:
         try:
             with open(env.UT_CONST.ups_json_file, 'r') as ups_list_file:
                 self.ups_list = json.load(ups_list_file)
+            for ups, ups_item in self.ups_list.items():
+                ups_item['ups_nmc_model'] = ups_item['ups_type']
         except FileNotFoundError as error:
             env.UT_CONST.log_print("Error: file not found error for [{}]: {}".format(env.UT_CONST.ups_json_file, error))
             return False
@@ -565,6 +567,16 @@ class UPSsnmp:
             tups = self.active_ups
         return tups['ups_type']
 
+    def ups_nmc_model(self, tups: dict = None) -> str:
+        """ Get the type value for the target UPS or active UPS if target is None.
+
+        :param tups:  The target ups dictionary from list or None.
+        :return:  The ups_type as an str.
+        """
+        if not tups:
+            tups = self.active_ups
+        return tups['ups_nmc_model']
+
     def ups_ip(self, tups: dict = None) -> None:
         """ Get the IP address value for the target UPS or active UPS if target is None.
 
@@ -652,7 +664,7 @@ class UPSsnmp:
             return return_list
         return self.monitor_mib_cmds[cmd_type]
 
-    def read_all_ups_list_items(self, command_list: list, errups: bool = True) -> dict:
+    def read_all_ups_list_items(self, command_list: list, errups: bool = True, display: bool = False) -> dict:
         """ Get the specified list of monitor mib commands for all UPSs.
 
         :param command_list:  A list of mib commands to be read from the active UPS
@@ -665,10 +677,10 @@ class UPSsnmp:
                 if not self.is_responsive(ups_item):
                     continue
             self.set_active_ups(ups_item)
-            results[ups_name] = self.read_ups_list_items(command_list)
+            results[ups_name] = self.read_ups_list_items(command_list, display=display)
         return results
 
-    def read_ups_list_items(self, command_list: list, tups: dict = None) -> dict:
+    def read_ups_list_items(self, command_list: list, tups: dict = None, display: bool = False) -> dict:
         """ Read the specified list of monitor mib commands for all UPSs.
 
         :param command_list:  A list of mib commands to be read from the active UPS
@@ -682,12 +694,19 @@ class UPSsnmp:
                    'name': self.ups_name(tups=tups),
                    'uuid': self.ups_uuid(tups=tups),
                    'ups_IP': self.ups_ip(tups=tups),
+                   'ups_nmc_model': self.ups_nmc_model(tups=tups),
                    'ups_type': self.ups_type(tups=tups)}
         for cmd in command_list:
-            results[cmd] = self.send_snmp_command(cmd, tups=tups)
+            results[cmd] = self.send_snmp_command(cmd, tups=tups, display=display)
             if not results[cmd]:
                 results['valid'] = False
                 break
+            if cmd == 'mib_ups_info' and results['ups_type'] == 'apc-ap96xx':
+                try:
+                    results['ups_nmc_model'] = re.sub(r'.*MN:', '', results[cmd]).split()[0]
+                    tups['ups_nmc_model'] = results['ups_nmc_model']
+                except:
+                    pass
         # Since PowerWalker NMC is not intended for 110V UPSs, the following correction to output current is needed.
         if self.ups_type(tups=tups) == 'eaton-pw':
             if 'mib_output_current' in results.keys() and 'mib_output_voltage' in results.keys():

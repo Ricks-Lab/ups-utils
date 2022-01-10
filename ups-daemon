@@ -165,8 +165,9 @@ def main() -> None:
         sys.exit(0)
 
     # Display current status of target UPS
-    for mib_command in ups.get_mib_commands().keys():
-        ups.send_snmp_command(mib_command, display=True)
+    ups.read_all_ups_list_items(ups.get_monitor_mib_commands('all'), display=True)
+    #for mib_command in ups.get_mib_commands().keys():
+        #ups.send_snmp_command(mib_command, display=True)
 
     if args.daemon:
         crit_bat_level = ups.daemon_params['threshold_battery_capacity']['crit']

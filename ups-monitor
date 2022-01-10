@@ -356,7 +356,7 @@ def print_monitor_table(ups: UPS.UPSsnmp, header_list: list, cmd_list: list, ups
             print('│', str(values[info_item]).ljust(irw, ' ')[:irw], sep='', end='')
         print('│')
     for table_item in cmd_list:
-        print('│', '\x1b[1;36m' + ups.get_mib_name_for_type(table_item, 'apc-ap9630').ljust(hrw, ' ')[:hrw] + '\x1b[0m',
+        print('│', '\x1b[1;36m' + ups.get_mib_name_for_type(table_item, 'apc-ap96xx').ljust(hrw, ' ')[:hrw] + '\x1b[0m',
               sep='', end='')
         for value in ups_data.values():
             if table_item == 'mib_system_status':
@@ -485,7 +485,8 @@ def main() -> None:
         env.UT_CONST.log_print('Fatal Error. Exiting...')
         sys.exit(-1)
 
-    header_list = ['ups_type', 'ups_IP']
+    header_list = ['ups_type', 'ups_IP', 'ups_nmc_model']
+    ups_data = ups.read_all_ups_list_items(ups.get_monitor_mib_commands('all'), errups=args.show_unresponsive)
     if args.long:
         command_list = ups.get_monitor_mib_commands('all')
     else:
