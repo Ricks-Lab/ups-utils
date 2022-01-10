@@ -735,6 +735,8 @@ class UPSsnmp:
         snmp_mib_commands = self.get_mib_commands(tups)
         if command_name not in snmp_mib_commands:
             return 'No data'
+        if command_name == 'mib_ups_env_temp' and self.ups_nmc_model(tups=tups) != 'AP9641':
+            return 'No data'
         cmd_mib = snmp_mib_commands[command_name]['iso']
         cmd_str = 'snmpget -v2c -c {} {} {}'.format(tups['snmp_community'], tups['ups_IP'], cmd_mib)
         try:
