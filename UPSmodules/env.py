@@ -38,6 +38,7 @@ import logging
 from pathlib import Path
 import shutil
 from datetime import datetime
+from typing import Dict, Union, List, TextIO
 from UPSmodules import __version__, __status__
 
 LOGGER = logging.getLogger('ups-utils')
@@ -98,29 +99,29 @@ class UtConst:
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
 
     # Constant path and file names
-    UPS_JSON_FILE = 'ups-config.json'
-    UPS_CONFIG_INI = 'ups-utils.ini'
-    CONFIG_FILES = [UPS_CONFIG_INI, UPS_JSON_FILE]
+    UPS_JSON_FILE: str = 'ups-config.json'
+    UPS_CONFIG_INI: str = 'ups-utils.ini'
+    CONFIG_FILES: List[str] = [UPS_CONFIG_INI, UPS_JSON_FILE]
     # Utility Repository Path Definitions
-    _repository_module_path = os.path.dirname(str(Path(__file__).resolve()))
-    _repository_path = os.path.join(_repository_module_path, '..')
-    _local_icon_list = {'repository': os.path.join(_repository_path, 'icons'),
-                        'debian': '/usr/share/rickslab-ups-utils/icons',
-                        'pypi': '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))}
-    _local_config_list = {'repository': _repository_path,
-                          'debian': '/usr/share/rickslab-ups-utils/config',
-                          'pypi': '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))}
-    gui_window_title = 'Ricks-Lab UPS Utilities'
-    gui_monitor_icon_file = 'ups-utils-monitor.icon.png'
+    _repository_module_path: str = os.path.dirname(str(Path(__file__).resolve()))
+    _repository_path: str = os.path.join(_repository_module_path, '..')
+    _local_icon_list: Dict[str, str] = {'repository': os.path.join(_repository_path, 'icons'),
+                                        'debian': '/usr/share/rickslab-ups-utils/icons',
+                                        'pypi': '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))}
+    _local_config_list: Dict[str, str] = {'repository': _repository_path,
+                                          'debian': '/usr/share/rickslab-ups-utils/config',
+                                          'pypi': '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))}
+    gui_window_title: str = 'Ricks-Lab UPS Utilities'
+    gui_monitor_icon_file: str = 'ups-utils-monitor.icon.png'
 
     def __init__(self):
-        self.args = None
-        self.program_name = None
-        self.fatal = False
-        self.no_ini = False
-        self.installation = 'unknown'
-        self.ups_json_file = None
-        self.ups_config_ini = None
+        self.args: Union[argparse.Namespace, None] = None
+        self.program_name: Union[str, None] = None
+        self.fatal: bool = False
+        self.no_ini: bool = False
+        self.installation: str = 'unknown'
+        self.ups_json_file: Union[str, None] = None
+        self.ups_config_ini: Union[str, None] = None
 
         if 'dist-packages' in inspect.getfile(inspect.currentframe()):
             self.installation = 'debian'
@@ -161,10 +162,10 @@ class UtConst:
             self.icon_path = None
 
         # Utility Execution Flags
-        self.show_unresponsive = False
-        self.LOG = False
-        self.log_file_ptr = ''
-        self.USELTZ = False
+        self.show_unresponsive: bool = False
+        self.LOG: bool = False
+        self.log_file_ptr: Union[TextIO, None] = None
+        self.USELTZ: bool = False
         self.LTZ = datetime.utcnow().astimezone().tzinfo
 
     def set_env_args(self, args: argparse.Namespace, prog_name: str = None) -> None:
@@ -203,7 +204,7 @@ class UtConst:
         LOGGER.debug('Icon path set to: %s', self.icon_path)
 
     @staticmethod
-    def log_print(message) -> None:
+    def log_print(message: str) -> None:
         """ Print and log message
 
         :param message:  message to be processed
