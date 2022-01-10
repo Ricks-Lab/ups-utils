@@ -136,7 +136,7 @@ def main() -> None:
         env.UT_CONST.fatal = True
     if not ups.set_daemon_parameters():
         ups.print_daemon_parameters()
-        if env.UT_CONST.ups_config_ini:
+        if not env.UT_CONST.ups_config_ini:
             env.UT_CONST.log_print('Error reading [{}] file.'.format(env.UtConst.UPS_CONFIG_INI))
         else:
             env.UT_CONST.log_print('Error no [{}] file found.'.format(env.UtConst.UPS_CONFIG_INI))
