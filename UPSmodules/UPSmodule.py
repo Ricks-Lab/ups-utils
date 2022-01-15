@@ -667,7 +667,7 @@ class UPSsnmp:
     def read_all_ups_list_items(self, command_list: list, errups: bool = True, display: bool = False) -> dict:
         """ Get the specified list of monitor mib commands for all UPSs.
 
-        :param command_list:  A list of mib commands to be read from the active UPS
+        :param command_list:  A list of mib commands to be read from the all UPSs.
         :param errups: Flag to indicate if error UPS should be included.
         :param display: Flag to indicate if parameters should be displayed as read.
         :return:  dict of results from the reading of all commands from all UPSs.
@@ -682,9 +682,9 @@ class UPSsnmp:
         return results
 
     def read_ups_list_items(self, command_list: list, tups: dict = None, display: bool = False) -> dict:
-        """ Read the specified list of monitor mib commands for all UPSs.
+        """ Read the specified list of monitor mib commands for specified UPS.
 
-        :param command_list:  A list of mib commands to be read from the active UPS
+        :param command_list:  A list of mib commands to be read from the specified UPS.
         :param tups:  The target ups dictionary from list or None.
         :param display: Flag to indicate if parameters should be displayed as read.
         :return:  dict of results from the reading of all commands target UPS.
@@ -708,8 +708,8 @@ class UPSsnmp:
                     try:
                         results['ups_nmc_model'] = re.sub(r'.*MN:', '', results[cmd]).split()[0]
                         tups['ups_nmc_model'] = results['ups_nmc_model']
-                    except:
-                        results['ups_nmc_model'] = None
+                    except(KeyError, IndexError):
+                        results['ups_nmc_model'] = self.ups_type(tups=tups)
                 else:
                     results['ups_nmc_model'] = self.ups_type(tups=tups)
         # Since PowerWalker NMC is not intended for 110V UPSs, the following correction to output current is needed.
@@ -870,9 +870,11 @@ class UPSsnmp:
                 if self.daemon_params[path_name]:
                     if not os.path.isdir(self.daemon_params[path_name]):
                         if path_name == 'boinc_home':
-                            print('BOINC_HOME directory [{}] not found. Set to None'.format(self.daemon_params[path_name]))
+                            print('BOINC_HOME directory [{}] not found. Set to None'.format(
+                                self.daemon_params[path_name]))
                         else:
-                            print('Missing directory for {} path_name: {}'.format(path_name, self.daemon_params[path_name]))
+                            print('Missing directory for {} path_name: {}'.format(
+                                path_name, self.daemon_params[path_name]))
                             read_status = False
         if self.daemon_params['boinc_home']:
             os.environ['BOINC_HOME'] = self.daemon_params['boinc_home']

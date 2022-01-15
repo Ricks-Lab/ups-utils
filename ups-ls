@@ -108,6 +108,8 @@ def main() -> None:
             continue
         print('UPS Name: {}'.format(ups.ups_name()))
         print('UPS IP: {}'.format(ups.ups_ip()))
+        _ = ups.read_ups_list_items(['mib_ups_info'], tups=ups_item)
+        print('UPS NMC Model: {}'.format(ups.ups_nmc_model()))
         if args.input or args.output:
             if args.input:
                 for oc in ups.input_mib_cmds:
