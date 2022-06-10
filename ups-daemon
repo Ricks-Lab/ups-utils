@@ -9,7 +9,7 @@
     execute the specified resume script when it detects power has resumed.  When the utility
     detects a Battery Low event from the UPS or that time remaining for battery or the battery
     charge is below specified thresholds, then the shutdown script will be executed. If
-    *ups-deamon* detects a return to line power has occurred before the shutdown has completed,
+    *ups-daemon* detects a return to line power has occurred before the shutdown has completed,
     it will execute the cancel shutdown script.  With the *--verbose* option set, no event
     update messages will be output, otherwise, only events are output.  With the *--list_commands*
     option, the utility will list all available SNMP commands for the configured UPS.  With the
@@ -33,12 +33,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-__author__ = "RueiKe"
+__author__ = "RicksLab"
 __copyright__ = "Copyright (C) 2019 RicksLab"
-__credits__ = []
 __license__ = "GNU General Public License"
 __program_name__ = "ups-daemon"
-__maintainer__ = "RueiKe"
+__maintainer__ = "RicksLab"
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
@@ -55,7 +54,7 @@ from typing import Any
 from datetime import datetime
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
-from UPSmodules import __version__, __status__
+from UPSmodules import __version__, __status__, __credits__
 
 
 LOGGER = logging.getLogger('ups-utils')
@@ -98,11 +97,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--about", help="README", action="store_true", default=False)
     parser.add_argument("--daemon", help="Run in daemon mode", action="store_true", default=False)
-    parser.add_argument("--verbose", help="Output normal readings", action="store_true", default=False)
     parser.add_argument("--list_commands", help="List all available commands", action="store_true", default=False)
     parser.add_argument("--list_params", help="List all configuration parameters", action="store_true", default=False)
     parser.add_argument("--list_decoders", help="List all decoder parameters", action="store_true", default=False)
     parser.add_argument("--logfile", help="Specify logfile", type=str, default="")
+    parser.add_argument("--verbose", help="Output normal readings", action="store_true", default=False)
     parser.add_argument("-d", "--debug", help="Debug output", action="store_true", default=False)
     args = parser.parse_args()
 
@@ -114,9 +113,10 @@ def main() -> None:
         print(__doc__)
         print("Author: ", __author__)
         print("Copyright: ", __copyright__)
-        print("Credits: ", __credits__)
+        print('Credits: ', *['\n      {}'.format(item) for item in __credits__])
         print("License: ", __license__)
         print("Version: ", __version__)
+        print('Install Type: ', env.UT_CONST.install_type)
         print("Maintainer: ", __maintainer__)
         print("Status: ", __status__)
         sys.exit(0)
@@ -124,7 +124,7 @@ def main() -> None:
     env.UT_CONST.set_env_args(args, __program_name__)
     env.UT_CONST.cmd_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
     LOGGER.debug('########## %s %s [%s]', __program_name__, __version__, env.UT_CONST.cmd_path)
-    print('Install type: {}'.format(env.UT_CONST.installation))
+    print('Install type: {}'.format(env.UT_CONST.install_type))
 
     if not env.UT_CONST.check_env():
         env.UT_CONST.log_print('Error in environment. Exiting...')

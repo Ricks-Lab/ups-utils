@@ -24,24 +24,24 @@ to the project.
 
 First, remove any previous PyPI installation and exit that terminal:
 
-```
+```shell
 pip uninstall rickslab-ups-utils
 exit
 ```
 
 Next, add the *rickslab-ups-utils* repository:
 
-```
-wget -q -O - https://debian.rickslab.com/PUBLIC.KEY | sudo apt-key add -
+```shell
+wget -q -O - https://debian.rickslab.com/PUBLIC.KEY | sudo gpg --dearmour -o /usr/share/keyrings/rickslab-agent.gpg
 
-echo 'deb [arch=amd64] https://debian.rickslab.com/ups-utils/ stable main' | sudo tee /etc/apt/sources.list.d/rickslab-ups-utils.list
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rickslab-agent.gpg] https://debian.rickslab.com/ups-utils/ stable main' | sudo tee /etc/apt/sources.list.d/rickslab-ups-utils.list
 
 sudo apt update
 ```
 
 Then install the package with apt:
 
-```
+```shell
 sudo apt install rickslab-ups-utils
 ```
 
@@ -49,7 +49,7 @@ After installation, you will need to create a new group, *upsutils*, and add tru
 This required for this type of installation in order to secure the snmp shared secret stored in the configuration
 files:
 
-```
+```shell
 sudo groupadd upsutils
 sudo usermod -a -G upsutils $LOGNAME
 ```
@@ -61,7 +61,7 @@ After adding the user to a new group, the user must logout and relogin before th
 Install the latest package from [PyPI](https://pypi.org/project/rickslab-ups-utils/) with the following
 commands:
 
-```
+```shell
 pip3 install rickslab-ups-utils
 ```
 
@@ -75,7 +75,7 @@ Application configuration parameters must be specified in the `ups-utils.ini` fi
 template files is provided: `ups-utils.ini.template`. You can verify the values of the
 configuration settings by executing:
 
-```
+```shell
 ups-daemon --list_params
 ```
 
@@ -89,7 +89,7 @@ If you installed from debian package, the template configuration files will be o
 you create your configuration files from the templates, you MUST change group ownership to
 *upsutils* and change permissions to 660:
 
-```
+```shell
 cd /usr/share/rickslab-ups-utils/config/
 sudo chgrp upsutils ups-utils.ini ups-config.json
 sudo chmod 660 ups-utils.ini ups-config.json
@@ -98,7 +98,7 @@ sudo chmod 660 ups-utils.ini ups-config.json
 If you installed from PyPI, you will be the owner of the file, so there is not need to change
 group ownership, but the configuration files must be readable by only you:
 
-```
+```shell
 cd ~/.local/share/rickslab-ups-utils/config
 chmod 600 ups-utils.ini ups-config.json
 ```
@@ -109,7 +109,7 @@ exit with an error if not properly secured.
 The ups-utils rely on the command *snmpget* which is part of the snmp package that must
 be installed:
 
-```
+```shell
 sudo apt install snmp
 ```
 
@@ -123,7 +123,7 @@ and run the specified suspend script when the specified threshold is exceeded.  
 execute the specified resume script when it detects power has resumed.  When the utility
 detects a Battery Low event from the UPS or that time remaining for battery or the battery
 charge is below specified thresholds, then the shutdown script will be executed. If
-*ups-deamon* detects a return to line power has occurred before the shutdown has completed,
+*ups-daemon* detects a return to line power has occurred before the shutdown has completed,
 it will execute the cancel shutdown script.  With the *--verbose* option set, no event 
 update messages will be output, otherwise, only events are output.  With the *--list_commands*
 option, the utility will list all available SNMP commands for the configured UPS.  With the
@@ -139,7 +139,7 @@ listed in the ups-config.json file.  By default, all available parameters are di
 The *--input* and *--output* options can be used to get relevant UPS input and output
 parameters.
 
-## ups-monitor
+## ups-mon
 
 A utility to give the current state of all compatible UPSs. The default behavior
 is to continuously update a text based table in the current window until Ctrl-C is

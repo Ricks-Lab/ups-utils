@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" ups-monitor  -  Displays current status of all active UPSs
+""" ups-mon  -  Displays current status of all active UPSs
 
     A utility to give the current state of all compatible UPSs. The default behavior
     is to continuously update a text based table in the current window until Ctrl-C is
@@ -28,12 +28,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-__author__ = 'RueiKe'
+__author__ = 'RicksLab'
 __copyright__ = 'Copyright (C) 2019 RicksLab'
-__credits__ = ['']
 __license__ = 'GNU General Public License'
-__program_name__ = 'ups-monitor'
-__maintainer__ = 'RueiKe'
+__program_name__ = 'ups-mon'
+__maintainer__ = 'RicksLab'
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
@@ -60,7 +59,7 @@ except ModuleNotFoundError as error:
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
 from UPSmodules import UPSgui
-from UPSmodules import __version__, __status__
+from UPSmodules import __version__, __status__, __credits__
 
 set_gtk_prop = UPSgui.GuiProps.set_gtk_prop
 LOGGER = logging.getLogger('ups-utils')
@@ -91,10 +90,10 @@ class MonitorWindow(Gtk.Window):
         self.set_border_width(0)
         UPSgui.GuiProps.set_style()
 
-        icon_file = os.path.join(env.UT_CONST.icon_path, env.UtConst.gui_monitor_icon_file)
-        LOGGER.debug('Icon file: [%s]', icon_file)
-        if os.path.isfile(icon_file):
-            self.set_icon_from_file(icon_file)
+        if env.UT_CONST.icon_file:
+            LOGGER.debug('Icon file: [%s]', env.UT_CONST.icon_file)
+            if os.path.isfile(env.UT_CONST.icon_file):
+                self.set_icon_from_file(env.UT_CONST.icon_file)
 
         grid = Gtk.Grid()
         self.add(grid)
@@ -359,18 +358,21 @@ def print_monitor_table(ups: UPS.UPSsnmp, header_list: list, cmd_list: list, ups
         print('│', '\x1b[1;36m' + ups.get_mib_name_for_type(table_item, 'apc-ap96xx').ljust(hrw, ' ')[:hrw] + '\x1b[0m',
               sep='', end='')
         for value in ups_data.values():
-            if table_item == 'mib_system_status':
-                if re.match(env.UT_CONST.PATTERNS['ONLINE'], value[table_item]):
-                    item_str = '\x1b[1;30;42m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+            try:
+                if table_item == 'mib_system_status':
+                    if re.match(env.UT_CONST.PATTERNS['ONLINE'], value[table_item]):
+                        item_str = '\x1b[1;30;42m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+                    else:
+                        item_str = '\x1b[1;37;41m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+                elif table_item == 'mib_battery_status':
+                    if re.match(env.UT_CONST.PATTERNS['NORMAL'], value[table_item]):
+                        item_str = '\x1b[1;30;42m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+                    else:
+                        item_str = '\x1b[1;37;41m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
                 else:
-                    item_str = '\x1b[1;37;41m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
-            elif table_item == 'mib_battery_status':
-                if re.match(env.UT_CONST.PATTERNS['NORMAL'], value[table_item]):
-                    item_str = '\x1b[1;30;42m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
-                else:
-                    item_str = '\x1b[1;37;41m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
-            else:
-                item_str = str(value[table_item]).ljust(irw, ' ')[:irw]
+                    item_str = str(value[table_item]).ljust(irw, ' ')[:irw]
+            except KeyError:
+                item_str = ' '.ljust(irw, ' ')[:irw]
             print('│', item_str, sep='', end='')
         print('│')
 
@@ -439,9 +441,10 @@ def main() -> None:
         print(__doc__)
         print('Author: ', __author__)
         print('Copyright: ', __copyright__)
-        print('Credits: ', __credits__)
+        print('Credits: ', *['\n      {}'.format(item) for item in __credits__])
         print('License: ', __license__)
         print('Version: ', __version__)
+        print('Install Type: ', env.UT_CONST.install_type)
         print('Maintainer: ', __maintainer__)
         print('Status: ', __status__)
         sys.exit(0)

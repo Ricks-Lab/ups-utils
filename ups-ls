@@ -21,12 +21,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-__author__ = 'RueiKe'
+__author__ = 'RicksLab'
 __copyright__ = 'Copyright (C) 2019 RicksLab'
-__credits__ = []
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-ls'
-__maintainer__ = 'RueiKe'
+__maintainer__ = 'RicksLab'
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
@@ -37,7 +36,7 @@ import sys
 import logging
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
-from UPSmodules import __version__, __status__
+from UPSmodules import __version__, __status__, __credits__
 
 LOGGER = logging.getLogger('ups-utils')
 
@@ -45,8 +44,6 @@ LOGGER = logging.getLogger('ups-utils')
 def main() -> None:
     """
     Main function
-
-    :return: None
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README',
@@ -64,9 +61,10 @@ def main() -> None:
         print(__doc__)
         print('Author: ', __author__)
         print('Copyright: ', __copyright__)
-        print('Credits: ', __credits__)
+        print('Credits: ', *['\n      {}'.format(item) for item in __credits__])
         print('License: ', __license__)
         print('Version: ', __version__)
+        print('Install Type: ', env.UT_CONST.install_type)
         print('Maintainer: ', __maintainer__)
         print('Status: ', __status__)
         sys.exit(0)

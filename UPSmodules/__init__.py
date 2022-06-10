@@ -17,4 +17,5 @@
 
 __version__ = '1.2.0'
 __status__ = 'Development Status :: 5 - Production/Stable'
+__credits__ = ['Natalya Langford - Configuration Parser']
 #__status__ = 'Development Status :: 4 - Beta'

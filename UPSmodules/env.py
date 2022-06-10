@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """env.py - sets environment for ups-utils and establishes global variables
 
-    Copyright (C) 2019  RueiKe
+    Copyright (C) 2019  RicksLab
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,12 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-__author__ = 'RueiKe'
+__author__ = 'RicksLab'
 __copyright__ = 'Copyright (C) 2019 RicksLab'
-__credits__ = []
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-utils'
-__maintainer__ = 'RueiKe'
+__maintainer__ = 'RicksLab'
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
@@ -39,7 +38,7 @@ from pathlib import Path
 import shutil
 from datetime import datetime
 from typing import Dict, Union, List, TextIO
-from UPSmodules import __version__, __status__
+from UPSmodules import __version__, __status__, __credits__
 
 LOGGER = logging.getLogger('ups-utils')
 
@@ -79,23 +78,23 @@ class UtConst:
     """ Class definition for UPS Utils environment"""
     # FQDN regex credit: https://stackoverflow.com/questions/2532053/validate-a-hostname-string
     # IPV6 regex credit: https://gist.github.com/syzdek/6086792
-    PATTERNS = {'HEXRGB': re.compile(r'^#[0-9a-fA-F]{6}'),
+    PATTERNS = {'HEXRGB': re.compile(r'^#[\da-fA-F]{6}'),
                 'SNMP_VALUE': re.compile(r'.*=.*:.*'),
-                'IPV4': re.compile(r'^([0-9]{1,3})(.[0-9]{1,3}){3}$'),
-                'IPV6': re.compile(r'^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|'
-                                   r'([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}'
-                                   r'(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|'
-                                   r'([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}'
-                                   r'(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|'
-                                   r':((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|'
-                                   r'::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}'
-                                   r'(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|'
-                                   r'(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])'
-                                   r'{0,1}[0-9]))$'),
-                'FQDN': re.compile(r'^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9]))*$',
+                'IPV4': re.compile(r'^(\d{1,3})(.\d{1,3}){3}$'),
+                'IPV6': re.compile(r'^(([\da-fA-F]{1,4}:){7,7}[\da-fA-F]{1,4}|([\da-fA-F]{1,4}:){1,7}:|'
+                                   r'([\da-fA-F]{1,4}:){1,6}:[\da-fA-F]{1,4}|([\da-fA-F]{1,4}:){1,5}'
+                                   r'(:[\da-fA-F]{1,4}){1,2}|([\da-fA-F]{1,4}:){1,4}(:[\da-fA-F]{1,4}){1,3}|'
+                                   r'([\da-fA-F]{1,4}:){1,3}(:[\da-fA-F]{1,4}){1,4}|([\da-fA-F]{1,4}:){1,2}'
+                                   r'(:[\da-fA-F]{1,4}){1,5}|[\da-fA-F]{1,4}:((:[\da-fA-F]{1,4}){1,6})|'
+                                   r':((:[\da-fA-F]{1,4}){1,7}|:)|fe80:(:[\da-fA-F]{0,4}){0,4}%[\da-zA-Z]{1,}|'
+                                   r'::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}\d){0,1}\d)\.){3,3}'
+                                   r'(25[0-5]|(2[0-4]|1{0,1}\d){0,1}[0-9])|([\da-fA-F]{1,4}:){1,4}:((25[0-5]|'
+                                   r'(2[0-4]|1{0,1}\d){0,1}\d)\.){3,3}(25[0-5]|(2[0-4]|1{0,1}\d)'
+                                   r'{0,1}\d))$'),
+                'FQDN': re.compile(r'^[a-z\d]([a-z\d-]{0,61}[a-z\d])?(.[a-z\d]([a-z\d-]{0,61}[a-z\d]))*$',
                                    re.IGNORECASE),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
-                'INI': re.compile(r'^\(\s*[0-9]+\s*,\s*[0-9]+\s*\)\s*$'),
+                'INI': re.compile(r'^\(\s*\d+\s*,\s*\d+\s*\)\s*$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
 
     # Constant path and file names
@@ -111,6 +110,7 @@ class UtConst:
     _local_config_list: Dict[str, str] = {'repository': _repository_path,
                                           'debian': '/usr/share/rickslab-ups-utils/config',
                                           'pypi': '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))}
+    _icons: Dict[str, str] = {'ups-mon': 'ups-utils-monitor.icon.png'}
     gui_window_title: str = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file: str = 'ups-utils-monitor.icon.png'
 
@@ -119,18 +119,19 @@ class UtConst:
         self.program_name: Union[str, None] = None
         self.fatal: bool = False
         self.no_ini: bool = False
-        self.installation: str = 'unknown'
         self.ups_json_file: Union[str, None] = None
         self.ups_config_ini: Union[str, None] = None
+        self.install_type: Union[str, None] = None
+        self.package_path: str = inspect.getfile(inspect.currentframe())
 
-        if 'dist-packages' in inspect.getfile(inspect.currentframe()):
-            self.installation = 'debian'
-        elif '/.local/lib/' in inspect.getfile(inspect.currentframe()):
-            self.installation = 'pypi'
-        else:
-            self.installation = 'repository'
-        config_list = {self.installation: self._local_config_list[self.installation]}
-        icon_list = {self.installation: self._local_icon_list[self.installation]}
+        if 'dist-packages' in self.package_path: self.install_type = 'debian'
+        elif '.local' in self.package_path: self.install_type = 'pypi-linux'
+        else: self.install_type = 'repository'
+        self._icon_path = self._local_icon_list[self.install_type]
+        self.icon_file = ''
+
+        config_list = {self.install_type: self._local_config_list[self.install_type]}
+        icon_list = {self.install_type: self._local_icon_list[self.install_type]}
 
         # Set config Path
         for try_config_path in config_list.values():
@@ -153,6 +154,7 @@ class UtConst:
             self.fatal = True
 
         # Set Icon Path
+        """
         for try_icon_path in icon_list.values():
             if os.path.isdir(try_icon_path):
                 if os.path.isfile(os.path.join(try_icon_path, self.gui_monitor_icon_file)):
@@ -160,6 +162,7 @@ class UtConst:
                     break
         else:
             self.icon_path = None
+        """
 
         # Utility Execution Flags
         self.show_unresponsive: bool = False
@@ -167,17 +170,18 @@ class UtConst:
         self.log_file_ptr: Union[TextIO, None] = None
         self.USELTZ: bool = False
         self.LTZ = datetime.utcnow().astimezone().tzinfo
+        self.verbose = False
 
-    def set_env_args(self, args: argparse.Namespace, prog_name: str = None) -> None:
+    def set_env_args(self, args: argparse.Namespace, program_name: str = None) -> None:
         """
         Set arguments for the give args object.
 
         :param args: The object return by args parser.
-        :param prog_name: Name of calling program.
+        :param program_name: Name of calling program.
         """
         self.args = args
-        self.program_name = prog_name
-        if self.no_ini and prog_name == 'ups-daemon':
+        self.program_name = program_name
+        if self.no_ini and program_name == 'ups-daemon':
             self.fatal = True
         for target_arg in vars(self.args):
             if target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
@@ -199,9 +203,16 @@ class UtConst:
             LOGGER.addHandler(file_handler)
         LOGGER.debug('Command line arguments:\n  %s', args)
         LOGGER.debug('Module directory: %s', inspect.getfile(inspect.currentframe()))
-        LOGGER.debug('Install type: %s', self.installation)
+        LOGGER.debug('Install type: %s', self.install_type)
         LOGGER.debug('Local TZ: %s', self.LTZ)
-        LOGGER.debug('Icon path set to: %s', self.icon_path)
+        LOGGER.debug('Icon path set to: %s', self._icon_path)
+        try:
+            self.icon_file = os.path.join(self._icon_path, self._icons[program_name])
+        except KeyError:
+            self.icon_file = None
+        else:
+            if not os.path.isfile(self.icon_file):
+                self.process_message('Error: Icon file not found: [{}]'.format(self.icon_file), log_flag=True)
 
     @staticmethod
     def log_print(message: str) -> None:
@@ -223,6 +234,18 @@ class UtConst:
         if ltz:
             return datetime.now()
         return datetime.utcnow()
+
+    def process_message(self, message: str, log_flag: bool = False) -> None:
+        """
+        For given message, print to stderr and/or LOGGER depending on command line options and
+        the value of log_flag.
+
+        :param message: A string containing the message to be processed.
+        :param log_flag:  If True, write to LOGGER.
+        """
+        if not message: return
+        if self.verbose: print(message, file=sys.stderr)
+        if log_flag: LOGGER.debug(message)
 
     def check_env(self) -> bool:
         """ Check the user's environment for compatibility.
