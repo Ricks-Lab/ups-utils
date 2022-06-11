@@ -342,7 +342,8 @@ class UPSsnmp:
         :return: boolean True if no problems reading list
         """
         if not env.UT_CONST.ups_json_file or not os.path.isfile(env.UT_CONST.ups_json_file):
-            print('Error: {} file not found: {}'.format(env.UT_CONST.UPS_JSON_FILE, env.UT_CONST.ups_json_file))
+            print('Error: {} file not found: {}'.format(os.path.basename(env.UT_CONST.ups_json_file),
+                                                        env.UT_CONST.ups_json_file))
             return False
         try:
             with open(env.UT_CONST.ups_json_file, 'r') as ups_list_file:
@@ -350,10 +351,12 @@ class UPSsnmp:
             for ups, ups_item in self.ups_list.items():
                 ups_item['ups_nmc_model'] = ups_item['ups_type']
         except FileNotFoundError as error:
-            env.UT_CONST.log_print("Error: file not found error for [{}]: {}".format(env.UT_CONST.ups_json_file, error))
+            env.UT_CONST.process_message("Error: file not found error for [{}]: {}".format(env.UT_CONST.ups_json_file,
+                                                                                           error), verbose=True)
             return False
         except PermissionError as error:
-            env.UT_CONST.ups_json_file("Error: permission error for [{}]: {}".format(env.UT_CONST.ups_json_file, error))
+            env.UT_CONST.ups_json_file("Error: permission error for [{}]: {}".format(env.UT_CONST.ups_json_file,
+                                                                                     error), verbose=True)
             return False
         self.daemon_params['ups_json_file'] = env.UT_CONST.ups_json_file
         return True
@@ -372,7 +375,7 @@ class UPSsnmp:
             if not re.search(env.UT_CONST.PATTERNS['IPV4'], ups['ups_IP']):
                 if not re.search(env.UT_CONST.PATTERNS['FQDN'], ups['ups_IP']):
                     if not re.search(env.UT_CONST.PATTERNS['IPV6'], ups['ups_IP']):
-                        env.UT_CONST.log_print('ERROR: IP Address entry [{}]'.format(ups['ups_IP']))
+                        env.UT_CONST.process_message('ERROR: IP Address entry [{}]'.format(ups['ups_IP']), verbose=True)
                         error_flag = True
                         continue
             ups['compatible'] = False
@@ -397,7 +400,7 @@ class UPSsnmp:
             print('{} contains {} total UPSs and {} daemon UPS'.format(env.UT_CONST.ups_json_file,
                                                                        ups_cnt, daemon_cnt))
         if error_flag:
-            env.UT_CONST.log_print('FATAL ERROR: Invalid entry in {}'.format(env.UT_CONST.ups_json_file))
+            env.UT_CONST.process_message('FATAL ERROR: Invalid entry in {}'.format(env.UT_CONST.ups_json_file), verbose=True)
             sys.exit(-1)
     # End of read and check the UPS list.
 
@@ -913,9 +916,9 @@ class UPSsnmp:
                 for sub_parameter_name in ['monitor', 'daemon']:
                     if self.daemon_params[parameter_name][sub_parameter_name] < \
                             self.daemon_params[parameter_name]['limit']:
-                        env.UT_CONST.log_print('Warning invalid {}-{} value [{}], using defaults'.format(
+                        env.UT_CONST.process_message('Warning invalid {}-{} value [{}], using defaults'.format(
                                                parameter_name, sub_parameter_name,
-                                               self.daemon_params[parameter_name][sub_parameter_name]))
+                                               self.daemon_params[parameter_name][sub_parameter_name]), verbose=True)
                         self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
             else:
                 reset = False
@@ -923,29 +926,29 @@ class UPSsnmp:
                         self.daemon_param_defaults[parameter_name]['warn']:
                     if self.daemon_params[parameter_name]['crit'] <= self.daemon_params[parameter_name]['warn']:
                         reset = True
-                        env.UT_CONST.log_print('Warning crit must be > warn value, '
-                                               'using defaults for {}'.format(parameter_name))
+                        env.UT_CONST.process_message('Warning crit must be > warn value, '
+                                                     'using defaults for {}'.format(parameter_name), verbose=True)
                     if self.daemon_params[parameter_name]['crit'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        env.UT_CONST.log_print('Warning crit must be >= limit value, '
-                                               'using defaults for {}'.format(parameter_name))
+                        env.UT_CONST.process_message('Warning crit must be >= limit value, '
+                                                     'using defaults for {}'.format(parameter_name), verbose=True)
                     if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        env.UT_CONST.log_print('Warning warn must be >= limit value, '
-                                               'using defaults for {}'.format(parameter_name))
+                        env.UT_CONST.process_message('Warning warn must be >= limit value, '
+                                                     'using defaults for {}'.format(parameter_name), verbose=True)
                 else:
                     if self.daemon_params[parameter_name]['crit'] >= self.daemon_params[parameter_name]['warn']:
                         reset = True
-                        env.UT_CONST.log_print('Warning crit must be < warn value, '
-                                               'using defaults for {}'.format(parameter_name))
+                        env.UT_CONST.process_message('Warning crit must be < warn value, '
+                                                     'using defaults for {}'.format(parameter_name), verbose=True)
                     if self.daemon_params[parameter_name]['crit'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        env.UT_CONST.log_print('Warning crit must be >= limit value, '
-                                               'using defaults for {}'.format(parameter_name))
+                        env.UT_CONST.process_message('Warning crit must be >= limit value, '
+                                                     'using defaults for {}'.format(parameter_name), verbose=True)
                     if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        env.UT_CONST.log_print('Warning warn must be >= limit value, '
-                                               'using defaults for {}'.format(parameter_name))
+                        env.UT_CONST.process_message('Warning warn must be >= limit value, '
+                                                     'using defaults for {}'.format(parameter_name), verbose=True)
                 if reset:
                     self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
         return read_status
@@ -978,7 +981,8 @@ class UPSsnmp:
                     break
                 time.sleep(0.2)
             if cmd.returncode:
-                env.UT_CONST.log_print('{} failed with return code: [{}]'.format(script_name, cmd.returncode))
+                env.UT_CONST.process_message('{} failed with return code: [{}]'.format(script_name, cmd.returncode),
+                                             verbose=True)
                 return False
         except subprocess.CalledProcessError as err:
             print('Error [{}]: could not execute script: {}'.format(err,

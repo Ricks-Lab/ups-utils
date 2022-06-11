@@ -456,26 +456,26 @@ def main() -> None:
         env.UT_CONST.log_print('Error in environment. Exiting...')
         sys.exit(-1)
 
-    print('Reading and verifying UPSs listed in {}. '.format(env.UtConst.UPS_JSON_FILE))
+    print('Reading and verifying UPSs listed in {}. '.format(env.UT_CONST.ups_json_file))
     ups = UPS.UPSsnmp()
     if not ups.set_daemon_parameters():
         ups.print_daemon_parameters()
         if env.UT_CONST.ups_config_ini:
-            env.UT_CONST.log_print('Error reading [{}] file.'.format(env.UtConst.UPS_CONFIG_INI))
+            env.UT_CONST.log_print('Error reading [{}] file.'.format(env.UT_CONST.ups_config_ini))
         else:
-            env.UT_CONST.log_print('Error no [{}] file found.'.format(env.UtConst.UPS_CONFIG_INI))
-        print('    For more information: `man {}`'.format(env.UtConst.UPS_CONFIG_INI))
+            env.UT_CONST.log_print('Error no [{}] file found.'.format(env.UT_CONST.ups_config_ini))
+        print('    For more information: `man {}`'.format(env.UT_CONST.ups_config_ini))
         # env.UT_CONST.fatal = True
 
     num_ups = ups.get_num_ups_tuple()
     if num_ups[0] == 0:
-        env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UtConst.UPS_JSON_FILE))
-        print('    For more information: `man {}`, exiting...'.format(env.UtConst.UPS_JSON_FILE))
+        env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file))
+        print('    For more information: `man {}`, exiting...'.format(env.UT_CONST.ups_json_file))
         sys.exit(-1)
-    print('{} UPSs listed in {} file.'.format(num_ups[0], env.UtConst.UPS_JSON_FILE))
+    print('{} UPSs listed in {} file.'.format(num_ups[0], env.UT_CONST.ups_json_file))
     print('    {} are compatible, {} are accessible, {} are responsive'.format(num_ups[1], num_ups[2], num_ups[3]))
     if num_ups[0] != num_ups[3]:
-        print('    Check the {} file.\n'.format(env.UtConst.UPS_JSON_FILE))
+        print('    Check the {} file.\n'.format(env.UT_CONST.ups_json_file))
 
     if int(args.sleep) >= UPS.UPSsnmp.daemon_param_defaults['read_interval']['limit']:
         env.UT_CONST.SLEEP = int(args.sleep)

@@ -153,7 +153,7 @@ output a table of the current status.  The *--long* option will include addition
 informational parameters. By default, unresponsive UPSs will not be displayed, but the
 *--show_unresponsive* can be used to force their display.
 
-## New in Development
+## New in Development  -  v1.2.0 
 
 * Delay sys exit on failure to allow more information to be available for user to troubleshoot.
 * Check file permissions for security issues and exit if not secure.
@@ -164,12 +164,13 @@ use defaults if missing.
 * Added verbose option to ups-daemon to output status message for normal readings.
 * Changes in documentation to describe steps necessary to secure snmp shared secret.
 * Added check of configuration files readability.
+* Implement code improvements from gpu-utils project.
 
 ## Known Issues
 
 The utility currently supports:
 
-* APC UPS with AP9630 NMC
+* APC UPS with AP9630 and AP9641 NMC
 * EATON UPS with PowerWalker NMC
 
 It monitors the specified UPS using snmp v2c.  I have not implemented the ability to listen to snmp traps

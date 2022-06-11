@@ -32,10 +32,11 @@ import sys
 import os
 import pathlib
 from setuptools import setup, find_packages
-from UPSmodules import __version__, __status__
+from UPSmodules import __version__, __status__, __required_pversion__
 
-if sys.version_info < (3, 6):
-    print('rickslab-ups-utils requires at least Python 3.6.')
+if sys.version_info[:2] < __required_pversion__:
+    print('rickslab-ups-utils requires at least Python {}.{}.'.format(__required_pversion__[0],
+                                                                      __required_pversion__[1]))
     sys.exit(1)
 
 with open(os.path.join(pathlib.Path(__file__).parent, 'README.md'), 'r') as file_ptr:
@@ -53,10 +54,10 @@ setup(name='rickslab-ups-utils',
       url='https://github.com/Ricks-Lab/ups-utils',
       packages=find_packages(include=['UPSmodules']),
       include_package_data=True,
-      scripts=['ups-ls', 'ups-daemon', 'ups-monitor', 'cancelShutdownBOINC.sh', 'pauseBOINC.sh',
+      scripts=['ups-ls', 'ups-daemon', 'ups-mon', 'cancelShutdownBOINC.sh', 'pauseBOINC.sh',
                'quitBOINC.sh', 'resumeBOINC.sh', 'shutdownBOINC.sh'],
       license=__license__,
-      python_requires='>=3.6',
+      python_requires='>={}.{}'.format(__required_pversion__[0], __required_pversion__[1]),
       project_urls={'Bug Tracker':   'https://github.com/Ricks-Lab/ups-utils/issues',
                     'Documentation': 'https://github.com/Ricks-Lab/ups-utils/',
                     'Source Code':   'https://github.com/Ricks-Lab/ups-utils'},

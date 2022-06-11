@@ -84,10 +84,10 @@ def main() -> None:
         sys.exit(-1)
 
     if num_ups[0] == 0:
-        env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UtConst.UPS_JSON_FILE))
-        print('    For more information: `man {0}`, exiting...'.format(env.UtConst.UPS_JSON_FILE))
+        env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file))
+        print('    For more information: `man {0}`, exiting...'.format(env.UT_CONST.ups_json_file))
         sys.exit(-1)
-    print('{} UPSs listed in {}.'.format(num_ups[0], env.UtConst.UPS_JSON_FILE))
+    print('{} UPSs listed in {}.'.format(num_ups[0], env.UT_CONST.ups_json_file))
     print('    {} are compatible, {} are accessible, {} are responsive\n'.format(num_ups[1], num_ups[2], num_ups[3]))
 
     for ups_item in ups.ups_list.values():

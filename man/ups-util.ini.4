@@ -59,9 +59,9 @@ is used if power is recovered before shutdown completes.
 
 .TP
 \fBThird section defines ups-utility parameters:\fR
-These parameters are in pairs with the read_interval specifying both \fBups-monitor\fR and \fBups-daemon\fR
+These parameters are in pairs with the read_interval specifying both \fBups-mon\fR and \fBups-daemon\fR
 read intervals in seconds. The remaining UPS related parameters specify critical and warning levels used by
-both \fBups-monitor\fR and \fBups-daemon\fR. The \fBups-monitor\fR utility will color relevant items
+both \fBups-mon\fR and \fBups-daemon\fR. The \fBups-monitor\fR utility will color relevant items
 red/yellow when tripping critical/warning levels. If running, \fBups-daemon --daemon\fR, will decrease
 update interval for \fBthreshold_battery_time_rem\fR or \fBthreshold_battery_capacity\fR reaching warning
 level and execute \fBshutdown_script\fR if critical level is reached.  For \fBthreshold_time_on_battery\fR
@@ -126,7 +126,7 @@ Please report any bugs/issues at https://github.com/Ricks-Lab/ups-utils
 .BR adduser (1),
 .BR usermod (1),
 .BR ups-ls (1),
-.BR ups-monitor (1),
+.BR ups-mon (1),
 .BR ups-daemon (1),
 .BR ups-config.json (4),
 .BR snmp (8)
