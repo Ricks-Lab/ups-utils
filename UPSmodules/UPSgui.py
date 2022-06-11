@@ -16,12 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-__author__ = 'RueiKe'
+__author__ = 'RicksLab'
 __copyright__ = 'Copyright (C) 2020 RicksLab'
-__credits__ = ['@berturion - Testing and Verification']
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-utils'
-__maintainer__ = 'RueiKe'
+__maintainer__ = 'RicksLab'
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
@@ -42,15 +41,12 @@ except ModuleNotFoundError as error:
     print('   In a venv, first install vext:  pip install --no-cache-dir vext')
     print('   Then install vext.gi:  pip install --no-cache-dir vext.gi')
     sys.exit(0)
-from UPSmodules import __version__, __status__
-try:
-    from UPSmodules import env
-except ImportError:
-    import env
+from UPSmodules import __version__, __status__, __credits__
+from UPSmodules import env
 
 ColorDict = Dict[str, str]
 LOGGER = logging.getLogger('ups-utils')
-PATTERNS = env.UtConst.PATTERNS
+PATTERNS = env.UT_CONST.PATTERNS
 
 
 def get_color(value: str) -> str:
@@ -106,6 +102,7 @@ class GuiProps:
     def color_name_to_hex(value: str) -> str:
         """
         Return the hex code for the given string.  The specified string must exist in the project color list.
+
         :param value: Color name
         :return: Color hex code
         """
