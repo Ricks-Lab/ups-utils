@@ -96,10 +96,15 @@ def main() -> None:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--about", help="README", action="store_true", default=False)
-    parser.add_argument("--daemon", help="Run in daemon mode", action="store_true", default=False)
-    parser.add_argument("--list_commands", help="List all available commands", action="store_true", default=False)
-    parser.add_argument("--list_params", help="List all configuration parameters", action="store_true", default=False)
-    parser.add_argument("--list_decoders", help="List all decoder parameters", action="store_true", default=False)
+
+    # Mutually exclusive group of main functions
+    detail_group = parser.add_mutually_exclusive_group(required=False)
+    detail_group.add_argument("--daemon", help="Run in daemon mode", action="store_true", default=False)
+    detail_group.add_argument("--list_commands", help="List all available commands", action="store_true", default=False)
+    detail_group.add_argument("--list_params", help="List all configuration parameters", action="store_true", default=False)
+    detail_group.add_argument("--list_decoders", help="List all decoder parameters", action="store_true", default=False)
+
+    # Verbosity, logging, and debug options
     parser.add_argument("--logfile", help="Specify logfile", type=str, default="")
     parser.add_argument("--verbose", help="Output normal readings", action="store_true", default=False)
     parser.add_argument("-d", "--debug", help="Debug output", action="store_true", default=False)

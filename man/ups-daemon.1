@@ -5,8 +5,11 @@ ups-daemon \- enables the monitoring of and response to UPS events
 
 .SH SYNOPSIS
 .B ups-daemon
-.RB [ \-\-help "] [" \-\-about "] [" \-\-daemon "] [" \-\-verbose "] [" \-\-list_commands "] [" \-\-list_params "]"
-.RB [ \-\-list_decoders "] [" \-\-logfile " LOGFILE ] [" \-\-debug "]"
+.RB [ \-\-help "] [" \-\-about "]"
+.br
+.RB [ \-\-daemon " | " \-\-list_commands " | " \-\-list_params " | " \-\-list_decoders "]"
+.br
+.RB [ \-\-verbose "] [" \-\-logfile " LOGFILE ] [" \-\-debug "]"
 
 .SH DESCRIPTION
 .B ups-daemon
@@ -37,14 +40,8 @@ as a template.
 Will display details about 
 .B ups-ls\fP.
 .TP
-.BR \-d , " \-\-debug"
-Will run in debug mode which enables the logger at debug level.
-.TP
 .BR "\-\-daemon"
 Run in daemon mode which is meant to run as a system service.
-.TP
-.BR "\-\-verbose"
-Output messages for normal events.
 .TP
 .BR "\-\-list_commands"
 Will display list of all MiB commands available for the UPS defined with \fBdaemon = true\fR.
@@ -57,6 +54,12 @@ file
 .TP
 .BR "\-\-list_decoders"
 Will display list of all MiB decoders available for the UPS defined with \fBdaemon = true\fR.
+.TP
+.BR \-d , " \-\-debug"
+Will run in debug mode which enables the logger at debug level.
+.TP
+.BR "\-\-verbose"
+Output messages for normal events.
 .TP
 .BR "\-\-logfile LOGFILE"
 Will set the logfile used in daemon mode.  By default, stdout is used.
