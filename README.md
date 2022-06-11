@@ -13,12 +13,14 @@ A set of utilities to monitor and react to the status of a supported UPS
 There are currently 3 possible ways of installing *rickslab-ups-utils*.  These are summarized in
 order of preference as:
 
-* Debian Package - This will install a Debian package file from my public server.  It is signed and verified
-with my GPG key.  This will be installed as root and can be removed and updated with apt tools.
-* PyPI - Uses the Python Package Index as the source.  This should work on systems other than Debian based
-but I have ony verified Ubuntu.  Feel free to report any issues and I will work them out to support other distros.
-* Repository - You can always clone the repository and run that version.  This is useful if you want to contribute 
-to the project.
+* Debian Package - This will install a Debian package file from my public
+server.  It is signed and verified with my GPG key.  This will be installed
+as root and can be removed and updated with apt tools.
+* PyPI - Uses the Python Package Index as the source.  This should work on
+systems other than Debian based, but I have ony verified Ubuntu.  Feel free
+to report any issues, and I will work them out to support other distros.
+* Repository - You can always clone the repository and run that version.
+This is useful if you want to contribute to the project.
 
 ### Debian Package Installation
 
@@ -76,7 +78,7 @@ template files is provided: `ups-utils.ini.template`. You can verify the values 
 configuration settings by executing:
 
 ```shell
-ups-daemon --list_params
+ups-ls --list_params
 ```
 
 Also, a UPS list must be specified in the `ups-config.json` file using `ups-config.json.template`
@@ -95,7 +97,7 @@ sudo chgrp upsutils ups-utils.ini ups-config.json
 sudo chmod 660 ups-utils.ini ups-config.json
 ```
 
-If you installed from PyPI, you will be the owner of the file, so there is not need to change
+If you installed from PyPI, you will be the owner of the file, so there is no need to change
 group ownership, but the configuration files must be readable by only you:
 
 ```shell
@@ -176,12 +178,15 @@ use defaults if missing.
 The utility currently supports:
 
 * APC UPS with AP9630 and AP9641 NMC
-* EATON UPS with PowerWalker NMC
+* EATON UPS with PowerWalker NMC.  I had an issue with voltage interpretation, and
+found that PowerWalker does not support the use of their NMC with Eaton UPS.  But it 
+mostly works anyway.
 
-It monitors the specified UPS using snmp v2c.  I have not implemented the ability to listen to snmp traps
-yet, as I still have some research to do.  If you have different UPS and would like to extend the dictionary
-in this [code](https://github.com/Ricks-Lab/ups-utils/blob/master/UPSmodules/UPSmodule.py) to support it, feel
-free to make a pull request.
+It monitors the specified UPSs using snmp v2c.  I have not implemented the
+ability to listen to snmp traps yet, as I still have some research to do.
+If you have different UPS and would like to extend the dictionary in this
+[code](https://github.com/Ricks-Lab/ups-utils/blob/master/UPSmodules/UPSmodule.py)
+to support it, feel free to make a pull request.
 
 ## Reference Material
 
