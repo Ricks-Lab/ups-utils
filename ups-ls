@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
 """ ups-ls  -  Displays details about installed compatible UPSs
 
-    This utility displays most relevant parameters for installed and compatible UPSs
-    listed in the config.json file.  By default, all available parameters are displayed.
-    The --input and --output options can be used to get relevant UPS input and output
-    parameters.
+    This utility displays most relevant parameters for installed and compatible
+    UPSs listed in the config.json file.  By default, all available parameters
+    are displayed. The --input and --output options can be used to get relevant
+    UPS input and output parameters.  With the *--list_commands* option, the
+    utility will list all available SNMP commands for the configured UPS.  With
+    the *--list_params* option, the daemon configuration parameters will be listed.
+    The *--list_decoders* option will display list of all MiB decoders available
+    for the UPS defined as daemon target.
 
     Copyright (C) 2019  RicksLab
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    This program is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the Free
+    Software Foundation, either version 3 of the License, or (at your option)
+    any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+    more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License along with
+    this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __author__ = 'RicksLab'
 __copyright__ = 'Copyright (C) 2019 RicksLab'
@@ -48,9 +52,22 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README',
                         action='store_true', default=False)
-    parser.add_argument('--input', help='Display UPS input parameters',
-                        action='store_true', default=False)
-    parser.add_argument('--output', help='Display UPS output parameters',
+
+    # Mutually exclusive group of main functions
+    detail_group = parser.add_mutually_exclusive_group(required=False)
+    detail_group.add_argument('--list_commands', help='List all available commands',
+                              action='store_true', default=False)
+    detail_group.add_argument('--list_params', help='List all configuration parameters',
+                              action='store_true', default=False)
+    detail_group.add_argument('--list_decoders', help='List all decoder parameters',
+                              action='store_true', default=False)
+    detail_group.add_argument('--input', help='Display UPS input parameters',
+                              action='store_true', default=False)
+    detail_group.add_argument('--output', help='Display UPS output parameters',
+                              action='store_true', default=False)
+
+    # Verbosity, logging, and debug options
+    parser.add_argument('--verbose', help='Output normal readings',
                         action='store_true', default=False)
     parser.add_argument('-d', '--debug', help='Debug output',
                         action='store_true', default=False)
@@ -89,6 +106,18 @@ def main() -> None:
         sys.exit(-1)
     print('{} UPSs listed in {}.'.format(num_ups[0], env.UT_CONST.ups_json_file))
     print('    {} are compatible, {} are accessible, {} are responsive\n'.format(num_ups[1], num_ups[2], num_ups[3]))
+
+    if args.list_decoders:
+        ups.print_decoders()
+        sys.exit(0)
+
+    if args.list_params:
+        ups.print_daemon_parameters()
+        sys.exit(0)
+
+    if args.list_commands:
+        ups.print_snmp_commands()
+        sys.exit(0)
 
     for ups_item in ups.ups_list.values():
         ups.set_active_ups(ups_item)

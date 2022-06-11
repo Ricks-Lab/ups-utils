@@ -5,14 +5,22 @@ ups-ls \- displays most relevant parameters for installed, accessible, and compa
 
 .SH SYNOPSIS
 .B ups-ls
-.RB [ \-\-help "] [" \-\-about "] [" \-\-input "] [" \-\-output "] [" \-\-debug "]"
+.RB [ \-\-help "] [" \-\-about "]"
+.br
+.RB [ \-\-input " | " \-\-output " | " \-\-list_commands " | " \-\-list_params " | " \-\-list_decoders "]"
+.br
+.RB [ \-\-verbose "] [" \-\-debug "]"
 
 .SH DESCRIPTION
 .B ups-ls
-displays most relevant parameters for installed and compatible UPSs
-listed in the config.json file.  By default, all available parameters are displayed.
-The \fB--input\fR and \fB--output\fR options can be used to get relevant UPS input and output
-parameters.
+displays most relevant parameters for installed and compatible UPSs listed in
+the config.json file.  By default, all available parameters are displayed. The
+\fB--input\fR and \fB--output\fR options can be used to get relevant UPS input
+and output parameters. With the \fB--list_commands\fR option, the utility will
+list all available SNMP commands for the configured UPS.  With the
+\fB--list_\fR option, the daemon configuration parameters will be listed.
+The \fB--list_decoders\fR option will display list of all MiB decoders
+available for the UPS defined with \fBdaemon = true\fR.
 
 .SH OPTIONS
 .TP
@@ -28,6 +36,18 @@ Will display short list of configured UPSs with input power parameters.
 .TP
 .BR "\-\-output"
 Will display short list of configured UPSs with output power parameters.
+.TP
+.BR "\-\-list_commands"
+Will display list of all MiB commands available for the UPS defined with \fBdaemon = true\fR.
+.TP
+.BR "\-\-list_params"
+Will display list of all configuration parameters read from the
+.ul
+ups-config.ini
+file
+.TP
+.BR "\-\-list_decoders"
+Will display list of all MiB decoders available for the UPS defined with \fBdaemon = true\fR.
 .TP
 .BR \-h , " \-\-help"
 Display help text and exit.

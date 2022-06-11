@@ -115,29 +115,33 @@ sudo apt install snmp
 
 ## ups-daemon
 
-With no options specified, the utility will give the current status of the UPS configured
-with *daemon = true* in the ups-config.json file. With the *--daemon* option, *ups-daemon*
-will continuously check the status of the UPS.  When it detects that the UPS is sourcing
-powering from the battery, it will check the amount of time it has been running on battery
-and run the specified suspend script when the specified threshold is exceeded.  It will
-execute the specified resume script when it detects power has resumed.  When the utility
-detects a Battery Low event from the UPS or that time remaining for battery or the battery
-charge is below specified thresholds, then the shutdown script will be executed. If
-*ups-daemon* detects a return to line power has occurred before the shutdown has completed,
-it will execute the cancel shutdown script.  With the *--verbose* option set, no event 
-update messages will be output, otherwise, only events are output.  With the *--list_commands*
-option, the utility will list all available SNMP commands for the configured UPS.  With the
-*--list_params* option, the daemon configuration parameters will be listed. The
-*--logfile filename* option is used to specify a logfile, but is not implemented at this
-time.  The threshold and script definitions must be made in the config.py file using
-*config.py.template* as a template.
+With no options specified, the utility will give the current status of the
+UPS configured with *daemon = true* in the ups-config.json file. With the
+*--daemon* option, *ups-daemon* will continuously check the status of the
+UPS.  When it detects that the UPS is sourcing powering from the battery,
+it will check the amount of time it has been running on battery and run
+the specified suspend script when the specified threshold is exceeded.  It
+will execute the specified resume script when it detects power has resumed.
+When the utility detects a Battery Low event from the UPS or that time
+remaining for battery or the battery charge is below specified thresholds,
+then the shutdown script will be executed. If *ups-daemon* detects a return
+to line power has occurred before the shutdown has completed, it will
+execute the cancel shutdown script.  With the *--verbose* option set, no
+event update messages will be output, otherwise, only events are output.
+The *--logfile filename* option is used to specify a logfile, but is not
+implemented at this time.  The threshold and script definitions must be
+made in the config.py file using *config.py.template* as a template.
 
 ## ups-ls
 
-This utility displays most relevant parameters for installed and compatible UPSs
-listed in the ups-config.json file.  By default, all available parameters are displayed.
-The *--input* and *--output* options can be used to get relevant UPS input and output
-parameters.
+This utility displays most relevant parameters for installed and compatible
+UPSs listed in the config.json file.  By default, all available parameters
+are displayed. The --input and --output options can be used to get relevant
+UPS input and output parameters.  With the *--list_commands* option, the
+utility will list all available SNMP commands for the configured UPS.  With
+the *--list_params* option, the daemon configuration parameters will be listed.
+The *--list_decoders* option will display list of all MiB decoders available
+for the UPS defined as daemon target.
 
 ## ups-mon
 
@@ -165,6 +169,7 @@ use defaults if missing.
 * Changes in documentation to describe steps necessary to secure snmp shared secret.
 * Added check of configuration files readability.
 * Implement code improvements from gpu-utils project.
+* Move listing like functions from *ups-daemon* to *ups-ls*.
 
 ## Known Issues
 

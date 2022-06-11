@@ -1,37 +1,38 @@
 #!/usr/bin/env python3
-""" ups-daemon  -  Utility for interacting with compatible UPSs with network management cards
+""" ups-daemon  -  Utility for interacting with compatible UPSs with network
+                   management cards.
 
-    With no options specified, the utility will give the current status of the UPS configured
-    with *daemon = true* in the ups-config.json file. With the *--daemon* option, *ups-daemon*
-    will continuously check the status of the UPS.  When it detects that the UPS is sourcing
-    powering from the battery, it will check the amount of time it has been running on battery
-    and run the specified suspend script when the specified threshold is exceeded.  It will
-    execute the specified resume script when it detects power has resumed.  When the utility
-    detects a Battery Low event from the UPS or that time remaining for battery or the battery
-    charge is below specified thresholds, then the shutdown script will be executed. If
-    *ups-daemon* detects a return to line power has occurred before the shutdown has completed,
-    it will execute the cancel shutdown script.  With the *--verbose* option set, no event
-    update messages will be output, otherwise, only events are output.  With the *--list_commands*
-    option, the utility will list all available SNMP commands for the configured UPS.  With the
-    *--list_params* option, the daemon configuration parameters will be listed. The
-    *--logfile filename* option is used to specify a logfile, but is not implemented at this
-    time.  The threshold and script definitions must be made in the config.py file using
-    *config.py.template* as a template.
+    With no options specified, the utility will give the current status of the
+    UPS configured with *daemon = true* in the ups-config.json file. With the
+    *--daemon* option, *ups-daemon* will continuously check the status of the
+    UPS.  When it detects that the UPS is sourcing powering from the battery,
+    it will check the amount of time it has been running on battery and run
+    the specified suspend script when the specified threshold is exceeded.  It
+    will execute the specified resume script when it detects power has resumed.
+    When the utility detects a Battery Low event from the UPS or that time
+    remaining for battery or the battery charge is below specified thresholds,
+    then the shutdown script will be executed. If *ups-daemon* detects a return
+    to line power has occurred before the shutdown has completed, it will
+    execute the cancel shutdown script.  With the *--verbose* option set, no
+    event update messages will be output, otherwise, only events are output.
+    The *--logfile filename* option is used to specify a logfile, but is not
+    implemented at this time.  The threshold and script definitions must be
+    made in the config.py file using *config.py.template* as a template.
 
     Copyright (C) 2019  RicksLab
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    This program is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the Free
+    Software Foundation, either version 3 of the License, or (at your option)
+    any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+    more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License along with
+    this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __author__ = "RicksLab"
 __copyright__ = "Copyright (C) 2019 RicksLab"
@@ -95,19 +96,14 @@ def main() -> None:
     :return: None
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--about", help="README", action="store_true", default=False)
+    parser.add_argument('--about', help='README', action='store_true', default=False)
 
-    # Mutually exclusive group of main functions
-    detail_group = parser.add_mutually_exclusive_group(required=False)
-    detail_group.add_argument("--daemon", help="Run in daemon mode", action="store_true", default=False)
-    detail_group.add_argument("--list_commands", help="List all available commands", action="store_true", default=False)
-    detail_group.add_argument("--list_params", help="List all configuration parameters", action="store_true", default=False)
-    detail_group.add_argument("--list_decoders", help="List all decoder parameters", action="store_true", default=False)
+    parser.add_argument('--daemon', help='Run in daemon mode', action='store_true', default=False)
 
     # Verbosity, logging, and debug options
-    parser.add_argument("--logfile", help="Specify logfile", type=str, default="")
-    parser.add_argument("--verbose", help="Output normal readings", action="store_true", default=False)
-    parser.add_argument("-d", "--debug", help="Debug output", action="store_true", default=False)
+    parser.add_argument('--logfile', help='Specify logfile', type=str, default='')
+    parser.add_argument('--verbose', help='Output normal readings', action='store_true', default=False)
+    parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -157,22 +153,8 @@ def main() -> None:
         env.UT_CONST.log_print('Fatal Error. Exiting...')
         sys.exit(-1)
 
-    if args.list_decoders:
-        ups.print_decoders()
-        sys.exit(0)
-
-    if args.list_params:
-        ups.print_daemon_parameters()
-        sys.exit(0)
-
-    if args.list_commands:
-        ups.print_snmp_commands()
-        sys.exit(0)
-
     # Display current status of target UPS
     ups.read_all_ups_list_items(ups.get_monitor_mib_commands('all'), display=True)
-    #for mib_command in ups.get_mib_commands().keys():
-        #ups.send_snmp_command(mib_command, display=True)
 
     if args.daemon:
         crit_bat_level = ups.daemon_params['threshold_battery_capacity']['crit']
