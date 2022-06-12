@@ -40,7 +40,7 @@ import configparser
 from enum import Enum
 from typing import Tuple, List, Union, Dict
 from uuid import uuid4
-from UPSmodules import __version__, __status__
+from UPSmodules import __version__, __status__, __credits__
 try:
     from UPSmodules import env
 except ModuleNotFoundError:
@@ -54,10 +54,10 @@ class UPSsnmp:
     """ Class definition for UPS communication object."""
 
     # Configuration details
-    daemon_paths = ['boinc_home', 'ups_utils_script_path']
-    daemon_scripts = ['suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script']
-    daemon_param_names = ['read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
-                          'threshold_battery_load', 'threshold_battery_capacity']
+    daemon_paths = ('boinc_home', 'ups_utils_script_path')
+    daemon_scripts = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
+    daemon_param_names = ('read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
+                          'threshold_battery_load', 'threshold_battery_capacity')
     daemon_param_defaults = {'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
                              'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
                              'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
@@ -66,8 +66,6 @@ class UPSsnmp:
                              'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
     # Set params to defaults
     daemon_params: Dict[str, Union[str, dict]] = {
-        'ups_ini_file': 'DEFAULTS',
-        'ups_json_file': 'NONE',
         'boinc_home': None, 'ups_utils_script_path': daemon_param_defaults['ups_utils_script_path'],
         'suspend_script': None, 'resume_script': None,
         'shutdown_script': None, 'cancel_shutdown_script': None,
@@ -79,7 +77,7 @@ class UPSsnmp:
 
     state_style = Enum('state', 'warn crit green bold normal')
     # UPS response bit string decoders
-    decoders = {'apc_system_status': ['Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
+    decoders = {'apc_system_status': ('Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
                                       'SCE', 'AVR_Boost', 'AVR_Trim', 'OverLoad', 'RT_Calibration',
                                       'BatteriesDischarged', 'ManualBypass', 'SoftwareBypass',
                                       'Bypass-InternalFault', 'Bypass-SupplyFailure', 'Bypass-FanFailure',
@@ -95,20 +93,20 @@ class UPSsnmp:
                                       'InputOORforBypass', 'DCbusOverV', 'PFCfailure', 'CritHWfail',
                                       'Green/ECO mode', 'HotStandby', 'EPO', 'LoadAlarmViolation',
                                       'BypassPhaseFault', 'UPSinternalComFail', 'EffBoosterMode',
-                                      'Off', 'Standby', 'Minor/EnvAlarm']}
+                                      'Off', 'Standby', 'Minor/EnvAlarm')}
 
     # UPS MiB Commands
-    monitor_mib_cmds = {'static': ['mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
+    monitor_mib_cmds = {'static': ('mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
                                    'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
-                                   'mib_ups_uptime'],
-                        'dynamic': ['mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
+                                   'mib_ups_uptime'),
+                        'dynamic': ('mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
                                     'mib_battery_runtime_remain', 'mib_input_voltage',
                                     'mib_input_frequency', 'mib_output_voltage', 'mib_output_frequency',
                                     'mib_output_load', 'mib_output_current', 'mib_output_power',
-                                    'mib_system_status', 'mib_battery_status']}
-    output_mib_cmds = ['mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
-                       'mib_output_power']
-    input_mib_cmds = ['mib_input_voltage', 'mib_input_frequency']
+                                    'mib_system_status', 'mib_battery_status')}
+    output_mib_cmds = ('mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
+                       'mib_output_power')
+    input_mib_cmds = ('mib_input_voltage', 'mib_input_frequency')
 
     all_mib_cmds = {
         # MiBs for APC UPS with AP96xx NMC
@@ -864,7 +862,6 @@ class UPSsnmp:
         LOGGER.debug('config[DaemonPaths]: %s', dict(config['DaemonPaths']))
         LOGGER.debug('config[DaemonScripts]: %s', dict(config['DaemonScripts']))
         LOGGER.debug('config[DaemonParameters]: %s', dict(config['DaemonParameters']))
-        self.daemon_params['ups_ini_file'] = env.UT_CONST.ups_config_ini
 
         # Set path definitions
         for path_name in self.daemon_paths:
@@ -913,7 +910,7 @@ class UPSsnmp:
         # Check Daemon Parameter Values
         for parameter_name in self.daemon_param_names:
             if parameter_name == 'read_interval':
-                for sub_parameter_name in ['monitor', 'daemon']:
+                for sub_parameter_name in {'monitor', 'daemon'}:
                     if self.daemon_params[parameter_name][sub_parameter_name] < \
                             self.daemon_params[parameter_name]['limit']:
                         env.UT_CONST.process_message('Warning invalid {}-{} value [{}], using defaults'.format(
