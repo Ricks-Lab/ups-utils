@@ -54,16 +54,18 @@ class UPSsnmp:
     """ Class definition for UPS communication object."""
 
     # Configuration details
-    daemon_paths = ('boinc_home', 'ups_utils_script_path')
-    daemon_scripts = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
-    daemon_param_names = ('read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
-                          'threshold_battery_load', 'threshold_battery_capacity')
-    daemon_param_defaults = {'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
-                             'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
-                             'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
-                             'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
-                             'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 10},
-                             'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
+    daemon_paths: Tuple[str, ...] = ('boinc_home', 'ups_utils_script_path')
+    daemon_scripts: Tuple[str, ...] = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
+    daemon_param_names: Tuple[str, ...] = ('read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
+                                           'threshold_battery_load', 'threshold_battery_capacity')
+    daemon_param_defaults: Dict[str, Union[str, Dict[str, int]]] = {
+        'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
+        'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
+        'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
+        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
+        'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 10},
+        'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
+
     # Set params to defaults
     daemon_params: Dict[str, Union[str, dict]] = {
         'boinc_home': None, 'ups_utils_script_path': daemon_param_defaults['ups_utils_script_path'],
@@ -77,38 +79,35 @@ class UPSsnmp:
 
     state_style = Enum('state', 'warn crit green bold normal')
     # UPS response bit string decoders
-    decoders = {'apc_system_status': ('Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
-                                      'SCE', 'AVR_Boost', 'AVR_Trim', 'OverLoad', 'RT_Calibration',
-                                      'BatteriesDischarged', 'ManualBypass', 'SoftwareBypass',
-                                      'Bypass-InternalFault', 'Bypass-SupplyFailure', 'Bypass-FanFailure',
-                                      'SleepOnTimer', 'SleepNoPower', 'On', 'Rebooting', 'BatterCommLost',
-                                      'ShutdownInitiated', 'Boost/TrimFailure', 'BadOutVoltage',
-                                      'BatteryChargerFail', 'HiBatTemp', 'WarnBatTemp', 'CritBatTemp',
-                                      'SelfTestInProgress', 'LowBat/OnBat', 'ShutdownFromUpstream',
-                                      'ShutdownFromDownstream', 'NoBatteriesAttached', 'SyncCmdsInProg',
-                                      'SyncSleepInProg', 'SyncRebootInProg', 'InvDCimbalance',
-                                      'TransferReadyFailure', 'Shutdown/Unable to Transfer',
-                                      'LowBatShutdown', 'FanFail', 'MainRelayFail', 'BypassRelayFail',
-                                      'TempBypass', 'HighInternalTemp', 'BatTempSensorFault',
-                                      'InputOORforBypass', 'DCbusOverV', 'PFCfailure', 'CritHWfail',
-                                      'Green/ECO mode', 'HotStandby', 'EPO', 'LoadAlarmViolation',
-                                      'BypassPhaseFault', 'UPSinternalComFail', 'EffBoosterMode',
-                                      'Off', 'Standby', 'Minor/EnvAlarm')}
+    decoders: Dict[str, Tuple[str, ...]] = {
+        'apc_system_status': ('Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
+                              'SCE', 'AVR_Boost', 'AVR_Trim', 'OverLoad', 'RT_Calibration',
+                              'BatteriesDischarged', 'ManualBypass', 'SoftwareBypass', 'Bypass-InternalFault',
+                              'Bypass-SupplyFailure', 'Bypass-FanFailure', 'SleepOnTimer', 'SleepNoPower',
+                              'On', 'Rebooting', 'BatterCommLost', 'ShutdownInitiated', 'Boost/TrimFailure',
+                              'BadOutVoltage', 'BatteryChargerFail', 'HiBatTemp', 'WarnBatTemp', 'CritBatTemp',
+                              'SelfTestInProgress', 'LowBat/OnBat', 'ShutdownFromUpstream',
+                              'ShutdownFromDownstream', 'NoBatteriesAttached', 'SyncCmdsInProg',
+                              'SyncSleepInProg', 'SyncRebootInProg', 'InvDCimbalance', 'TransferReadyFailure',
+                              'Shutdown/Unable to Transfer', 'LowBatShutdown', 'FanFail', 'MainRelayFail',
+                              'BypassRelayFail', 'TempBypass', 'HighInternalTemp', 'BatTempSensorFault',
+                              'InputOORforBypass', 'DCbusOverV', 'PFCfailure', 'CritHWfail', 'Green/ECO mode',
+                              'HotStandby', 'EPO', 'LoadAlarmViolation', 'BypassPhaseFault',
+                              'UPSinternalComFail', 'EffBoosterMode', 'Off', 'Standby', 'Minor/EnvAlarm')}
 
     # UPS MiB Commands
-    monitor_mib_cmds = {'static': ('mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number',
-                                   'mib_firmware_revision', 'mib_ups_type', 'mib_ups_location',
-                                   'mib_ups_uptime'),
-                        'dynamic': ('mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
-                                    'mib_battery_runtime_remain', 'mib_input_voltage',
-                                    'mib_input_frequency', 'mib_output_voltage', 'mib_output_frequency',
-                                    'mib_output_load', 'mib_output_current', 'mib_output_power',
-                                    'mib_system_status', 'mib_battery_status')}
-    output_mib_cmds = ('mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
-                       'mib_output_power')
-    input_mib_cmds = ('mib_input_voltage', 'mib_input_frequency')
+    monitor_mib_cmds: Dict[str, Tuple[str, ...]] = {
+        'static': ('mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number', 'mib_firmware_revision',
+                   'mib_ups_type', 'mib_ups_location', 'mib_ups_uptime'),
+        'dynamic': ('mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
+                    'mib_battery_runtime_remain', 'mib_input_voltage', 'mib_input_frequency',
+                    'mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
+                    'mib_output_power', 'mib_system_status', 'mib_battery_status')}
+    output_mib_cmds: Tuple[str, ...] = ('mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
+                                        'mib_output_current', 'mib_output_power')
+    input_mib_cmds: Tuple[str, ...] = ('mib_input_voltage', 'mib_input_frequency')
 
-    all_mib_cmds = {
+    all_mib_cmds: Dict[str, Dict[str, Dict[str, Union[str, Dict[str, str], None]]]] = {
         # MiBs for APC UPS with AP96xx NMC
         'apc-ap96xx': {'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                                         'name': 'General UPS Information',
@@ -651,7 +650,7 @@ class UPSsnmp:
     # End of set of methods to check if UPS is valid.
 
     # Commands to read from UPS using snmp protocol.
-    def get_monitor_mib_commands(self, cmd_type: str = 'dynamic') -> list:
+    def get_monitor_mib_commands(self, cmd_type: str = 'dynamic') -> Tuple[str, ...]:
         """ Get the specified list of monitor mib commands for the active UPS.
 
         :param cmd_type:  The target type of monitor commands
@@ -662,7 +661,7 @@ class UPSsnmp:
             for try_cmd_type in ['static', 'dynamic']:
                 for item in self.monitor_mib_cmds[try_cmd_type]:
                     return_list.append(item)
-            return return_list
+            return tuple(return_list)
         return self.monitor_mib_cmds[cmd_type]
 
     def read_all_ups_list_items(self, command_list: list, errups: bool = True, display: bool = False) -> dict:
@@ -798,7 +797,7 @@ class UPSsnmp:
         return value
 
     @staticmethod
-    def bit_str_decoder(value: str, decode_key: list) -> str:
+    def bit_str_decoder(value: str, decode_key: tuple) -> str:
         """ Bit string decoder
 
         :param value: A string representing a bit encoded set of flags
