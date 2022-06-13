@@ -16,7 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from __future__ import annotations
 __author__ = "RicksLab"
 __copyright__ = "Copyright (C) 2019 RicksLab"
 __credits__ = ['Natalya Langford - Configuration Parser']
@@ -55,6 +54,10 @@ class UpsEnum(Enum):
     def __str__(self) -> str:
         return self.name
 
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.name, cls))
+
 
 class ObjDict(dict):
     """
@@ -78,21 +81,21 @@ class ObjDict(dict):
 
 
 class UpsItem:
-    _json_keys: Set[str, ...] = {'ups_IP', 'display_name', 'ups_type', 'daemon', 'snmp_community', 'uuid', 'ups_model'}
+    _json_keys: Set[str] = {'ups_IP', 'display_name', 'ups_type', 'daemon', 'snmp_community', 'uuid', 'ups_model'}
+    UPS_type: UpsEnum = UpsEnum('type', 'all apc_ap96xx eaton_pw')
 
     def __init__(self, json_details: dict):
         # UPS list from ups-config.json for monitor and ls utils.
-        self.ups_list = {}
         self.prm: ObjDict = ObjDict({
             'uuid': None,
             'ups_IP': None,
             'display_name': None,
             'ups_type': None,
             'ups_model': None,
-            'mib_commands': None,
+            'ups_nmc_model': None,
             'snmp_community': None,
             'daemon': False,
-            'valid_ip': False,
+            'valid': False,
             'compatible': False,
             'accessible': False,
             'responsive': False})
@@ -104,30 +107,43 @@ class UpsItem:
                 continue
             self.prm[item_name] = item_value
 
-        # Check accessibility
-        self.ups_comm = UpsComm(self)
-        if self.prm['ups_type'] in self.ups_comm.MIB_nmc.__members__:
+        if self.prm['ups_type'] in UpsComm.MIB_nmc.list():
             self.prm['compatible'] = True
-            self.prm['ups_type'] = self.ups_comm.MIB_nmc(self.prm['ups_type'])
-        if self.ups_comm.is_valid_ip_fqdn(self.prm['upsIP']):
-            self.prm['valid_ip'] = True
-        if self.ups_comm.check_ip_access(self.prm['upsIP']):
+
+        # Check accessibility
+        self.ups_comm: UpsComm = UpsComm(self)
+        if self.ups_comm.is_valid_ip_fqdn(self.prm['ups_IP']):
+            self.prm['valid'] = True
+        if self.ups_comm.check_ip_access(self.prm['ups_IP']):
             self.prm['accessible'] = True
         if self.ups_comm.check_snmp_response(self):
             self.prm['responsive'] = True
 
         self.prm['mib_commands'] = self.ups_comm.all_mib_cmds[self.prm['ups_type']]
+        if self.prm['daemon']:
+            self.daemon = UpsDaemon()
 
     def __str__(self):
         str_rep = ''
         for name, value in self.prm.items():
+            if name == 'mib_commands': continue
             if str_rep:
-                str_rep = '{}\n{}:\n'.format(str_rep, name)
+                str_rep = '{}\n{}: {}'.format(str_rep, name, value)
             else:
-                str_rep = '{}:\n'.format(name)
-            for ups_param_name, ups_param_value in value.items():
-                str_rep = '{}\n    {}: {}\n'.format(str_rep, ups_param_name, ups_param_value)
+                str_rep = '{}: {}'.format(name, value)
+            #for ups_param_name, ups_param_value in value.items():
+                #str_rep = '{}\n    {}: {}\n'.format(str_rep, ups_param_name, ups_param_value)
         return str_rep
+
+    def mib_command_names(self, cmd_group: UpsEnum) -> Generator[str, None, None]:
+        if cmd_group == UpsComm.MIB_group.all:
+            if self.prm.ups_type == UpsComm.MIB_nmc.apc_ap96xx:
+                cmd_group = UpsComm.MIB_group.all_apc
+            else:
+                cmd_group = UpsComm.MIB_group.all_eaton
+        for cmd_name in self.ups_comm.mib_commands:
+            if cmd_name in UpsComm.all_mib_cmd_names[cmd_group]:
+                yield cmd_name
 
     def get_ups_parameter_value(self, param_name: str) -> Union[str, None]:
         """ Get ups parameter value for parameter name from target UPS or active UPS if not specified
@@ -151,12 +167,12 @@ class UpsItem:
         """
         return self.prm['display_name']
 
-    def ups_type(self) -> str:
+    def ups_type(self) -> UpsEnum:
         """ Get the type value for the target UPS or active UPS if target is None.
 
-        :return:  The ups_type as a str.
+        :return:  The ups_type as a UpsEnum.
         """
-        return self.prm['ups_type'].name
+        return self.prm['ups_type']
 
     def ups_nmc_model(self) -> str:
         """ Get the type value for the target UPS or active UPS if target is None.
@@ -171,6 +187,21 @@ class UpsItem:
         :return:  The IP address as a str.
         """
         return self.prm['ups_IP']
+
+    def is_compatible(self):
+        return self.prm.compatible
+
+    def is_accessible(self):
+        return self.prm.accessible
+
+    def is_responsive(self):
+        return self.prm.responsive
+
+    def send_snmp_command(self, cmd_name: str, display: bool = True) -> str:
+        return self.ups_comm.send_snmp_command(cmd_name, self, display)
+
+    def read_ups_list_items(self, command_list: list, display: bool = False) -> dict:
+        return self.ups_comm.read_ups_list_items(command_list, self, display=display)
 
 
 class UpsDaemon:
@@ -198,11 +229,14 @@ class UpsDaemon:
         'threshold_battery_load': daemon_param_defaults['threshold_battery_load'].copy(),
         'threshold_battery_capacity': daemon_param_defaults['threshold_battery_capacity'].copy()}
 
-    Text_style = Enum('style', 'warn crit green bold normal')
+    Text_style: UpsEnum = UpsEnum('style', 'warn crit green bold normal')
 
     def __init__(self):
         self.config: Union[dict, None] = None
         self.daemon_ups: Union[UpsItem, None] = None
+
+        self.read_daemon_config()
+        self.set_daemon_parameters()
 
     def read_daemon_config(self) -> bool:
         """
@@ -319,11 +353,12 @@ class UpsDaemon:
                     self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
         return read_status
 
-    def print_daemon_parameters(self) -> None:
+    @classmethod
+    def print_daemon_parameters(cls) -> None:
         """ Print all daemon parameters.
         """
         print('Daemon parameters:')
-        for param_name, param_value in self.daemon_params.items():
+        for param_name, param_value in cls.daemon_params.items():
             print('    {}: {}'.format(param_name, param_value))
 
     def execute_script(self, script_name: str) -> bool:
@@ -356,8 +391,10 @@ class UpsDaemon:
 
 
 class UpsList:
-    def __init__(self):
+    def __init__(self, daemon: bool = True):
         self.list: Dict[str, UpsItem] = {}
+        self.daemon: Union[UpsDaemon, None] = UpsDaemon() if daemon else None
+        self.read_ups_json()
 
     def __repr__(self) -> str:
         return str(self.list)
@@ -416,15 +453,43 @@ class UpsList:
         self[ups_item.prm.uuid] = ups_item
         LOGGER.debug('Added UPS Item %s to UPS List', ups_item.prm.uuid)
 
-    def num_upss(self, vendor: Enum = UpsItem.UpsType.ALL) -> Dict[str, int]:
-        """
+    def print_daemon_parameters(self) -> None:
+        self.daemon.set_daemon_parameters()
 
-        :param vendor:
-        :return:
-        """
-        pass
+    def print(self) -> None:
+        for ups in self.upss():
+            print(ups, '\n')
 
-    def read_all_ups_list_items(self, command_list: list, errups: bool = True, display: bool = False) -> dict:
+    def num_upss(self, ups_type: UpsEnum = UpsItem.UPS_type.all) -> Dict[str, int]:
+        """
+        Return the count of UPSs by total, accessible, compatible, responsive, and valid.
+
+        :param ups_type: Only count UPSs of specific ups_type or all ups_type by default.
+        :return: Dictionary of UPS counts
+        """
+        try:
+            ups_type_name = ups_type.name
+        except AttributeError as error:
+            raise AttributeError('Error: {} not a valid vendor name: [{}]'.format(ups_type, UpsItem.UPS_type)) from error
+        results_dict = {'ups_type': ups_type_name, 'total': 0,
+                        'accessible': 0, 'compatible': 0, 'responsive': 0, 'valid': 0}
+        for ups in self.upss():
+            if ups_type != UpsItem.UPS_type.all:
+                if ups_type != ups.prm.ups_type:
+                    continue
+            if ups.prm.valid:
+                results_dict['valid'] += 1
+            if ups.prm.accessible:
+                results_dict['accessible'] += 1
+            if ups.prm.compatible:
+                results_dict['compatible'] += 1
+            if ups.prm.responsive:
+                results_dict['responsive'] += 1
+            results_dict['total'] += 1
+        return results_dict
+
+    def read_all_ups_list_items(self, command_list: Union[List[str], Tuple[str]], errups: bool = True,
+                                display: bool = False) -> dict:
         """ Get the specified list of monitor mib commands for all UPSs.
 
         :param command_list:  A list of mib commands to be read from the all UPSs.
@@ -437,7 +502,7 @@ class UpsList:
             if not errups:
                 if not ups.prm.responsive:
                     continue
-            results[uuid] = ups.read_ups_list_items(command_list, ups, display=display)
+            results[uuid] = ups.read_ups_list_items(command_list, display=display)
             return results
 
     def read_ups_json(self) -> bool:
@@ -466,7 +531,6 @@ class UpsList:
             ups['uuid'] = uuid
             ups['ups_nmc_model'] = ups['ups_type']
             self.list[uuid] = UpsItem(ups)
-        #self.daemon_params['ups_json_file'] = env.UT_CONST.ups_json_file
         return True
 
     # Methods to get, check, and list UPSs
@@ -492,6 +556,18 @@ class UpsList:
                 return ups['uuid']
         return 'Error'
 
+    def get_ups_type_list(self) -> Tuple[UpsEnum]:
+        """
+        Get a tuple of unique ups types.
+
+        :return:
+        """
+        type_list: List[UpsEnum] = []
+        for ups in self.upss():
+            if ups.prm.ups_type not in type_list:
+                type_list.append(ups.prm.ups_type)
+        return tuple(type_list)
+
     def get_ups_list(self, errups: bool = True) -> dict:
         """Get the dictionary list of UPSs read at start up.
 
@@ -514,7 +590,7 @@ class UpsList:
         cnt = [0, 0, 0, 0]
         for ups in self.upss():
             cnt[0] += 1
-            if ups.prm.compatiable:
+            if ups.prm.compatible:
                 cnt[1] += 1
             if ups.prm.accessible:
                 cnt[2] += 1
@@ -543,24 +619,7 @@ class UpsComm:
                               'HotStandby', 'EPO', 'LoadAlarmViolation', 'BypassPhaseFault',
                               'UPSinternalComFail', 'EffBoosterMode', 'Off', 'Standby', 'Minor/EnvAlarm')}
 
-    # UPS MiB Commands
-    MIB_group = Enum('group', 'all static dynamic')
-    _mib_static: Tuple[str, ...] = ('mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number', 'mib_firmware_revision',
-                                    'mib_ups_type', 'mib_ups_location', 'mib_ups_uptime')
-    _mib_dynamic: Tuple[str, ...] = ('mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
-                                     'mib_battery_runtime_remain', 'mib_input_voltage', 'mib_input_frequency',
-                                     'mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
-                                     'mib_output_current', 'mib_output_power', 'mib_system_status',
-                                     'mib_battery_status')
-    monitor_mib_cmds: Dict[MIB_group, Tuple[str, ...]] = {
-        MIB_group.all:  _mib_dynamic + _mib_static,
-        MIB_group.static: _mib_static,
-        MIB_group.dynamic: _mib_dynamic}
-    output_mib_cmds: Tuple[str, ...] = ('mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
-                                        'mib_output_current', 'mib_output_power')
-    input_mib_cmds: Tuple[str, ...] = ('mib_input_voltage', 'mib_input_frequency')
-
-    MIB_nmc = Enum('nmc', 'apc_ap96xx eaton_pw')
+    MIB_nmc: UpsEnum = UpsEnum('nmc', 'all apc_ap96xx eaton_pw')
     all_mib_cmds: Dict[MIB_nmc, Dict[str, Dict[str, Union[str, Dict[str, str], None]]]] = {
         # MiBs for APC UPS with AP96xx NMC
         MIB_nmc.apc_ap96xx: {
@@ -764,6 +823,32 @@ class UpsComm:
             'mib_last_self_test_date': {'iso': 'iso.3.6.1.4.1.935.10.1.1.7.4.0',
                                         'name': 'Date of Last Self Test',
                                         'decode': None}}}
+
+    # UPS MiB Commands lists
+    _mib_all_apc_ap96xx = tuple(all_mib_cmds[MIB_nmc.apc_ap96xx].keys())
+    _mib_all_eaton_pw = tuple(all_mib_cmds[MIB_nmc.eaton_pw].keys())
+    _mib_static: Tuple[str, ...] = ('mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number', 'mib_firmware_revision',
+                                    'mib_ups_type', 'mib_ups_location', 'mib_ups_uptime')
+    _mib_dynamic: Tuple[str, ...] = ('mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
+                                     'mib_battery_runtime_remain', 'mib_input_voltage', 'mib_input_frequency',
+                                     'mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
+                                     'mib_output_current', 'mib_output_power', 'mib_system_status',
+                                     'mib_battery_status')
+    _mib_output: Tuple[str, ...] = ('mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
+                                    'mib_output_current', 'mib_output_power')
+    _mib_input: Tuple[str, ...] = ('mib_input_voltage', 'mib_input_frequency')
+    MIB_group: UpsEnum = UpsEnum('group', 'all all_apc all_eaton monitor static dynamic input output')
+    all_mib_cmd_names: Dict[MIB_group, Tuple[str, ...]] = {
+        MIB_group.all:       _mib_all_apc_ap96xx,   # I choose all to be apc since eaton is a subset of apc.
+        MIB_group.all_apc:   _mib_all_apc_ap96xx,
+        MIB_group.all_eaton: _mib_all_eaton_pw,
+        MIB_group.monitor:   _mib_dynamic + _mib_static,
+        MIB_group.output:    _mib_output,
+        MIB_group.input:     _mib_input,
+        MIB_group.static:    _mib_static,
+        MIB_group.dynamic:   _mib_dynamic}
+    # MIB Command Lists
+
     # Check if snmp tools are installed
     _snmp_command: str = shutil.which('snmpget')
     _fatal: bool = False
@@ -776,6 +861,10 @@ class UpsComm:
         Initialize mechanism to communicate with UPS via SNMP V2.
         """
         self.snmp_command = self._snmp_command
+        self.daemon: bool = ups_item.prm.daemon
+        if ups_item.prm['ups_type'] in self.MIB_nmc.list():
+            self.ups_type = ups_item.prm['ups_type'] = self.MIB_nmc[ups_item.prm['ups_type']]
+        self.mib_commands = self.all_mib_cmds[self.ups_type]
 
     @staticmethod
     def is_valid_ip_fqdn(test_value: str) -> bool:
@@ -792,36 +881,34 @@ class UpsComm:
                     return False
         return True
 
-    @staticmethod
-    def get_mib_commands(ups: UpsItem) -> dict:
-        """ Get the list of MIB commands for the target UPS.
+    #@staticmethod
+    #def get_mib_commands(ups: UpsItem) -> dict:
+        #""" Get the list of MIB commands for this UPS.
+#
+        #:param ups:
+        #:return: List of MIB commands for target UPS
+        #"""
+        #return ups.prm['mib_commands']
 
-        :param ups:
-        :return: List of MIB commands for target UPS
-        """
-        return ups.prm['mib_commands']
-
-    def get_mib_name(self, mib_cmd: str, tups: dict = None) -> str:
+    @classmethod
+    def get_mib_name(cls, mib_cmd: str) -> str:
         """Get the mib command name.
 
         :param mib_cmd: string representing mib command
-        :param tups: target UPS, active UPS if missing
         :return: string of mib command name
         """
-        if not tups:
-            tups = self.active_ups
-        if mib_cmd in tups['mib_commands'].keys():
-            return tups['mib_commands'][mib_cmd]['name']
+        if mib_cmd in cls.all_mib_cmds[UpsComm.MIB_nmc.apc_ap96xx].keys():
+            return cls.all_mib_cmds[UpsComm.MIB_nmc.apc_ap96xx][mib_cmd]['name']
         return mib_cmd
 
-    def get_mib_name_for_type(self, mib_cmd: str, ups_type: str) -> str:
-        """Get mib command name for a given UPS type.
-
-        :param mib_cmd:
-        :param ups_type:
-        :return: string of mib command name
-        """
-        return self.all_mib_cmds[ups_type][mib_cmd]['name']
+    #def get_mib_name_for_type(self, mib_cmd: str, ups_type: str) -> str:
+        #"""Get mib command name for a given UPS type.
+#
+        #:param mib_cmd:
+        #:param ups_type:
+        #:return: string of mib command name
+        #"""
+        #return self.all_mib_cmds[ups_type][mib_cmd]['name']
 
     # Set of methods to check if UPS is valid.
     def check_ip_access(self, ip_fqdn: str, validate: bool = False) -> bool:
@@ -855,19 +942,18 @@ class UpsComm:
         return True
 
     # Commands to read from UPS using snmp protocol.
-    def get_monitor_mib_commands(self, cmd_type: str = 'all') -> Tuple[str, ...]:
+    def get_monitor_mib_commands(self, cmd_group: MIB_group = MIB_group.dynamic) -> Tuple[str, ...]:
         """ Get the specified list of monitor mib commands for the active UPS.
 
-        :param cmd_type:  The target type of monitor commands
+        :param cmd_group:  The target group of monitor commands
         :return:  list of relevant mib commands
         """
-        if cmd_type == 'all':
-            return_list = []
-            for try_cmd_type in ['static', 'dynamic']:
-                for item in self.monitor_mib_cmds[try_cmd_type]:
-                    return_list.append(item)
-            return tuple(return_list)
-        return self.monitor_mib_cmds[cmd_type]
+        try:
+            _ = cmd_group.name
+        except AttributeError as error:
+            raise AttributeError('Error: {} not a valid group name: [{}]'.format(
+                cmd_group, self.MIB_group)) from error
+        return UpsComm.all_mib_cmd_names[cmd_group]
 
     def read_ups_list_items(self, command_list: list, ups: UpsItem, display: bool = False) -> dict:
         """ Read the specified list of monitor mib commands for specified UPS.
@@ -890,16 +976,16 @@ class UpsComm:
                 results['valid'] = False
                 break
             if cmd == 'mib_ups_info':
-                if results['ups_type'] == 'apc-ap96xx':
+                if results['ups_type'] == UpsComm.MIB_nmc.apc_ap96xx:
                     try:
                         results['ups_nmc_model'] = re.sub(r'.*MN:', '', results[cmd]).split()[0]
                         ups.prm['ups_nmc_model'] = results['ups_nmc_model']
                     except(KeyError, IndexError):
-                        results['ups_nmc_model'] = ups.ups_type()
+                        results['ups_nmc_model'] = ups.ups_type().name
                 else:
-                    results['ups_nmc_model'] = ups.ups_type()
+                    results['ups_nmc_model'] = ups.ups_type().name
         # Since PowerWalker NMC is not intended for 110V UPSs, the following correction to output current is needed.
-        if self.ups_type() == 'eaton-pw':
+        if ups.prm.ups_type == UpsComm.MIB_nmc.eaton_pw:
             if 'mib_output_current' in results.keys() and 'mib_output_voltage' in results.keys():
                 results['mib_output_current'] = round((230 / results['mib_output_voltage']) *
                                                       results['mib_output_current'], 1)
@@ -944,7 +1030,7 @@ class UpsComm:
         if snmp_mib_commands[command_name]['decode']:
             if value in snmp_mib_commands[command_name]['decode'].keys():
                 value = snmp_mib_commands[command_name]['decode'][value]
-        if ups.prm['ups_type'] == 'eaton-pw':
+        if ups.prm['ups_type'] == UpsComm.MIB_nmc.eaton_pw:
             if command_name == 'mib_output_voltage' or command_name == 'mib_output_frequency':
                 value = int(value) / 10.0
             elif command_name == 'mib_output_current':
@@ -953,12 +1039,12 @@ class UpsComm:
                 value = int(value) / 10.0
             elif command_name == 'mib_system_temperature':
                 value = int(value) / 10.0
-        if command_name == 'mib_system_status' and ups.prm['ups_type'] == 'apc-ap96xx':
+        if command_name == 'mib_system_status' and ups.prm['ups_type'] == UpsComm.MIB_nmc.apc_ap96xx:
             value = self.bit_str_decoder(value, self.decoders['apc_system_status'])
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
-            if ups.prm['ups_type'] == 'eaton-pw':
-                # Process time for eaton-pw
+            if ups.prm['ups_type'] == UpsComm.MIB_nmc.eaton_pw:
+                # Process time for eaton_pw
                 if command_name == 'mib_time_on_battery':
                     # Measured in seconds.
                     value = int(value)
@@ -975,7 +1061,7 @@ class UpsComm:
                     value_minute, value_str = value_items
                 value = (round(int(value_minute) / 60 / 60, 2), value_str)
         if display:
-            if command_name == 'mib_output_current' and ups.prm['ups_type'] == 'eaton-pw':
+            if command_name == 'mib_output_current' and ups.prm['ups_type'] == UpsComm.MIB_nmc.eaton_pw:
                 print('{}: {} - raw, uncorrected value.'.format(snmp_mib_commands[command_name]['name'], value))
             else:
                 print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
@@ -1000,12 +1086,13 @@ class UpsComm:
                     value_str = '{}-{}'.format(value_str, decode_key[index])
         return value_str
 
-    def print_decoders(self) -> None:
+    @classmethod
+    def print_decoders(cls) -> None:
         """ Prints all bit decoders.
 
         :return: None
         """
-        for decoder_name, decoder_list in self.decoders.items():
+        for decoder_name, decoder_list in cls.decoders.items():
             print('decode key: {}'.format(decoder_name))
             for i, item in enumerate(decoder_list, start=1):
                 print('  {:2d}: {}'.format(i, item))
