@@ -55,6 +55,7 @@ class UpsEnum(Enum):
     def __str__(self) -> str:
         return self.name
 
+
 class ObjDict(dict):
     """
     Allow access of dictionary keys by key name.
@@ -75,24 +76,26 @@ class ObjDict(dict):
         else:
             raise AttributeError('No such attribute: {}'.format(name))
 
+
 class UpsItem:
-    _json_keys: Set[str, ...] = {'ups_IP', 'display_name', 'ups_type', 'daemon', 'snmp_community'}
+    _json_keys: Set[str, ...] = {'ups_IP', 'display_name', 'ups_type', 'daemon', 'snmp_community', 'uuid', 'ups_model'}
 
     def __init__(self, json_details: dict):
         # UPS list from ups-config.json for monitor and ls utils.
         self.ups_list = {}
-        self.prm: Dict[str, Union[str, bool, UpsComm.MIB_nmc, dict, None]] = {
-            'uuid': uuid4().hex,
+        self.prm: ObjDict = ObjDict({
+            'uuid': None,
             'ups_IP': None,
             'display_name': None,
             'ups_type': None,
+            'ups_model': None,
             'mib_commands': None,
             'snmp_community': None,
             'daemon': False,
             'valid_ip': False,
             'compatible': False,
             'accessible': False,
-            'responsive': False}
+            'responsive': False})
 
         # Load initial data from json dict.
         for item_name, item_value in json_details.items():
@@ -169,31 +172,70 @@ class UpsItem:
         """
         return self.prm['ups_IP']
 
-    # Set parameters required for daemon mode.
+
+class UpsDaemon:
+    # Configuration details
+    daemon_paths: Tuple[str, ...] = ('boinc_home', 'ups_utils_script_path')
+    daemon_scripts: Tuple[str, ...] = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
+    daemon_param_names: Tuple[str, ...] = ('read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
+                                           'threshold_battery_load', 'threshold_battery_capacity')
+    daemon_param_defaults: Dict[str, Union[str, Dict[str, int]]] = {
+        'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
+        'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
+        'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
+        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
+        'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 10},
+        'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
+
+    # Set params to defaults
+    daemon_params: Dict[str, Union[str, dict]] = {
+        'boinc_home': None, 'ups_utils_script_path': daemon_param_defaults['ups_utils_script_path'],
+        'suspend_script': None, 'resume_script': None,
+        'shutdown_script': None, 'cancel_shutdown_script': None,
+        'read_interval': daemon_param_defaults['read_interval'].copy(),
+        'threshold_battery_time_rem': daemon_param_defaults['threshold_battery_time_rem'].copy(),
+        'threshold_time_on_battery': daemon_param_defaults['threshold_time_on_battery'].copy(),
+        'threshold_battery_load': daemon_param_defaults['threshold_battery_load'].copy(),
+        'threshold_battery_capacity': daemon_param_defaults['threshold_battery_capacity'].copy()}
+
+    Text_style = Enum('style', 'warn crit green bold normal')
+
+    def __init__(self):
+        self.config: Union[dict, None] = None
+        self.daemon_ups: Union[UpsItem, None] = None
+
+    def read_daemon_config(self) -> bool:
+        """
+
+        :return:
+        """
+        if not env.UT_CONST.ups_config_ini:
+            print('Error ups-utils.ini filename not set.')
+            return False
+
+        self.config = configparser.ConfigParser()
+        try:
+            self.config.read(env.UT_CONST.ups_config_ini)
+        except configparser.Error as err:
+            LOGGER.exception('config parser error: %s', err)
+            print('Error in ups-utils.ini file.  Using defaults')
+            return False
+        LOGGER.debug('config[DaemonPaths]: %s', dict(self.config['DaemonPaths']))
+        LOGGER.debug('config[DaemonScripts]: %s', dict(self.config['DaemonScripts']))
+        LOGGER.debug('config[DaemonParameters]: %s', dict(self.config['DaemonParameters']))
+        return True
+
     def set_daemon_parameters(self) -> bool:
         """ Set all daemon parameters based on defaults in env.UT_CONST and the config.py file.
 
         :return:  True on success
         """
         read_status = True
-        if not env.UT_CONST.ups_config_ini:
-            print('Error ups-utils.ini filename not set.')
-            return False
-        config = configparser.ConfigParser()
-        try:
-            config.read(env.UT_CONST.ups_config_ini)
-        except configparser.Error as err:
-            LOGGER.exception('config parser error: %s', err)
-            print('Error in ups-utils.ini file.  Using defaults')
-            return True
-        LOGGER.debug('config[DaemonPaths]: %s', dict(config['DaemonPaths']))
-        LOGGER.debug('config[DaemonScripts]: %s', dict(config['DaemonScripts']))
-        LOGGER.debug('config[DaemonParameters]: %s', dict(config['DaemonParameters']))
 
         # Set path definitions
         for path_name in self.daemon_paths:
-            if isinstance(config['DaemonPaths'][path_name], str):
-                self.daemon_params[path_name] = os.path.expanduser(config['DaemonPaths'][path_name])
+            if isinstance(self.config['DaemonPaths'][path_name], str):
+                self.daemon_params[path_name] = os.path.expanduser(self.config['DaemonPaths'][path_name])
                 if self.daemon_params[path_name]:
                     if not os.path.isdir(self.daemon_params[path_name]):
                         if path_name == 'boinc_home':
@@ -208,9 +250,9 @@ class UpsItem:
 
         # Set script definitions
         for script_name in self.daemon_scripts:
-            if isinstance(config['DaemonScripts'][script_name], str):
+            if isinstance(self.config['DaemonScripts'][script_name], str):
                 self.daemon_params[script_name] = os.path.join(self.daemon_params['ups_utils_script_path'],
-                                                               config['DaemonScripts'][script_name])
+                                                               self.config['DaemonScripts'][script_name])
                 if self.daemon_params[script_name]:
                     if not os.path.isfile(self.daemon_params[script_name]):
                         print('Missing {} script: {}'.format(script_name, self.daemon_params[script_name]))
@@ -218,8 +260,8 @@ class UpsItem:
 
         # Set script parameters
         for parameter_name in self.daemon_param_names:
-            if re.search(env.UT_CONST.PATTERNS['INI'], config['DaemonParameters'][parameter_name]):
-                raw_param = re.sub(r'\s+', '', config['DaemonParameters'][parameter_name])
+            if re.search(env.UT_CONST.PATTERNS['INI'], self.config['DaemonParameters'][parameter_name]):
+                raw_param = re.sub(r'\s+', '', self.config['DaemonParameters'][parameter_name])
                 params = tuple(int(x) for x in raw_param[1:-1].split(','))
                 if parameter_name == 'read_interval':
                     self.daemon_params[parameter_name]['monitor'] = params[0]
@@ -229,9 +271,9 @@ class UpsItem:
                     self.daemon_params[parameter_name]['warn'] = params[1]
             else:
                 LOGGER.debug('Incorrect format for %s parameter: %s',
-                             parameter_name, config['DaemonParameters'][parameter_name])
+                             parameter_name, self.config['DaemonParameters'][parameter_name])
                 print('Incorrect format for {} parameter: {}'.format(
-                    parameter_name, config['DaemonParameters'][parameter_name]))
+                    parameter_name, self.config['DaemonParameters'][parameter_name]))
                 print('Using default value: {}'.format(self.daemon_params[parameter_name]))
 
         # Check Daemon Parameter Values
@@ -279,8 +321,6 @@ class UpsItem:
 
     def print_daemon_parameters(self) -> None:
         """ Print all daemon parameters.
-
-        :return:  None
         """
         print('Daemon parameters:')
         for param_name, param_value in self.daemon_params.items():
@@ -343,27 +383,27 @@ class UpsList:
 
     def items(self) -> Generator[Union[str, UpsItem], None, None]:
         """
-        Get uuid, gpu pairs from a GpuList object.
+        Get uuid, gpu pairs from a UpsList object.
 
-        :return:  uuid, gpu pair
+        :return:  uuid, ups pair
         """
         for key, value in self.list.items():
             yield key, value
 
     def uuids(self) -> Generator[str, None, None]:
         """
-        Get uuids of the GpuList object.
+        Get uuids of the UpsList object.
 
-        :return: uuids from the GpuList object.
+        :return: uuids from the UpsList object.
         """
         for key in self.list:
             yield key
 
-    def gpus(self) -> Generator[UpsItem, None, None]:
+    def upss(self) -> Generator[UpsItem, None, None]:
         """
         Get UpsItems from a GpuList object.
 
-        :return: GpuUItem
+        :return: UpsItem
         """
         return self.__iter__()
 
@@ -393,16 +433,16 @@ class UpsList:
         :return:  dict of results from the reading of all commands from all UPSs.
         """
         results = {}
-        for ups_name, ups_item in self.get_ups_list().items():
+        for uuid, ups in self.items():
             if not errups:
-                if not self.is_responsive(ups_item):
+                if not ups.prm.responsive:
                     continue
-            self.set_active_ups(ups_item)
-            results[ups_name] = self.read_ups_list_items(command_list, ups display=display)
+            results[uuid] = ups.read_ups_list_items(command_list, ups, display=display)
             return results
 
     def read_ups_json(self) -> bool:
-        """Reads the ups-config.json file which contains parameters for UPSs to be used by utility.
+        """ Reads the ups-config.json file which contains parameters for UPSs to be used by utility.
+            Build of list of UpsItems representing each of the UPSs defined in the json file.
 
         :return: boolean True if no problems reading list
         """
@@ -412,18 +452,21 @@ class UpsList:
             return False
         try:
             with open(env.UT_CONST.ups_json_file, 'r') as ups_list_file:
-                ups_item = json.load(ups_list_file)
-            for ups, ups_item in self.ups_list.items():
-                ups_item['ups_nmc_model'] = ups_item['ups_type']
+                ups_items = json.load(ups_list_file)
         except FileNotFoundError as error:
-            env.UT_CONST.process_message("Error: file not found error for [{}]: {}".format(env.UT_CONST.ups_json_file,
-                                                                                           error), verbose=True)
+            env.UT_CONST.process_message("Error: file not found error for [{}]: {}".format(
+                env.UT_CONST.ups_json_file, error), verbose=True)
             return False
         except PermissionError as error:
-            env.UT_CONST.ups_json_file("Error: permission error for [{}]: {}".format(env.UT_CONST.ups_json_file,
-                                                                                     error), verbose=True)
+            env.UT_CONST.ups_json_file("Error: permission error for [{}]: {}".format(
+                env.UT_CONST.ups_json_file, error), verbose=True)
             return False
-        self.daemon_params['ups_json_file'] = env.UT_CONST.ups_json_file
+        for ups in ups_items.values():
+            uuid = uuid4().hex
+            ups['uuid'] = uuid
+            ups['ups_nmc_model'] = ups['ups_type']
+            self.list[uuid] = UpsItem(ups)
+        #self.daemon_params['ups_json_file'] = env.UT_CONST.ups_json_file
         return True
 
     # Methods to get, check, and list UPSs
@@ -433,9 +476,9 @@ class UpsList:
         :param ups_uuid: Universally unique identifier for a UPS
         :return: name of the ups
         """
-        for name, ups in self.ups_list.items():
+        for name, ups in self.upss():
             if ups['uuid'] == ups_uuid:
-                return str(name)
+                return ups['display_name']
         return 'Error'
 
     def get_uuid_for_ups_name(self, ups_name: str) -> str:
@@ -444,7 +487,7 @@ class UpsList:
         :param ups_name: The target ups name.
         :return: The uuid as str or 'Error' if not found
         """
-        for ups in self.ups_list.values():
+        for ups in self.upss():
             if ups['display_name'] == ups_name:
                 return ups['uuid']
         return 'Error'
@@ -456,11 +499,11 @@ class UpsList:
         :return:  dictionary representing the list of UPSs
         """
         return_list = {}
-        for ups_name, ups_item in self.ups_list.items():
+        for uuid, ups in self.items():
             if not errups:
-                if not self.is_responsive(ups_item):
+                if not ups.prm.responsive:
                     continue
-            return_list[ups_name] = ups_item
+            return_list[uuid] = ups
         return return_list
 
     def get_num_ups_tuple(self) -> Tuple[int]:
@@ -469,47 +512,20 @@ class UpsList:
         :return: tuple represents listed, compatible, accessible, responsive UPSs
         """
         cnt = [0, 0, 0, 0]
-        for ups in self.ups_list.values():
+        for ups in self.upss():
             cnt[0] += 1
-            if self.is_compatible(ups):
+            if ups.prm.compatiable:
                 cnt[1] += 1
-            if self.is_accessible(ups):
+            if ups.prm.accessible:
                 cnt[2] += 1
-            if self.is_responsive(ups):
+            if ups.prm.responsive:
                 cnt[3] += 1
         return tuple(cnt)
-
-
 
 
 class UpsComm:
     """ Class definition for UPS communication object."""
 
-    # Configuration details
-    daemon_paths: Tuple[str, ...] = ('boinc_home', 'ups_utils_script_path')
-    daemon_scripts: Tuple[str, ...] = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
-    daemon_param_names: Tuple[str, ...] = ('read_interval', 'threshold_battery_time_rem', 'threshold_time_on_battery',
-                                           'threshold_battery_load', 'threshold_battery_capacity')
-    daemon_param_defaults: Dict[str, Union[str, Dict[str, int]]] = {
-        'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
-        'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
-        'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
-        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
-        'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 10},
-        'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
-
-    # Set params to defaults
-    daemon_params: Dict[str, Union[str, dict]] = {
-        'boinc_home': None, 'ups_utils_script_path': daemon_param_defaults['ups_utils_script_path'],
-        'suspend_script': None, 'resume_script': None,
-        'shutdown_script': None, 'cancel_shutdown_script': None,
-        'read_interval': daemon_param_defaults['read_interval'].copy(),
-        'threshold_battery_time_rem': daemon_param_defaults['threshold_battery_time_rem'].copy(),
-        'threshold_time_on_battery': daemon_param_defaults['threshold_time_on_battery'].copy(),
-        'threshold_battery_load': daemon_param_defaults['threshold_battery_load'].copy(),
-        'threshold_battery_capacity': daemon_param_defaults['threshold_battery_capacity'].copy()}
-
-    Text_style = Enum('style', 'warn crit green bold normal')
     # UPS response bit string decoders
     decoders: Dict[str, Tuple[str, ...]] = {
         'apc_system_status': ('Abnormal', 'OnBattery', 'LowBattery', 'OnLine', 'ReplaceBattery',
@@ -529,13 +545,17 @@ class UpsComm:
 
     # UPS MiB Commands
     MIB_group = Enum('group', 'all static dynamic')
+    _mib_static: Tuple[str, ...] = ('mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number', 'mib_firmware_revision',
+                                    'mib_ups_type', 'mib_ups_location', 'mib_ups_uptime')
+    _mib_dynamic: Tuple[str, ...] = ('mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
+                                     'mib_battery_runtime_remain', 'mib_input_voltage', 'mib_input_frequency',
+                                     'mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
+                                     'mib_output_current', 'mib_output_power', 'mib_system_status',
+                                     'mib_battery_status')
     monitor_mib_cmds: Dict[MIB_group, Tuple[str, ...]] = {
-        MIB_group.static: ('mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number', 'mib_firmware_revision',
-                           'mib_ups_type', 'mib_ups_location', 'mib_ups_uptime'),
-        MIB_group.dynamic: ('mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
-                            'mib_battery_runtime_remain', 'mib_input_voltage', 'mib_input_frequency',
-                            'mib_output_voltage', 'mib_output_frequency', 'mib_output_load', 'mib_output_current',
-                            'mib_output_power', 'mib_system_status', 'mib_battery_status')}
+        MIB_group.all:  _mib_dynamic + _mib_static,
+        MIB_group.static: _mib_static,
+        MIB_group.dynamic: _mib_dynamic}
     output_mib_cmds: Tuple[str, ...] = ('mib_output_voltage', 'mib_output_frequency', 'mib_output_load',
                                         'mib_output_current', 'mib_output_power')
     input_mib_cmds: Tuple[str, ...] = ('mib_input_voltage', 'mib_input_frequency')
@@ -772,15 +792,14 @@ class UpsComm:
                     return False
         return True
 
-    def get_mib_commands(self, nmc_type: MIB_nmc) -> dict:
+    @staticmethod
+    def get_mib_commands(ups: UpsItem) -> dict:
         """ Get the list of MIB commands for the target UPS.
 
-        :param nmc_type:
+        :param ups:
         :return: List of MIB commands for target UPS
         """
-        if not tups:
-            tups = self.active_ups
-        return tups['mib_commands']
+        return ups.prm['mib_commands']
 
     def get_mib_name(self, mib_cmd: str, tups: dict = None) -> str:
         """Get the mib command name.
@@ -854,21 +873,19 @@ class UpsComm:
         """ Read the specified list of monitor mib commands for specified UPS.
 
         :param command_list:  A list of mib commands to be read from the specified UPS.
-        :param ups:  The target ups dictionary from list or None.
+        :param ups:  The target ups item
         :param display: Flag to indicate if parameters should be displayed as read.
         :return:  dict of results from the reading of all commands target UPS.
         """
-        if not tups:
-            tups = self.active_ups
         results = {'valid': True,
-                   'display_name': self.ups_name(tups=tups),
-                   'name': self.ups_name(tups=tups),
-                   'uuid': self.ups_uuid(tups=tups),
-                   'ups_IP': self.ups_ip(tups=tups),
-                   'ups_nmc_model': self.ups_nmc_model(tups=tups),
-                   'ups_type': self.ups_type(tups=tups)}
+                   'display_name': ups.ups_name(),
+                   'name': ups.ups_name(),
+                   'uuid': ups.ups_uuid(),
+                   'ups_IP': ups.ups_ip(),
+                   'ups_nmc_model': ups.ups_nmc_model(),
+                   'ups_type': ups.ups_type()}
         for cmd in command_list:
-            results[cmd] = self.send_snmp_command(cmd, tups=tups, display=display)
+            results[cmd] = self.send_snmp_command(cmd, ups, display=display)
             if not results[cmd]:
                 results['valid'] = False
                 break
@@ -876,44 +893,43 @@ class UpsComm:
                 if results['ups_type'] == 'apc-ap96xx':
                     try:
                         results['ups_nmc_model'] = re.sub(r'.*MN:', '', results[cmd]).split()[0]
-                        tups['ups_nmc_model'] = results['ups_nmc_model']
+                        ups.prm['ups_nmc_model'] = results['ups_nmc_model']
                     except(KeyError, IndexError):
-                        results['ups_nmc_model'] = self.ups_type(tups=tups)
+                        results['ups_nmc_model'] = ups.ups_type()
                 else:
-                    results['ups_nmc_model'] = self.ups_type(tups=tups)
+                    results['ups_nmc_model'] = ups.ups_type()
         # Since PowerWalker NMC is not intended for 110V UPSs, the following correction to output current is needed.
-        if self.ups_type(tups=tups) == 'eaton-pw':
+        if self.ups_type() == 'eaton-pw':
             if 'mib_output_current' in results.keys() and 'mib_output_voltage' in results.keys():
                 results['mib_output_current'] = round((230 / results['mib_output_voltage']) *
                                                       results['mib_output_current'], 1)
         return results
 
-    def send_snmp_command(self, command_name: str, tups: dict = None,
+    def send_snmp_command(self, command_name: str, ups: UpsItem,
                           display: bool = False) -> Union[str, int, List[Union[float, str]], float, None]:
         """ Read the specified mib commands results for specified UPS or active UPS if not specified.
 
         :param command_name:  A command to be read from the target UPS
-        :param tups:  The target ups dictionary from list or None.
+        :param ups:  The target ups item
         :param display: If true the results will be printed
         :return:  The results from the read, could be str, int or tuple
         """
-        if not tups:
-            tups = self.active_ups
-        if not self.is_responsive(tups):
+        if not ups.prm['responsive']:
             return 'Invalid UPS'
-        snmp_mib_commands = self.get_mib_commands(tups)
+        snmp_mib_commands = ups.prm.mib_commands
         if command_name not in snmp_mib_commands:
             return 'No data'
-        if command_name == 'mib_ups_env_temp' and self.ups_nmc_model(tups=tups) != 'AP9641':
+        if command_name == 'mib_ups_env_temp' and ups.ups_nmc_model() != 'AP9641':
             return 'No data'
         cmd_mib = snmp_mib_commands[command_name]['iso']
-        cmd_str = 'snmpget -v2c -c {} {} {}'.format(tups['snmp_community'], tups['ups_IP'], cmd_mib)
+        cmd_str = 'snmpget -v2c -c {} {} {}'.format(ups.prm['snmp_community'],
+                                                    ups.prm['ups_IP'], cmd_mib)
         try:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
         except subprocess.CalledProcessError:
             LOGGER.debug('Error executing snmp %s command [%s] to %s at %s.', command_name, cmd_mib, self.ups_name(),
-                         self.ups_ip())
+                         ups.ups_ip())
             return None
 
         value = ''
@@ -928,7 +944,7 @@ class UpsComm:
         if snmp_mib_commands[command_name]['decode']:
             if value in snmp_mib_commands[command_name]['decode'].keys():
                 value = snmp_mib_commands[command_name]['decode'][value]
-        if tups['ups_type'] == 'eaton-pw':
+        if ups.prm['ups_type'] == 'eaton-pw':
             if command_name == 'mib_output_voltage' or command_name == 'mib_output_frequency':
                 value = int(value) / 10.0
             elif command_name == 'mib_output_current':
@@ -937,11 +953,11 @@ class UpsComm:
                 value = int(value) / 10.0
             elif command_name == 'mib_system_temperature':
                 value = int(value) / 10.0
-        if command_name == 'mib_system_status' and tups['ups_type'] == 'apc-ap96xx':
+        if command_name == 'mib_system_status' and ups.prm['ups_type'] == 'apc-ap96xx':
             value = self.bit_str_decoder(value, self.decoders['apc_system_status'])
         if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
             # Create a minute, string tuple
-            if tups['ups_type'] == 'eaton-pw':
+            if ups.prm['ups_type'] == 'eaton-pw':
                 # Process time for eaton-pw
                 if command_name == 'mib_time_on_battery':
                     # Measured in seconds.
@@ -959,7 +975,7 @@ class UpsComm:
                     value_minute, value_str = value_items
                 value = (round(int(value_minute) / 60 / 60, 2), value_str)
         if display:
-            if command_name == 'mib_output_current' and tups['ups_type'] == 'eaton-pw':
+            if command_name == 'mib_output_current' and ups.prm['ups_type'] == 'eaton-pw':
                 print('{}: {} - raw, uncorrected value.'.format(snmp_mib_commands[command_name]['name'], value))
             else:
                 print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
@@ -994,19 +1010,16 @@ class UpsComm:
             for i, item in enumerate(decoder_list, start=1):
                 print('  {:2d}: {}'.format(i, item))
 
-    def print_snmp_commands(self, tups: dict = None) -> None:
+    @staticmethod
+    def print_snmp_commands(ups: UpsItem) -> None:
         """ Print all supported mib commands for the target UPS, which is the active UPS when not specified.
 
-        :param tups:  The target ups dictionary from list or None.
-        :return:  None
+        :param ups:  The target ups dictionary from list or None.
         """
-        if not tups:
-            tups = self.active_ups
-        for mib_name, mib_dict in self.get_mib_commands(tups).items():
+        for mib_name, mib_dict in ups.prm.get_mib_commands().items():
             print('{}: Value: {}'.format(mib_name, mib_dict['iso']))
             print('    Description: {}'.format(mib_dict['name']))
             if mib_dict['decode']:
                 for decoder_name, decoder_list in mib_dict['decode'].items():
                     print('        {}: {}'.format(decoder_name, decoder_list))
-    # End of commands to read from UPS using snmp protocol.
 
