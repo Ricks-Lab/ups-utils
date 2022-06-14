@@ -103,7 +103,8 @@ class MonitorWindow(Gtk.Window):
 
         col = 0
         row = 0
-        num_ups = ups_list.get_num_ups_tuple()[0] if env.UT_CONST.show_unresponsive else ups.get_num_ups_tuple()[3]
+        num_ups_dict = ups_list.num_upss()
+        num_ups = num_ups_dict['total'] if env.UT_CONST.show_unresponsive else num_ups_dict['responsive']
 
         # Set logging details at top of table if logging enabled
         if LOGGER.getEffectiveLevel() == logging.DEBUG:
@@ -329,10 +330,6 @@ def print_monitor_table(ups_list: UPS.UpsList, header_list: Union[List[str], Tup
     :param ups_data: A dictionary of results for items listed in header and command lists
     :return: Zero if all is good.
     """
-    #num_ups = ups_list.get_num_ups_tuple()
-    #if num_ups[0] < 1:
-        #return -1
-
     hrw = 29  # Row header item width
     irw = MAX_WIDTH + 1  # Row data item width
 

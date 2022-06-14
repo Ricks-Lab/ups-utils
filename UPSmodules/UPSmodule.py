@@ -84,6 +84,56 @@ class UpsItem:
     _json_keys: Set[str] = {'ups_IP', 'display_name', 'ups_type', 'daemon', 'snmp_community', 'uuid', 'ups_model'}
     UPS_type: UpsEnum = UpsEnum('type', 'all apc_ap96xx eaton_pw')
 
+    _param_labels: Dict[str, str] = {
+        'display_name': 'UPS Name',
+        'ups_IP': 'UPS IP/FQDN',
+        'ups_type': 'UPS Type',
+        'ups_model': 'UPS Model',
+        'ups_nmc_model': 'NMC Model',
+        'sep1':                '#',
+        'valid': 'Valid',
+        'compatible': 'Compatible',
+        'accessible': 'Accessible',
+        'responsive': 'Responsive',
+        'daemon': 'Daemon',
+        'sep2':                '#',
+        'mib_ups_name': 'UPS Real Name',
+        'mib_ups_info': 'General UPS Information',
+        'mib_bios_serial_number': 'UPS BIOS Serial Number',
+        'mib_firmware_revision': 'UPS Firmware Revision',
+        'mib_ups_manufacture_date': 'UPS Manufacture Date',
+        'mib_ups_type': 'UPS Model Type',
+        'mib_ups_model': 'UPS Model Number',
+        'mib_ups_contact': 'UPS Contact',
+        'mib_ups_location': 'UPS Location',
+        'mib_comms': 'Communicating with UPS Device',
+        'sep3':                '#',
+        'mib_system_status': 'UPS System Status',
+        'mib_battery_status': 'Battery Status',
+        'mib_battery_replace': 'Battery Replacement',
+        'mib_last_self_test_result': 'Last Self Test Results',
+        'mib_last_self_test_date': 'Date of Last Self Test',
+        'mib_ups_uptime': 'UPS Up Time',
+        'mib_battery_temperature': 'Battery Temperature in C',
+        'mib_ups_env_temp': 'UPS Environment Temp',
+        'sep4':                '#',
+        'mib_battery_capacity': 'Percentage of Total Capacity',
+        'mib_time_on_battery': 'Time on Battery',
+        'mib_battery_runtime_remain': 'Runtime Remaining',
+        'sep5':                '#',
+        'mib_input_voltage': 'Input Voltage',
+        'mib_input_frequency': 'Input Frequency Hz',
+        'mib_reason_for_last_transfer': 'Last Transfer Event',
+        'sep6':                '#',
+        'mib_output_voltage': 'Output Voltage',
+        'mib_output_frequency': 'Output Frequency Hz',
+        'mib_output_load': 'Output Load as % of Capacity',
+        'mib_output_power': 'Output Power in W',
+        'mib_output_current': 'Output Current in Amps'}
+
+    _short_list: Set[str] = {'ups_IP', 'display_name', 'ups_model', 'responsive', 'daemon'}
+    mark_up_codes = env.UT_CONST.mark_up_codes
+
     def __init__(self, json_details: dict):
         # UPS list from ups-config.json for monitor and ls utils.
         self.prm: ObjDict = ObjDict({
@@ -99,6 +149,8 @@ class UpsItem:
             'compatible': False,
             'accessible': False,
             'responsive': False})
+        for cmd in UpsComm.all_mib_cmd_names[UpsComm.MIB_group.all]:
+            self.prm.update({cmd: None})
 
         # Load initial data from json dict.
         for item_name, item_value in json_details.items():
@@ -202,6 +254,28 @@ class UpsItem:
 
     def read_ups_list_items(self, command_list: list, display: bool = False) -> dict:
         return self.ups_comm.read_ups_list_items(command_list, self, display=display)
+
+    def print(self, short: bool = False, newline: bool = True) -> None:
+        """
+        Display ls like listing function for UPS parameters.
+
+        :param short:  Display short listing
+        :param newline:  Display terminating newline if True
+        """
+        for param_name, param_label in self._param_labels.items():
+            if short and param_name not in self._short_list:
+                continue
+
+            color = self.mark_up_codes['none']
+            color_reset = self.mark_up_codes['none'] if env.UT_CONST.no_markup else self.mark_up_codes['reset']
+            pre = '' if param_name == 'display_name' else '   '
+            if re.search(r'^sep\d', param_name):
+                print('{}{}'.format(pre, param_label.ljust(50, param_label)))
+                continue
+            if not env.UT_CONST.no_markup: color = self.mark_up_codes['data']
+            print('{}{}: {}{}{}'.format(pre, param_label, color,
+                                            self.prm[param_name], color_reset))
+        if newline: print('')
 
 
 class UpsDaemon:
@@ -458,7 +532,7 @@ class UpsList:
 
     def print(self) -> None:
         for ups in self.upss():
-            print(ups, '\n')
+            ups.print()
 
     def num_upss(self, ups_type: UpsEnum = UpsItem.UPS_type.all) -> Dict[str, int]:
         """
@@ -590,12 +664,9 @@ class UpsList:
         cnt = [0, 0, 0, 0]
         for ups in self.upss():
             cnt[0] += 1
-            if ups.prm.compatible:
-                cnt[1] += 1
-            if ups.prm.accessible:
-                cnt[2] += 1
-            if ups.prm.responsive:
-                cnt[3] += 1
+            if ups.prm.compatible: cnt[1] += 1
+            if ups.prm.accessible: cnt[2] += 1
+            if ups.prm.responsive: cnt[3] += 1
         return tuple(cnt)
 
 
@@ -677,10 +748,10 @@ class UpsComm:
             'mib_battery_runtime_remain': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.3.0',
                                            'name': 'Runtime Remaining',
                                            'decode': None},
-            'mib_battery_replace ': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.4.0',
-                                     'name': 'Battery Replacement',
-                                     'decode': {'1': 'OK',
-                                                '2': 'Replacement Required'}},
+            'mib_battery_replace': {'iso': 'iso.3.6.1.4.1.318.1.1.1.2.2.4.0',
+                                    'name': 'Battery Replacement',
+                                    'decode': {'1': 'OK',
+                                               '2': 'Replacement Required'}},
             'mib_input_voltage': {'iso': 'iso.3.6.1.4.1.318.1.1.1.3.2.1.0',
                                   'name': 'Input Voltage',
                                   'decode': None},
@@ -881,14 +952,12 @@ class UpsComm:
                     return False
         return True
 
-    #@staticmethod
-    #def get_mib_commands(ups: UpsItem) -> dict:
-        #""" Get the list of MIB commands for this UPS.
-#
-        #:param ups:
-        #:return: List of MIB commands for target UPS
-        #"""
-        #return ups.prm['mib_commands']
+    def get_mib_commands(self) -> dict:
+        """ Get the list of MIB commands for this UPS.
+
+        :return: List of MIB commands for target UPS
+        """
+        return self.mib_commands
 
     @classmethod
     def get_mib_name(cls, mib_cmd: str) -> str:
@@ -1097,13 +1166,12 @@ class UpsComm:
             for i, item in enumerate(decoder_list, start=1):
                 print('  {:2d}: {}'.format(i, item))
 
-    @staticmethod
-    def print_snmp_commands(ups: UpsItem) -> None:
+    def print_snmp_commands(self) -> None:
         """ Print all supported mib commands for the target UPS, which is the active UPS when not specified.
 
         :param ups:  The target ups dictionary from list or None.
         """
-        for mib_name, mib_dict in ups.prm.get_mib_commands().items():
+        for mib_name, mib_dict in self.get_mib_commands().items():
             print('{}: Value: {}'.format(mib_name, mib_dict['iso']))
             print('    Description: {}'.format(mib_dict['name']))
             if mib_dict['decode']:

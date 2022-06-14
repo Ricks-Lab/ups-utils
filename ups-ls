@@ -95,7 +95,6 @@ def main() -> None:
 
     ups_list = UPS.UpsList(daemon=args.list_params)
     num_ups = ups_list.num_upss()
-    ups_list.print()
 
     if env.UT_CONST.fatal:
         env.UT_CONST.log_print('Fatal Error. Exiting...')
@@ -109,7 +108,7 @@ def main() -> None:
     print('    {} are compatible, {} are accessible, {} are responsive, and {} are valid\n'.format(
         num_ups['compatible'], num_ups['accessible'], num_ups['responsive'], num_ups['valid']))
 
-    print(ups_list.get_ups_type_list())
+    LOGGER.debug('nmc types: %s', ups_list.get_ups_type_list())
     if args.list_decoders:
         UPS.UpsComm.print_decoders()
         sys.exit(0)
@@ -120,7 +119,7 @@ def main() -> None:
 
     for ups in ups_list.upss():
         if args.list_commands:
-            UPS.UpsComm.print_snmp_commands(ups)
+            ups.ups_comm.print_snmp_commands()
             sys.exit(0)
         if not ups.is_compatible():
             print('ERROR: {} is not compatible type: {}'.format(ups.ups_name(), ups.ups_type()))
@@ -151,9 +150,10 @@ def main() -> None:
                         break
         else:
             for cmd_name in ups.mib_command_names(UPS.UpsComm.MIB_group.all):
-                if ups.send_snmp_command(cmd_name, display=True) == 'UPS Not Responding':
+                if ups.send_snmp_command(cmd_name, display=False) == 'UPS Not Responding':
                     print('Giving up on {}'.format(ups.ups_name()))
                     break
+            ups_list.print()
         print('')
 
     sys.exit(0)
