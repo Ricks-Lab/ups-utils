@@ -103,6 +103,7 @@ class UtConst:
                                      'white':     '\033[37m',
                                      'data':      '\033[36m',
                                      'cyan':      '\033[36m',
+                                     'bcyan':     '\033[1;36m',
                                      'purple':    '\033[35m',
                                      'blue':      '\033[34m',
                                      'yellow':    '\033[33m',
@@ -221,6 +222,20 @@ class UtConst:
         else:
             if not os.path.isfile(self.icon_file):
                 self.process_message('Error: Icon file not found: [{}]'.format(self.icon_file), log_flag=True)
+
+    def wrap(self, message: any, indent: int = 0) -> str:
+        if not isinstance(message, str): return message
+        length = len(message)
+        if length < 80:
+            return message
+        trunc_loc = 0
+        for i in range(80, 0, -1):
+            if message[i] == ' ':
+                trunc_loc = i
+                break
+        if trunc_loc:
+            message = message[:trunc_loc] + '\n{}'.format(' '.ljust(indent, ' ')) + self.wrap(message[trunc_loc:], indent)
+        return message
 
     @staticmethod
     def log_print(message: str) -> None:

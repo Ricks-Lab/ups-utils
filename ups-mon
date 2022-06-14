@@ -72,13 +72,10 @@ class MonitorWindow(Gtk.Window):
     """
     Class defining Monitor Window
     """
-    def __init__(self, ups_list: UPS.UpsList, non_mib_params: Union[List[str], Tuple[str]],
-                 mib_params: Union[List[str], Tuple[str]], devices: dict):
+    def __init__(self, ups_list: UPS.UpsList, devices: dict):
         """ Initialize the main UPS monitor window.
 
-        :param ups:  The ups list object
-        :param non_mib_params:  A list of non-mib parameters
-        :param mib_params:  A list of mib parameter results
+        :param ups_list:  The ups list object
         :param devices: A dictionary of Gtk components and values
         """
         self.quit: bool = False
@@ -130,13 +127,10 @@ class MonitorWindow(Gtk.Window):
         row_labels = {'display_name': Gtk.Label(name='white_label')}
         row_labels['display_name'].set_markup('<b>UPS Parameters</b>')
         # Set row labels for header items
-        for v in non_mib_params:
-            row_labels[v] = Gtk.Label(name='white_label')
-            row_labels[v].set_markup('<b>' + str(ups.get_mib_name(v)) + '</b>')
-        # Set row labels for command items
-        for v in mib_params:
-            row_labels[v] = Gtk.Label(name='white_label')
-            row_labels[v].set_markup('<b>' + str(ups.get_mib_name(v)) + '</b>')
+        for param_name, param_label in UPS.UpsItem._param_labels.items():
+            if param_name not in UPS.UpsItem._table_list: continue
+            row_labels[param_name] = Gtk.Label(name='white_label')
+            row_labels[param_name].set_markup('<b>{}</b>'.format(param_label))
         # Set boxes for each row label
         for row_label_item in row_labels.values():
             lbox = Gtk.Box(spacing=6, name='head_box')
@@ -146,56 +140,33 @@ class MonitorWindow(Gtk.Window):
             grid.attach(lbox, col, row, 1, 1)
             row += 1
 
-        # Associate all table items with data source in devices dictionary
-        col = 1
-        def_box_css = "{ background-image: image(%s); }" % UPSgui.GuiProps.color_name_to_hex('slate_md')
-        for item_name, item_ups in ups.get_ups_list(errups=env.UT_CONST.show_unresponsive).items():
-            row = row_start
-            devices[item_ups['uuid']] = {'display_name': {
-                'label': Gtk.Label(label=ups.ups_name(item_ups), name='white_label'),
-                'box': Gtk.Box(spacing=6, name='head_box'),
-                'box_name': 'head_box'}}
-            lbox = devices[item_ups['uuid']]['display_name']['box']
-            litem = devices[item_ups['uuid']]['display_name']['label']
-            set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-            set_gtk_prop(litem, top=1, bottom=1, right=3, left=3, width_chars=17)
-            set_gtk_prop(litem, width_chars=MAX_WIDTH)
-            lbox.pack_start(litem, True, True, 0)
-            grid.attach(lbox, col, row, 1, 1)
-            row += 1
-            for item_hdr in non_mib_params:
-                box_name = '{}_{}'.format(item_name, item_hdr)
-                devices[item_ups['uuid']].update({item_hdr: {'label': '', 'box': '', 'box_name': box_name}})
-                UPSgui.GuiProps.set_style(css_str="#{} {}".format(box_name, def_box_css))
-                devices[item_ups['uuid']][item_hdr]['label'] = Gtk.Label(
-                    label=ups.get_ups_parameter_value(item_hdr, item_ups), name='white_label')
-                devices[item_ups['uuid']][item_hdr]['label'].set_width_chars(10)
-                devices[item_ups['uuid']][item_hdr]['box'] = Gtk.Box(spacing=6, name=box_name)
-                lbox = devices[item_ups['uuid']][item_hdr]['box']
-                litem = devices[item_ups['uuid']][item_hdr]['label']
-                set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-                set_gtk_prop(litem, top=1, bottom=1, right=3, left=3, width_chars=17)
-                set_gtk_prop(litem, width_chars=MAX_WIDTH)
-                lbox.pack_start(litem, True, True, 0)
-                grid.attach(lbox, col, row, 1, 1)
-                row += 1
-            for item_cmd in mib_params:
-                box_name = '{}_{}'.format(item_name, item_cmd)
-                devices[item_ups['uuid']].update({item_cmd: {'label': '', 'box': '', 'box_name': box_name}})
-                UPSgui.GuiProps.set_style(css_str="#{} {}".format(box_name, def_box_css))
-                devices[item_ups['uuid']][item_cmd]['label'] = Gtk.Label(
-                    label=ups.get_ups_parameter_value(item_cmd, item_ups), name='white_label')
-                devices[item_ups['uuid']][item_cmd]['label'].set_width_chars(10)
-                devices[item_ups['uuid']][item_cmd]['box'] = Gtk.Box(spacing=6, name=box_name)
-                lbox = devices[item_ups['uuid']][item_cmd]['box']
-                litem = devices[item_ups['uuid']][item_cmd]['label']
-                set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-                set_gtk_prop(litem, top=1, bottom=1, right=3, left=3, width_chars=17)
-                set_gtk_prop(litem, width_chars=MAX_WIDTH)
-                lbox.pack_start(litem, True, True, 0)
-                grid.attach(lbox, col, row, 1, 1)
-                row += 1
+        #def_box_css = "{ background-image: image(%s); }" % UPSgui.GuiProps.color_name_to_hex('slate_md')
+        # for item_name, item_ups in ups.get_ups_list(errups=env.UT_CONST.show_unresponsive).items():
+        for ups in ups_list.upss():
+            devices[ups.prm.uuid] = {'display_name':  Gtk.Label(name='white_label')}
+            devices[ups.prm.uuid]['display_name'].set_markup('<b>CARD{}</b>'.format(ups['display_name']))
+            devices[ups.prm.uuid]['display_name'].set_use_markup(True)
+            for param_name in UPS.UpsItem._param_labels:
+                if param_name not in UPS.UpsItem._table_list: continue
+                devices[ups.prm.uuid][param_name] = Gtk.Label(label=ups[param_name], name='white_label')
+                devices[ups.prm.uuid][param_name].set_width_chars(MAX_WIDTH)
+                set_gtk_prop(devices[ups.prm.uuid][param_name], width_chars=MAX_WIDTH)
+
+        for gui_component in devices.values():
             col += 1
+            row = row_start
+            for comp_name, comp_item in gui_component.items():
+                comp_item.set_text('')
+                if comp_name == 'display_name':
+                    lbox = Gtk.Box(spacing=6, name='head_box')
+                else:
+                    lbox = Gtk.Box(spacing=6, name='med_box')
+                set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+                set_gtk_prop(comp_item, top=1, bottom=1, right=3, left=3, width_chars=MAX_WIDTH)
+                lbox.pack_start(comp_item, True, True, 0)
+                grid.attach(lbox, col, row, 1, 1)
+                row += 1
+
         if LOGGER.getEffectiveLevel() == logging.DEBUG:
             log_message = ''
             for k, v in devices.items():
@@ -215,23 +186,21 @@ class MonitorWindow(Gtk.Window):
         self.quit = True
 
 
-def update_data(ups: UPS.UpsComm, header_list: list, command_list: list, devices: dict) -> None:
+def update_data(ups_list: UPS.UpsList, devices: dict) -> None:
     """ Function that updates data in MonitorWindow  with call to read data from ups.
 
-    :param ups:  The main ups module object
-    :param header_list:  A list of non-mib parameters
-    :param command_list:  A list of mib parameter results
+    :param ups_list:  The main ups module object
     :param devices: A dictionary of Gtk components and values
     :return: None
     """
-    ups_data = ups.read_all_ups_list_items(command_list, errups=env.UT_CONST.show_unresponsive)
+    ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic, errups=env.UT_CONST.show_unresponsive)
     if env.UT_CONST.LOG:
-        print_log(env.UT_CONST.log_file_ptr, header_list, command_list, ups_data)
+        print_log(env.UT_CONST.log_file_ptr, ups_list)
 
     # update gui
     for dev_uuid, dev_data in devices.items():
-        ups_name = ups.get_name_for_ups_uuid(dev_uuid)
-        if not ups_data[ups_name]['valid']:
+        ups = ups_list[dev_uuid]
+        if not ups['valid']:
             state_style = UPS.UpsComm.Text_style.warn
             mib_name = 'mib_system_status'
             gui_comp = dev_data[mib_name]
@@ -243,20 +212,20 @@ def update_data(ups: UPS.UpsComm, header_list: list, command_list: list, devices
             continue
         for mib_name, gui_comp in dev_data.items():
             state_style = UPS.UpsComm.Text_style.normal
-            data_value = str(ups_data[ups_name][mib_name])[:MAX_WIDTH]
+            data_value = str(ups[mib_name])[:MAX_WIDTH]
             lv = gui_comp['label']
             box_name = gui_comp['box_name']
             if data_value == '-1':
                 data_value = ''
             if mib_name == 'mib_battery_capacity' and data_value.isnumeric():
-                if int(data_value) <= ups.daemon_params['threshold_battery_capacity']['crit']:
+                if int(data_value) <= ups_list.daemon.daemon_params['threshold_battery_capacity']['crit']:
                     state_style = UPS.UpsComm.Text_style.crit
-                elif int(data_value) <= ups.daemon_params['threshold_battery_capacity']['warn']:
+                elif int(data_value) <= ups.daemon.daemon_params['threshold_battery_capacity']['warn']:
                     state_style = UPS.UpsComm.Text_style.warn
             elif mib_name == 'mib_output_load' and data_value.isnumeric():
-                if int(data_value) >= ups.daemon_params['threshold_battery_load']['crit']:
+                if int(data_value) >= ups.daemon.daemon_params['threshold_battery_load']['crit']:
                     state_style = UPS.UpsComm.Text_style.crit
-                elif int(data_value) >= ups.daemon_params['threshold_battery_load']['warn']:
+                elif int(data_value) >= ups.daemon.daemon_params['threshold_battery_load']['warn']:
                     state_style = UPS.UpsComm.Text_style.warn
             elif mib_name == 'mib_battery_status':
                 if re.match(env.UT_CONST.PATTERNS['NORMAL'], data_value):
@@ -293,15 +262,13 @@ def update_data(ups: UPS.UpsComm, header_list: list, command_list: list, devices
         Gtk.main_iteration_do(True)
 
 
-def refresh(refresh_time: int, updater: Callable, ups: UPS.UpsComm, header_list: list,
-            command_list: list, devices: dict, umonitor: MonitorWindow) -> None:
+def refresh(refresh_time: int, updater: Callable, ups_list: UPS.UpsList,
+            devices: dict, umonitor: MonitorWindow) -> None:
     """ Function that continuously updates the Gtk monitor window.
 
     :param refresh_time:  Delay time in seconds between monitor display refreshes
-    :param updater: Function name that does the actual refresh of the monitor table.
-    :param ups:  The main ups module object
-    :param header_list:  A list of non-mib parameters
-    :param command_list:  A list of mib parameter results
+    :param updater:  Function to update data
+    :param ups_list:  UPS list object
     :param devices: A dictionary of Gtk components and values
     :param umonitor: The main Gtk monitor window.
     :return: None
@@ -311,7 +278,7 @@ def refresh(refresh_time: int, updater: Callable, ups: UPS.UpsComm, header_list:
             print('Quitting...')
             Gtk.main_quit()
             sys.exit(0)
-        GLib.idle_add(updater, ups, header_list, command_list, devices)
+        GLib.idle_add(updater, ups_list, devices)
         for _sleep_cnt in range(0, refresh_time):
             if umonitor.quit:
                 print('Quitting...')
@@ -320,104 +287,87 @@ def refresh(refresh_time: int, updater: Callable, ups: UPS.UpsComm, header_list:
             time.sleep(1)
 
 
-def print_monitor_table(ups_list: UPS.UpsList, header_list: Union[List[str], Tuple[str]],
-                        cmd_list: Union[List[str], Tuple[str]], ups_data: dict) -> int:
+def print_monitor_table(ups_list: UPS.UpsList) -> bool:
     """ Print the monitor table in format optimized for terminal window.
 
     :param ups_list:  The main ups module object
-    :param header_list:  A list of non-mib parameters
-    :param cmd_list:  A list of mib parameter results
-    :param ups_data: A dictionary of results for items listed in header and command lists
-    :return: Zero if all is good.
+    :return: True on success
     """
     hrw = 29  # Row header item width
     irw = MAX_WIDTH + 1  # Row data item width
 
     print('┌', '─'.ljust(hrw, '─'), sep='', end='')
-    for _, _ in ups_data.items():
+    for _ in ups_list:
         print('┬', '─'.ljust(irw, '─'), sep='', end='')
     print('┐')
 
     print('│', '\x1b[1;36m' + 'UPS Parameters'.ljust(hrw, ' ') + '\x1b[0m', sep='', end='')
-    for value in ups_data.values():
-        print('│', '\x1b[1;36m' + value['display_name'].ljust(irw, ' ') + '\x1b[0m',
+    for ups in ups_list.upss():
+        print('│', '\x1b[1;36m' + ups['display_name'].ljust(irw, ' ') + '\x1b[0m',
               sep='', end='')
     print('│')
 
     print('├', '─'.ljust(hrw, '─'), sep='', end='')
-    for _, _ in ups_data.items():
+    for _ in ups_list:
         print('┼', '─'.ljust(irw, '─'), sep='', end='')
     print('┤')
 
-    for info_item in header_list:
-        print('│', '\x1b[1;36m' + info_item.ljust(hrw, ' ')[:hrw] + '\x1b[0m',
-              sep='', end='')
-        for values in ups_data.values():
-            print('│', str(values[info_item]).ljust(irw, ' ')[:irw], sep='', end='')
-        print('│')
-    for table_item in cmd_list:
-        print('│', '\x1b[1;36m' + UPS.UpsComm.get_mib_name(table_item).ljust(hrw, ' ')[:hrw] + '\x1b[0m',
-              sep='', end='')
-        for value in ups_data.values():
+    for table_item, item_name in UPS.UpsItem._param_labels.items():
+        if table_item not in UPS.UpsItem._table_list: continue
+        print('│{}{}{}'.format(env.UT_CONST.mark_up_codes['bcyan'],
+              item_name.ljust(hrw, ' ')[:hrw], env.UT_CONST.mark_up_codes['reset']), sep='', end='')
+        for ups in ups_list.upss():
             try:
+                color = reset = 'none'
                 if table_item == 'mib_system_status':
-                    if re.match(env.UT_CONST.PATTERNS['ONLINE'], value[table_item]):
-                        item_str = '\x1b[1;30;42m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
-                    else:
-                        item_str = '\x1b[1;37;41m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
+                    color = 'ok' if re.match(env.UT_CONST.PATTERNS['ONLINE'], ups[table_item]) else 'error'
+                    reset = 'reset'
                 elif table_item == 'mib_battery_status':
-                    if re.match(env.UT_CONST.PATTERNS['NORMAL'], value[table_item]):
-                        item_str = '\x1b[1;30;42m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
-                    else:
-                        item_str = '\x1b[1;37;41m' + value[table_item].ljust(irw, ' ')[:irw] + '\x1b[0m'
-                else:
-                    item_str = str(value[table_item]).ljust(irw, ' ')[:irw]
+                    color = 'ok' if re.match(env.UT_CONST.PATTERNS['NORMAL'], ups[table_item]) else 'error'
+                    reset = 'reset'
+                value = '---' if ups[table_item] is None else str(ups[table_item])
+                item_str = '{}{}{}'.format(env.UT_CONST.mark_up_codes[color],
+                                           value.ljust(irw, ' ')[:irw],
+                                           env.UT_CONST.mark_up_codes[reset])
             except KeyError:
                 item_str = ' '.ljust(irw, ' ')[:irw]
             print('│', item_str, sep='', end='')
         print('│')
 
     print('└', '─'.ljust(hrw, '─'), sep='', end='')
-    for _ in ups_data.keys():
+    for _ in ups_list:
         print('┴', '─'.ljust(irw, '─'), sep='', end='')
     print('┘')
-    return 0
+    return True
 
 
-def print_log(fileptr: TextIO, header_list: Union[List[str], Tuple[str]],
-              command_list: Union[List[str], Tuple[str]], ups_data: dict) -> None:
+def print_log(fileptr: TextIO, ups_list: UPS.UpsList) -> None:
     """ Print the logfile data line.
 
     :param fileptr:  The logfile fileptr
-    :param header_list:  A list of non-mib parameters
-    :param command_list:  A list of mib parameter results
-    :param ups_data: A dictionary of results for items listed in header and command lists
+    :param ups_list: A UPS list structure
     :return: None
     """
     time_str = (str(env.UT_CONST.now(ltz=True).strftime('%c')).strip())
-    for values in ups_data.values():
+    for ups in ups_list.upss():
         print('{}'.format(time_str), file=fileptr, end='')
-        for item in header_list:
-            print('|{}'.format(values[item]), file=fileptr, end='')
-        for item in command_list:
-            print('|{}'.format(values[item]), file=fileptr, end='')
+        for table_item, item_name in UPS.UpsItem._param_labels.items():
+            if table_item not in UPS.UpsItem._table_list: continue
+            print('|{}'.format(ups[table_item]), file=fileptr, end='')
         print('', file=fileptr)
 
 
-def print_log_header(fileptr: TextIO, header_list: Union[List[str], Tuple[str]],
-                     command_list: Union[List[str], Tuple[str]]) -> None:
+def print_log_header(fileptr: TextIO, ups_list: UPS.UpsList) -> None:
     """ Print the logfile header line.
 
     :param fileptr:  The logfile fileptr
-    :param header_list:  A list of non-mib parameters
-    :param command_list:  A list of mib parameter results
+    :param ups_list: A UPS list structure
     :return: None
     """
     print('time', file=fileptr, end='')
-    for item in header_list:
-        print('|{}'.format(item), file=fileptr, end='')
-    for item in command_list:
-        print('|{}'.format(item), file=fileptr, end='')
+    for table_item, item_name in UPS.UpsItem._param_labels.items():
+        if table_item not in UPS.UpsItem._table_list: continue
+        print('|{}'.format(table_item), file=fileptr, end='')
     print('', file=fileptr)
 
 
@@ -462,17 +412,6 @@ def main() -> None:
     print('Reading and verifying UPSs listed in {}. '.format(env.UT_CONST.ups_json_file))
     ups_list = UPS.UpsList()
     num_ups = ups_list.num_upss()
-    ups_list.print()
-
-    # TODO: Consider some of this error checking in UpsDaemon
-    #if not ups.set_daemon_parameters():
-        #ups.print_daemon_parameters()
-        #if env.UT_CONST.ups_config_ini:
-            #env.UT_CONST.log_print('Error reading [{}] file.'.format(env.UT_CONST.ups_config_ini))
-        #else:
-            #env.UT_CONST.log_print('Error no [{}] file found.'.format(env.UT_CONST.ups_config_ini))
-        #print('    For more information: `man {}`'.format(env.UT_CONST.ups_config_ini))
-        ## env.UT_CONST.fatal = True
 
     if not num_ups['total']:
         env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file))
@@ -495,10 +434,7 @@ def main() -> None:
         env.UT_CONST.log_print('Fatal Error. Exiting...')
         sys.exit(-1)
 
-    header_list = ['ups_type', 'ups_IP', 'ups_nmc_model']
-    command_list = UPS.UpsComm.get_monitor_mib_commands(UPS.UpsComm.MIB_group.all)
-    ups_data = ups_list.read_all_ups_list_items(command_list, errups=args.show_unresponsive)
-    if not args.long: command_list = UPS.UpsComm.get_monitor_mib_commands(UPS.UpsComm.MIB_group.dynamic)
+    ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.all, errups=args.show_unresponsive, display=False)
 
     env.UT_CONST.show_unresponsive = args.show_unresponsive
 
@@ -507,35 +443,36 @@ def main() -> None:
         env.UT_CONST.log_file = './log_monitor_{}.txt'.format(
             env.UT_CONST.now(ltz=env.UT_CONST.USELTZ).strftime('%m%d_%H%M%S'))
         env.UT_CONST.log_file_ptr = open(env.UT_CONST.log_file, 'w', 1)
-        print_log_header(env.UT_CONST.log_file_ptr, header_list, command_list)
+        print_log_header(env.UT_CONST.log_file_ptr, ups_list)
 
     if args.gui:
         # Display Gtk style Monitor
         devices = {}
-        umonitor = MonitorWindow(ups_list, header_list, command_list, devices)
+        umonitor = MonitorWindow(ups_list, devices)
         umonitor.connect('delete-event', umonitor.set_quit)
         umonitor.show_all()
 
         # Start thread to update Monitor
+
         _monthread = threading.Thread(target=refresh, daemon=True, args=[env.UT_CONST.SLEEP,
-                                      update_data, ups_list, header_list, command_list, devices, umonitor]).start()
+                                      update_data, ups_list, devices, umonitor]).start()
 
         Gtk.main()
     else:
         # Display text style Monitor
         try:
             while True:
-                ups_data = ups_list.read_all_ups_list_items(command_list, errups=args.show_unresponsive)
+                ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.monitor, errups=args.show_unresponsive, display=False)
                 if args.status:
-                    print_monitor_table(ups_list, header_list, command_list, ups_data)
+                    print_monitor_table(ups_list)
                     sys.exit(0)
                 os.system('clear')
                 if LOGGER.getEffectiveLevel() == logging.DEBUG:
                     print('%sDebug Logger Active%s' % ('\033[31m \033[01m', '\033[0m'))
                 if env.UT_CONST.LOG:
                     print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.UT_CONST.log_file, '\033[0m'))
-                    print_log(env.UT_CONST.log_file_ptr, header_list, command_list, ups_data)
-                print_monitor_table(ups_list, header_list, command_list, ups_data)
+                    print_log(env.UT_CONST.log_file_ptr, ups_list)
+                print_monitor_table(ups_list)
                 time.sleep(env.UT_CONST.SLEEP)
         except KeyboardInterrupt:
             if env.UT_CONST.LOG:
