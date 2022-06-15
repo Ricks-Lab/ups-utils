@@ -30,6 +30,7 @@ from typing import Tuple, Dict
 import sys
 import re
 import logging
+import pprint
 import warnings
 try:
     import gi
@@ -42,10 +43,13 @@ except ModuleNotFoundError as error:
     print('   Then install vext.gi:  pip install --no-cache-dir vext.gi')
     sys.exit(0)
 from UPSmodules import env
+from UPSmodules import UPSmodule
 
 ColorDict = Dict[str, str]
+GuiCompDict = Dict[str, Dict[str, Dict[str, any]]]
 LOGGER = logging.getLogger('ups-utils')
 PATTERNS = env.UT_CONST.PATTERNS
+Text_style: UPSmodule.UpsEnum = UPSmodule.UpsEnum('style', 'warn crit green bold normal')
 
 
 def get_color(value: str) -> str:
@@ -56,6 +60,31 @@ def get_color(value: str) -> str:
     :return: rrb value as a hex string.
     """
     return GuiProps.color_name_to_hex(value)
+
+
+class GuiComp:
+    def __init__(self, data_dict: UPSmodule.UpsList):
+        # {uuid: {name: {'label': label, 'box': box, 'data': data}}}
+        self.gc: GuiCompDict = {}
+        self.data_dict = data_dict
+
+    def __str__(self):
+        print(re.sub(r'\'', '\"', pprint.pformat(self.gc, indent=2, width=120)))
+
+    def __repr__(self):
+        self.__str__()
+
+    def add(self, uuid: str, name: str, label: any, box: any = None):
+        try:
+            data = self.data_dict[name]
+        except KeyError:
+            data = None
+        if uuid not in self.gc:
+            self.gc.update({uuid: {name: {'label': label, 'box': box, 'data': data}}})
+
+    def refresh_data(self, uuid: str):
+        for item_name, item_dict in self.gc[uuid].items():
+            item_dict['label'] = self.data_dict[item_name]
 
 
 class GuiProps:
