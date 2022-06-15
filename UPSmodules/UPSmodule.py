@@ -131,8 +131,7 @@ class UpsItem:
         'mib_output_current': 'Output Current (A)'}
 
     _short_list: Set[str] = {'ups_IP', 'display_name', 'ups_model', 'responsive', 'daemon'}
-    _table_list: Set[str] = {'display_name', 'ups_IP', 'ups_type', 'ups_model', 'ups_nmc_model',
-                             'valid', 'compatible', 'accessible', 'responsive', 'daemon'}
+    _table_list: Set[str] = {'display_name', 'ups_IP', 'ups_type', 'ups_model', 'ups_nmc_model', 'daemon'}
     mark_up_codes = env.UT_CONST.mark_up_codes
 
     def __init__(self, json_details: dict):
@@ -328,7 +327,6 @@ class UpsDaemon:
         'threshold_time_on_battery': daemon_param_defaults['threshold_time_on_battery'].copy(),
         'threshold_battery_load': daemon_param_defaults['threshold_battery_load'].copy(),
         'threshold_battery_capacity': daemon_param_defaults['threshold_battery_capacity'].copy()}
-
 
     def __init__(self):
         self.config: Union[dict, None] = None

@@ -26,7 +26,7 @@ __docformat__ = 'reStructuredText'
 # pylint: disable=line-too-long
 # pylint: disable=bad-continuation
 
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Union, Generator
 import sys
 import re
 import logging
@@ -63,28 +63,48 @@ def get_color(value: str) -> str:
 
 
 class GuiComp:
-    def __init__(self, data_dict: UPSmodule.UpsList):
-        # {uuid: {name: {'label': label, 'box': box, 'data': data}}}
+    def __init__(self, data_dict: UPSmodule.UpsList, max_width: int):
+        # {uuid: {name: {'label': label, 'box': box, 'box_name': box_name 'data': data}}}
         self.gc: GuiCompDict = {}
         self.data_dict = data_dict
+        self.max_width = max_width
 
-    def __str__(self):
-        print(re.sub(r'\'', '\"', pprint.pformat(self.gc, indent=2, width=120)))
+    def __str__(self) -> str:
+        return re.sub(r'\'', '\"', pprint.pformat(self.gc, indent=2, width=120))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         self.__str__()
 
-    def add(self, uuid: str, name: str, label: any, box: any = None):
-        try:
-            data = self.data_dict[name]
-        except KeyError:
-            data = None
-        if uuid not in self.gc:
-            self.gc.update({uuid: {name: {'label': label, 'box': box, 'data': data}}})
+    def items(self) -> Generator[Union[str, dict], None, None]:
+        """
+        Get uuid, gui component pairs from a gui component object.
 
-    def refresh_data(self, uuid: str):
+        :return:  uuid, gc pair
+        """
+        for key, value in self.gc.items():
+            yield key, value
+
+    def add(self, uuid: str, name: str, label: any, box: any = None, box_name: Union[str, None] = None):
+        if uuid not in self.gc:
+            self.gc.update({uuid: {name: {'label': label, 'box': box, 'box_name': box_name, 'data': '---'}}})
+        else:
+            self.gc[uuid].update({name: {'label': label, 'box': box, 'box_name': box_name, 'data': '---'}})
+
+    def all_refresh_gui_data(self):
+        for uuid in self.data_dict.uuids():
+            self.refresh_gui_data(uuid)
+
+    def refresh_gui_data(self, uuid: str):
         for item_name, item_dict in self.gc[uuid].items():
-            item_dict['label'] = self.data_dict[item_name]
+            try:
+                data_value = self.data_dict[uuid][item_name]
+            except KeyError:
+                data_value = None
+            if data_value in ['-1', None, '']:
+                data_value = '---'
+            data_value = str(data_value)[:self.max_width]
+            item_dict['label'].set_text(data_value)
+            self.gc[uuid][item_name]['data'] = data_value
 
 
 class GuiProps:

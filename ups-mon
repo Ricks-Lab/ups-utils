@@ -47,7 +47,6 @@ import sys
 import re
 import time
 import logging
-import pprint
 from typing import TextIO, List, Any, Callable, Tuple, Union
 try:
     import gi
@@ -66,18 +65,19 @@ from UPSmodules import __version__, __status__, __credits__
 
 set_gtk_prop = UPSgui.GuiProps.set_gtk_prop
 LOGGER = logging.getLogger('ups-utils')
-MAX_WIDTH = 23
 
 
 class MonitorWindow(Gtk.Window):
     """
     Class defining Monitor Window
     """
-    def __init__(self, ups_list: UPS.UpsList, devices: dict):
+    max_width = 23
+
+    def __init__(self, ups_list: UPS.UpsList, gc: UPSgui.GuiComp):
         """ Initialize the main UPS monitor window.
 
         :param ups_list:  The ups list object
-        :param devices: A dictionary of Gtk components and values
+        :param gc: A dictionary of Gtk components and values
         """
         self.quit: bool = False
 
@@ -98,7 +98,6 @@ class MonitorWindow(Gtk.Window):
 
         grid = Gtk.Grid()
         self.add(grid)
-        gc = UPSgui.GuiComp(ups_list)
 
         col = 0
         row = 0
@@ -142,37 +141,42 @@ class MonitorWindow(Gtk.Window):
             grid.attach(lbox, col, row, 1, 1)
             row += 1
 
-        #def_box_css = "{ background-image: image(%s); }" % UPSgui.GuiProps.color_name_to_hex('slate_md')
+        def_box_css = "{ background-image: image(%s); }" % UPSgui.GuiProps.color_name_to_hex('slate_md')
         # for item_name, item_ups in ups.get_ups_list(errups=env.UT_CONST.show_unresponsive).items():
+        col += 1
         for ups in ups_list.upss():
-            #gc.add(uuid, name, label, box)
-            devices[ups.prm.uuid] = {'display_name':  Gtk.Label(name='white_label')}
-            devices[ups.prm.uuid]['display_name'].set_markup('<b>CARD{}</b>'.format(ups['display_name']))
-            devices[ups.prm.uuid]['display_name'].set_use_markup(True)
+            row = row_start
+            # Header items do not need to be in gui component since they are static
+            label = Gtk.Label(name='white_label')
+            label.set_markup('<b>{}</b>'.format(ups['display_name']))
+            label.set_use_markup(True)
+            lbox = Gtk.Box(spacing=6, name='head_box')
+            set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+            set_gtk_prop(label, top=1, bottom=1, right=3, left=3, width_chars=self.max_width)
+            lbox.pack_start(label, True, True, 0)
+            grid.attach(lbox, col, row, 1, 1)
+            row += 1
             for param_name in UPS.UpsItem._param_labels:
                 if param_name not in UPS.UpsItem._table_list: continue
-                devices[ups.prm.uuid][param_name] = Gtk.Label(label=ups[param_name], name='white_label')
-                devices[ups.prm.uuid][param_name].set_width_chars(MAX_WIDTH)
-                set_gtk_prop(devices[ups.prm.uuid][param_name], width_chars=MAX_WIDTH)
-
-        for gui_component in devices.values():
-            col += 1
-            row = row_start
-            for comp_name, comp_item in gui_component.items():
-                comp_item.set_text('')
-                if comp_name == 'display_name':
-                    lbox = Gtk.Box(spacing=6, name='head_box')
-                else:
-                    lbox = Gtk.Box(spacing=6, name='med_box')
+                if param_name == 'display_name': continue
+                label = Gtk.Label(label=ups[param_name], name='white_label')
+                label.set_width_chars(self.max_width)
+                set_gtk_prop(label, top=1, bottom=1, right=3, left=3, width_chars=self.max_width)
+                set_gtk_prop(label, width_chars=self.max_width)
+                box_name = '{}-{}'.format(param_name, ups.prm.uuid)
+                lbox = Gtk.Box(spacing=6, name=box_name)
+                UPSgui.GuiProps.set_style(css_str="#{} {}".format(box_name, def_box_css))
                 set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-                set_gtk_prop(comp_item, top=1, bottom=1, right=3, left=3, width_chars=MAX_WIDTH)
-                lbox.pack_start(comp_item, True, True, 0)
+                lbox.pack_start(label, True, True, 0)
                 grid.attach(lbox, col, row, 1, 1)
+                gc.add(ups.prm.uuid, param_name, label, lbox, box_name)
                 row += 1
+            col += 1
 
+            gc.refresh_gui_data(ups.prm.uuid)
         if LOGGER.getEffectiveLevel() == logging.DEBUG:
             log_message = ''
-            for k, v in devices.items():
+            for k, v in gc.items():
                 if log_message: log_message = '{}\n\n{}:'.format(log_message, k)
                 else: log_message = '{}:\n\n'.format(k)
                 for k2, v2 in v.items():
@@ -189,19 +193,22 @@ class MonitorWindow(Gtk.Window):
         self.quit = True
 
 
-def update_data(ups_list: UPS.UpsList, devices: dict) -> None:
+def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
     """ Function that updates data in MonitorWindow  with call to read data from ups.
 
     :param ups_list:  The main ups module object
-    :param devices: A dictionary of Gtk components and values
+    :param gc: A dictionary of Gtk components and values
     :return: None
     """
+    daemon_params = ups_list.daemon.daemon_params
     ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic, errups=env.UT_CONST.show_unresponsive)
+    print(gc)
+    gc.all_refresh_gui_data()
     if env.UT_CONST.LOG:
         print_log(env.UT_CONST.log_file_ptr, ups_list)
 
     # update gui
-    for dev_uuid, dev_data in devices.items():
+    for dev_uuid, dev_data in gc.items():
         ups = ups_list[dev_uuid]
         if not ups['valid']:
             state_style = UPSgui.Text_style.warn
@@ -214,21 +221,21 @@ def update_data(ups_list: UPS.UpsList, devices: dict) -> None:
                 box_name, UPSgui.GuiProps.color_name_to_hex('yellow')))
             continue
         for mib_name, gui_comp in dev_data.items():
-            state_style = UPSgui.Text_style.normal
-            data_value = str(ups[mib_name])[:MAX_WIDTH]
-            lv = gui_comp['label']
             box_name = gui_comp['box_name']
+            state_style = UPSgui.Text_style.normal
+            data_value = str(ups[mib_name])[:MonitorWindow.max_width]
+            lv = gui_comp['label']
             if data_value == '-1':
                 data_value = ''
             if mib_name == 'mib_battery_capacity' and data_value.isnumeric():
                 if int(data_value) <= ups_list.daemon.daemon_params['threshold_battery_capacity']['crit']:
                     state_style = UPSgui.Text_style.crit
-                elif int(data_value) <= ups.daemon.daemon_params['threshold_battery_capacity']['warn']:
+                elif int(data_value) <= ups_list.daemon.daemon_params['threshold_battery_capacity']['warn']:
                     state_style = UPSgui.Text_style.warn
             elif mib_name == 'mib_output_load' and data_value.isnumeric():
-                if int(data_value) >= ups.daemon.daemon_params['threshold_battery_load']['crit']:
+                if int(data_value) >= ups_list.daemon.daemon_params['threshold_battery_load']['crit']:
                     state_style = UPSgui.Text_style.crit
-                elif int(data_value) >= ups.daemon.daemon_params['threshold_battery_load']['warn']:
+                elif int(data_value) >= ups_list.daemon.daemon_params['threshold_battery_load']['warn']:
                     state_style = UPSgui.Text_style.warn
             elif mib_name == 'mib_battery_status':
                 if re.match(env.UT_CONST.PATTERNS['NORMAL'], data_value):
@@ -243,7 +250,7 @@ def update_data(ups_list: UPS.UpsList, devices: dict) -> None:
             elif mib_name == 'display_name':
                 state_style = UPSgui.Text_style.bold
 
-            set_gtk_prop(lv, width_chars=MAX_WIDTH+1)
+            set_gtk_prop(lv, width_chars=MonitorWindow.max_width + 1)
             if state_style == UPSgui.Text_style.crit:
                 lv.set_markup('<b>{}</b>'.format(data_value))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
@@ -266,13 +273,13 @@ def update_data(ups_list: UPS.UpsList, devices: dict) -> None:
 
 
 def refresh(refresh_time: int, updater: Callable, ups_list: UPS.UpsList,
-            devices: dict, umonitor: MonitorWindow) -> None:
+            gc: UPSgui.GuiComp, umonitor: MonitorWindow) -> None:
     """ Function that continuously updates the Gtk monitor window.
 
     :param refresh_time:  Delay time in seconds between monitor display refreshes
     :param updater:  Function to update data
     :param ups_list:  UPS list object
-    :param devices: A dictionary of Gtk components and values
+    :param gc: A dictionary of Gtk components and values
     :param umonitor: The main Gtk monitor window.
     :return: None
     """
@@ -281,7 +288,7 @@ def refresh(refresh_time: int, updater: Callable, ups_list: UPS.UpsList,
             print('Quitting...')
             Gtk.main_quit()
             sys.exit(0)
-        GLib.idle_add(updater, ups_list, devices)
+        GLib.idle_add(updater, ups_list, gc)
         for _sleep_cnt in range(0, refresh_time):
             if umonitor.quit:
                 print('Quitting...')
@@ -297,7 +304,7 @@ def print_monitor_table(ups_list: UPS.UpsList) -> bool:
     :return: True on success
     """
     hrw = 29  # Row header item width
-    irw = MAX_WIDTH + 1  # Row data item width
+    irw = MonitorWindow.max_width + 1  # Row data item width
 
     print('┌', '─'.ljust(hrw, '─'), sep='', end='')
     for _ in ups_list:
@@ -450,15 +457,15 @@ def main() -> None:
 
     if args.gui:
         # Display Gtk style Monitor
-        devices = {}
-        umonitor = MonitorWindow(ups_list, devices)
+        gui_components = UPSgui.GuiComp(ups_list, MonitorWindow.max_width)
+        umonitor = MonitorWindow(ups_list, gui_components)
+        print(gui_components)
         umonitor.connect('delete-event', umonitor.set_quit)
         umonitor.show_all()
 
         # Start thread to update Monitor
-
         _monthread = threading.Thread(target=refresh, daemon=True, args=[env.UT_CONST.SLEEP,
-                                      update_data, ups_list, devices, umonitor]).start()
+                                      update_data, ups_list, gui_components, umonitor]).start()
 
         Gtk.main()
     else:
