@@ -232,8 +232,8 @@ class UtConst:
         :return:  The wrapped string.
         """
         if not isinstance(message, str): return message
-        length = len(message)
-        if length < length:
+        message_len = len(message)
+        if message_len < length:
             return message
         trunc_loc = 0
         for i in range(length, 0, -1):
@@ -241,7 +241,8 @@ class UtConst:
                 trunc_loc = i
                 break
         if trunc_loc:
-            message = message[:trunc_loc] + '\n{}'.format(' '.ljust(indent, ' ')) + self.wrap(message[trunc_loc:], indent)
+            message = message[:trunc_loc] + '\n{}'.format(' '.ljust(indent, ' ')) + self.wrap(message[trunc_loc:],
+                                                                                              indent, length)
         return message
 
     @staticmethod
