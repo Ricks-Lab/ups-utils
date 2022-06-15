@@ -131,22 +131,14 @@ def main() -> None:
         env.UT_CONST.log_print('Error in environment. Exiting...')
         sys.exit(-1)
 
-    ups = UPS.UPSsnmp()
-    if not ups.active_ups['responsive']:
-        env.UT_CONST.log_print('The daemon UPS [{}] is unresponsive.'.format(ups.active_ups['display_name']))
-        env.UT_CONST.fatal = True
-    if not ups.set_daemon_parameters():
-        ups.print_daemon_parameters()
-        if not env.UT_CONST.ups_config_ini:
-            env.UT_CONST.log_print('Error reading [{}] file.'.format(env.UT_CONST.ups_config_ini))
-        else:
-            env.UT_CONST.log_print('Error no [{}] file found.'.format(env.UT_CONST.ups_config_ini))
-        print('    For more information: `man {}`'.format(env.UT_CONST.ups_config_ini))
-        env.UT_CONST.fatal = True
+    ups_list = UPS.UpsList()
+    num_ups = ups_list.num_upss()
+    print(ups_list)
 
-    if not ups.check_ups_type(ups.active_ups['ups_type']):
-        env.UT_CONST.log_print('Invalid UPS type: {}'.format(ups.active_ups['ups_type']))
-        print('    Valid entries: {}'.format(ups.list_valid_ups_types()))
+    daemon_ups = ups_list.get_daemon_ups()
+
+    if not daemon_ups.is_responsive():
+        env.UT_CONST.log_print('The daemon UPS [{}] is unresponsive.'.format(daemon_ups['display_name']))
         env.UT_CONST.fatal = True
 
     if env.UT_CONST.fatal:
@@ -154,32 +146,32 @@ def main() -> None:
         sys.exit(-1)
 
     # Display current status of target UPS
-    ups.read_all_ups_list_items(ups.get_monitor_mib_commands('all'), display=True)
+    daemon_ups.read_ups_list_items(UPS.UpsComm.MIB_group.all, display=True)
 
     if args.daemon:
-        crit_bat_level = ups.daemon_params['threshold_battery_capacity']['crit']
-        warn_bat_level = ups.daemon_params['threshold_battery_capacity']['warn']
-        crit_load_level = ups.daemon_params['threshold_battery_load']['crit']
-        warn_load_level = ups.daemon_params['threshold_battery_load']['warn']
-        crit_runtime_rem = ups.daemon_params['threshold_battery_time_rem']['crit']
-        warn_runtime_rem = ups.daemon_params['threshold_battery_time_rem']['warn']
+        crit_bat_level = daemon_ups.daemon.daemon_params['threshold_battery_capacity']['crit']
+        warn_bat_level = daemon_ups.daemon.daemon_params['threshold_battery_capacity']['warn']
+        crit_load_level = daemon_ups.daemon.daemon_params['threshold_battery_load']['crit']
+        warn_load_level = daemon_ups.daemon.daemon_params['threshold_battery_load']['warn']
+        crit_runtime_rem = daemon_ups.daemon.daemon_params['threshold_battery_time_rem']['crit']
+        warn_runtime_rem = daemon_ups.daemon.daemon_params['threshold_battery_time_rem']['warn']
         overload_fault = False
         suspend_state = False
         shutting_down = False
-        normal_sleep = ups.daemon_params['read_interval']['daemon']
-        fault_sleep = UPS.UPSsnmp.daemon_param_defaults['read_interval']['limit']
+        normal_sleep = daemon_ups.daemon.daemon_params['read_interval']['daemon']
+        fault_sleep = daemon_ups.daemon.daemon_param_defaults['read_interval']['limit']
         active_sleep = normal_sleep
         while True:
             time_str = datetime.now().strftime('%c')
-            bat_status = ups.send_snmp_command('mib_battery_status')
+            bat_status = daemon_ups.send_snmp_command('mib_battery_status')
             if not bat_status:
-                print('{}: UPS [{}] is unresponsive'.format(time_str, ups.active_ups['display_name']))
+                print('{}: UPS [{}] is unresponsive'.format(time_str, daemon_ups['display_name']))
                 daemon_sleep(active_sleep)
                 continue
-            bat_load = int(ups.send_snmp_command('mib_output_load'))
-            bat_capacity = int(ups.send_snmp_command('mib_battery_capacity'))
-            time_on_bat = ups.send_snmp_command('mib_time_on_battery')[0]
-            remain_run_time = ups.send_snmp_command('mib_battery_runtime_remain')[0]
+            bat_load = int(daemon_ups.send_snmp_command('mib_output_load'))
+            bat_capacity = int(daemon_ups.send_snmp_command('mib_battery_capacity'))
+            time_on_bat = daemon_ups.send_snmp_command('mib_time_on_battery')[0]
+            remain_run_time = daemon_ups.send_snmp_command('mib_battery_runtime_remain')[0]
 
             if QUIT_SIGNAL:
                 print('{}: Received Quit Signal'.format(time_str))
@@ -196,7 +188,7 @@ def main() -> None:
             # Not on Battery
             if time_on_bat == 0.0:
                 if shutting_down:
-                    ups.execute_script('cancel_shutdown_script')
+                    daemon_ups.daemon.execute_script('cancel_shutdown_script')
                     print('{}: Cancelling Shutdown'.format(time_str))
                     shutting_down = False
                 if active_sleep != normal_sleep:
@@ -237,26 +229,26 @@ def main() -> None:
                         print('{}: Battery Low Signal'.format(time_str))
                         print('{}: Calling Shutdown Script'.format(time_str))
                         shutting_down = True
-                        ups.execute_script('shutdown_script')
+                        daemon_ups.daemon.execute_script('shutdown_script')
                     if bat_capacity < crit_bat_level or remain_run_time < crit_runtime_rem:
                         # Call shutdown script
                         print('{}: Battery Nearly Exhausted'.format(time_str))
                         print('{}: Calling Shutdown Script'.format(time_str))
                         shutting_down = True
-                        ups.execute_script('shutdown_script')
+                        daemon_ups.daemon.execute_script('shutdown_script')
 
             if suspend_state:
-                if time_on_bat < ups.daemon_params['threshold_time_on_battery']['crit'] and not overload_fault:
+                if time_on_bat < daemon_ups.daemon.daemon_params['threshold_time_on_battery']['crit'] and not overload_fault:
                     # Resume
                     print('{}: Resuming'.format(time_str))
-                    ups.execute_script('resume_script')
+                    daemon_ups.daemon.execute_script('resume_script')
                     suspend_state = False
 
             if not suspend_state:
-                if time_on_bat > ups.daemon_params['threshold_time_on_battery']['crit'] or bat_load > crit_load_level:
+                if time_on_bat > daemon_ups.daemon.daemon_params['threshold_time_on_battery']['crit'] or bat_load > crit_load_level:
                     # Suspend
                     print('{}: Suspending'.format(time_str))
-                    ups.execute_script('suspend_script')
+                    daemon_ups.daemon.execute_script('suspend_script')
                     suspend_state = True
 
             daemon_sleep(active_sleep)

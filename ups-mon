@@ -128,8 +128,9 @@ class MonitorWindow(Gtk.Window):
         row_labels = {'display_name': Gtk.Label(name='white_label')}
         row_labels['display_name'].set_markup('<b>UPS Parameters</b>')
         # Set row labels for header items
-        for param_name, param_label in UPS.UpsItem._param_labels.items():
+        for param_name in UPS.UpsItem.ordered_table_items:
             if param_name not in UPS.UpsItem._table_list: continue
+            param_label = UPS.UpsItem._param_labels[param_name]
             row_labels[param_name] = Gtk.Label(name='white_label')
             row_labels[param_name].set_markup('<b>{}</b>'.format(param_label))
         # Set boxes for each row label
@@ -156,7 +157,7 @@ class MonitorWindow(Gtk.Window):
             lbox.pack_start(label, True, True, 0)
             grid.attach(lbox, col, row, 1, 1)
             row += 1
-            for param_name in UPS.UpsItem._param_labels:
+            for param_name in UPS.UpsItem.ordered_table_items:
                 if param_name not in UPS.UpsItem._table_list: continue
                 if param_name == 'display_name': continue
                 label = Gtk.Label(label=ups[param_name], name='white_label')
@@ -202,7 +203,6 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
     """
     daemon_params = ups_list.daemon.daemon_params
     ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic, errups=env.UT_CONST.show_unresponsive)
-    print(gc)
     gc.all_refresh_gui_data()
     if env.UT_CONST.LOG:
         print_log(env.UT_CONST.log_file_ptr, ups_list)
@@ -247,6 +247,11 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
                     state_style = UPSgui.Text_style.green
                 else:
                     state_style = UPSgui.Text_style.crit
+            elif mib_name == 'mib_ups_env_temp' and data_value.isnumeric():
+                if int(data_value) >= ups_list.daemon.daemon_params['threshold_env_temp']['crit']:
+                    state_style = UPSgui.Text_style.crit
+                elif int(data_value) >= ups_list.daemon.daemon_params['threshold_env_temp']['warn']:
+                    state_style = UPSgui.Text_style.warn
             elif mib_name == 'display_name':
                 state_style = UPSgui.Text_style.bold
 
@@ -427,9 +432,7 @@ def main() -> None:
         env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file))
         print('    For more information: `man {0}`, exiting...'.format(env.UT_CONST.ups_json_file))
         sys.exit(-1)
-    print('{} UPSs listed in {}.'.format(num_ups['total'], env.UT_CONST.ups_json_file))
-    print('    {} are compatible, {} are accessible, {} are responsive, and {} are valid\n'.format(
-        num_ups['compatible'], num_ups['accessible'], num_ups['responsive'], num_ups['valid']))
+    print(ups_list)
     if num_ups['total'] != num_ups['responsive']:
         print('    Check the {} file.\n'.format(env.UT_CONST.ups_json_file))
 
@@ -459,7 +462,6 @@ def main() -> None:
         # Display Gtk style Monitor
         gui_components = UPSgui.GuiComp(ups_list, MonitorWindow.max_width)
         umonitor = MonitorWindow(ups_list, gui_components)
-        print(gui_components)
         umonitor.connect('delete-event', umonitor.set_quit)
         umonitor.show_all()
 

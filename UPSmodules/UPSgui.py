@@ -100,7 +100,7 @@ class GuiComp:
                 data_value = self.data_dict[uuid][item_name]
             except KeyError:
                 data_value = None
-            if data_value in ['-1', None, '']:
+            if data_value in ['-1', None, '', 'No data']:
                 data_value = '---'
             data_value = str(data_value)[:self.max_width]
             item_dict['label'].set_text(data_value)
