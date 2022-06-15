@@ -329,7 +329,6 @@ class UpsDaemon:
         'threshold_battery_load': daemon_param_defaults['threshold_battery_load'].copy(),
         'threshold_battery_capacity': daemon_param_defaults['threshold_battery_capacity'].copy()}
 
-    Text_style: UpsEnum = UpsEnum('style', 'warn crit green bold normal')
 
     def __init__(self):
         self.config: Union[dict, None] = None
