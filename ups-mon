@@ -379,7 +379,6 @@ def print_log_header(fileptr: TextIO) -> None:
     """ Print the logfile header line.
 
     :param fileptr:  The logfile fileptr
-    :param ups_list: A UPS list structure
     :return: None
     """
     print('time', file=fileptr, end='')
@@ -475,17 +474,22 @@ def main() -> None:
         Gtk.main()
     else:
         # Display text style Monitor
+        color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
+                              env.UT_CONST.mark_up_codes['bold'])
         try:
             while True:
-                ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.monitor, errups=args.show_unresponsive, display=False)
+                # TODO: Need to understand why env_temp goes invalid with monitor group is used.
+                ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic,
+                                                 errups=args.show_unresponsive, display=False)
                 if args.status:
                     print_monitor_table(ups_list)
                     sys.exit(0)
                 os.system('clear')
                 if LOGGER.getEffectiveLevel() == logging.DEBUG:
-                    print('%sDebug Logger Active%s' % ('\033[31m \033[01m', '\033[0m'))
+                    print('{}Debug Logger Active{}'.format(color, env.UT_CONST.mark_up_codes['reset']))
                 if env.UT_CONST.LOG:
-                    print('%sLogging to:  %s%s' % ('\033[31m \033[01m', env.UT_CONST.log_file, '\033[0m'))
+                    print('{}Logging to:  {}{}'.format(color, env.UT_CONST.log_file,
+                                                       env.UT_CONST.mark_up_codes['reset']))
                     print_log(env.UT_CONST.log_file_ptr, ups_list)
                 print_monitor_table(ups_list)
                 time.sleep(env.UT_CONST.SLEEP)

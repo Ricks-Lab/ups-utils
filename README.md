@@ -172,6 +172,7 @@ use defaults if missing.
 * Added check of configuration files readability.
 * Implement code improvements from gpu-utils project.
 * Move listing like functions from *ups-daemon* to *ups-ls*.
+* Complete rewrite.
 
 ## Known Issues
 

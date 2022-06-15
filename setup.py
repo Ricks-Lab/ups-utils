@@ -20,10 +20,9 @@
 """
 __author__ = 'RicksLabs'
 __copyright__ = 'Copyright (C) 2020 RicksLab'
-__credits__ = []
 __license__ = 'GPL-3'
 __program_name__ = 'setup.py'
-__maintainer__ = 'RueiKe'
+__maintainer__ = 'RicksLab'
 __docformat__ = 'reStructuredText'
 
 # pylint: disable=line-too-long
@@ -32,7 +31,7 @@ import sys
 import os
 import pathlib
 from setuptools import setup, find_packages
-from UPSmodules import __version__, __status__, __required_pversion__
+from UPSmodules import __version__, __status__, __required_pversion__, __credits__
 
 if sys.version_info[:2] < __required_pversion__:
     print('rickslab-ups-utils requires at least Python {}.{}.'.format(__required_pversion__[0],

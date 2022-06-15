@@ -44,8 +44,7 @@ LOGGER = logging.getLogger('ups-utils')
 
 
 def check_file(filename: str) -> bool:
-    """
-    Check if file is readable.
+    """ Check if file is readable.
 
     :param filename:  Name of file to be checked
     :return: True if ok
@@ -267,9 +266,8 @@ class UtConst:
         return datetime.utcnow()
 
     def process_message(self, message: str, log_flag: bool = False, verbose: bool = False) -> None:
-        """
-        For given message, print to stderr and/or LOGGER depending on command line options and
-        the value of log_flag.
+        """ For given message, print to stderr and/or LOGGER depending on command line options and
+            the value of log_flag.
 
         :param message: A string containing the message to be processed.
         :param verbose:  If True, force verbose.
