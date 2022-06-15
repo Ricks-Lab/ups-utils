@@ -55,7 +55,8 @@ class UpsEnum(Enum):
         return self.name
 
     @classmethod
-    def list(cls):
+    def list(cls) -> List[str]:
+        """ Return a list of name from current UpsEnum object """
         return list(map(lambda c: c.name, cls))
 
 
@@ -203,6 +204,7 @@ class UpsItem:
         return re.sub(r'\'', '\"', pprint.pformat(self.prm, indent=2, width=120))
 
     def mib_command_names(self, cmd_group: UpsEnum) -> Generator[str, None, None]:
+        """ Returns mib command names for the given command group """
         print('mib_cmd_names')
         if cmd_group == UpsComm.MIB_group.all:
             if self.prm.ups_type == UpsComm.MIB_nmc.apc_ap96xx:
@@ -257,39 +259,46 @@ class UpsItem:
         return self.prm['ups_IP']
 
     def is_compatible(self):
+        """ Return flag indicating compatibility """
         return self.prm.compatible
 
     def is_accessible(self):
+        """ Return flag indicating accessibility """
         return self.prm.accessible
 
     def is_responsive(self):
+        """ Return flag indicating ability to respond to ping """
         return self.prm.responsive
 
     def send_snmp_command(self, cmd_name: str, display: bool = True) -> str:
+        """ Send the given command to UPS using UpsComm object """
         return self.ups_comm.send_snmp_command(cmd_name, self, display)
 
     def read_ups_list_items(self, cmd_group: UpsEnum, display: bool = False) -> bool:
+        """ Read data for a group of commands from UpsComm object """
         return self.ups_comm.read_ups_list_items(cmd_group, self, display=display)
 
     def print_snmp_commands(self) -> None:
+        """ Print all mib command details for this UPS """
         print('{}\n{} - {} - {}\n{}'.format('#'.ljust(50, '#'), self.prm.display_name, self.prm.mib_ups_name,
                                             self.prm.ups_nmc_model, '#'.ljust(50, '#')))
         self.ups_comm.print_snmp_commands()
 
-    def print(self, short: bool = False, input: bool = False, output: bool = False, newline: bool = True) -> None:
+    def print(self, short: bool = False, input_arg: bool = False, output_arg: bool = False,
+              newline: bool = True) -> None:
         """ Display ls like listing function for UPS parameters.
 
         :param short:  Display short listing
-        :param input:  Display input parameters
-        :param output:  Display output parameters
+        :param input_arg:  Display input parameters
+        :param output_arg:  Display output parameters
         :param newline:  Display terminating newline if True
         """
         if short:
             show_list = self._short_list
         else:
             show_list: Set[str] = UpsComm.all_mib_cmd_names[UpsComm.MIB_group.all].union(self._table_list)
-        if input: show_list = show_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.input])
-        if output: show_list = show_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.output])
+        if input_arg: show_list = show_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.input])
+        if output_arg: show_list = show_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.output])
 
         for param_name, param_label in self._param_labels.items():
             if param_name not in show_list: continue
@@ -609,7 +618,7 @@ class UpsList:
         :param display: Flag to indicate if parameters should be displayed as read.
         :return:  dict of results from the reading of all commands from all UPSs.
         """
-        for uuid, ups in self.items():
+        for ups in self.upss():
             if not errups:
                 if not ups.prm.responsive:
                     continue
@@ -651,7 +660,7 @@ class UpsList:
         :param ups_uuid: Universally unique identifier for a UPS
         :return: name of the ups or None if not found
         """
-        for name, ups in self.upss():
+        for ups in self.upss():
             if ups['uuid'] == ups_uuid:
                 return ups['display_name']
         return None
@@ -1045,8 +1054,8 @@ class UpsComm:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
         except subprocess.CalledProcessError:
-            LOGGER.debug('Error executing snmp %s command [%s] to %s at %s.', command_name, cmd_mib, self.ups_name(),
-                         ups.ups_ip())
+            LOGGER.debug('Error executing snmp %s command [%s] to %s at %s.',
+                         command_name, cmd_mib, ups.prm.display_name, ups.ups_ip())
             return None
 
         value = ''
@@ -1117,7 +1126,8 @@ class UpsComm:
                     value_str = '{}-{}'.format(value_str, decode_key[index])
         return value_str
 
-    def get_mib_commands(self, cmd_group: UpsEnum):
+    def get_mib_commands(self, cmd_group: UpsEnum) -> Set[str]:
+        """ Returns all command mib names of the given group """
         return self.all_mib_cmd_names[cmd_group]
 
     @classmethod
