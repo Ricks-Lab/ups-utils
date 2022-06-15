@@ -97,6 +97,27 @@ class UtConst:
                 'INI': re.compile(r'^\(\s*\d+\s*,\s*\d+\s*\)\s*$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)')}
 
+    mark_up_codes: Dict[str, str] = {'none':      '',
+                                     'bold':      '\033[1m',
+                                     # Foreground colors
+                                     'white':     '\033[37m',
+                                     'data':      '\033[36m',
+                                     'cyan':      '\033[36m',
+                                     'bcyan':     '\033[1;36m',
+                                     'purple':    '\033[35m',
+                                     'blue':      '\033[34m',
+                                     'yellow':    '\033[33m',
+                                     'green':     '\033[32m',
+                                     'red':       '\033[31m',
+                                     # Named formats
+                                     'amd':       '\033[1;37;41m',
+                                     'error':     '\033[1;37;41m',
+                                     'ok':        '\033[1;37;42m',
+                                     'nvidia':    '\033[1;30;42m',
+                                     'warn':      '\033[1;30;43m',
+                                     'other':     '\033[1;37;44m',
+                                     'label':     '\033[1;37;46m',
+                                     'reset':     '\033[0;0;0m'}
     # Private items
     # Utility Repository Path Definitions
     _repository_module_path: str = os.path.dirname(str(Path(__file__).resolve()))
@@ -152,6 +173,7 @@ class UtConst:
         # Utility Execution Flags
         self.show_unresponsive: bool = False
         self.LOG: bool = False
+        self.no_markup: bool = False
         self.log_file_ptr: Union[TextIO, None] = None
         self.USELTZ: bool = False
         self.LTZ = datetime.utcnow().astimezone().tzinfo
@@ -171,6 +193,7 @@ class UtConst:
         for target_arg in vars(self.args):
             if target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
             elif target_arg == 'log': self.LOG = self.args.log
+            elif target_arg == 'no_markup': self.no_markup = self.args.no_markup
             elif target_arg == 'verbose': self.verbose = self.args.verbose
             elif target_arg == 'ltz': self.USELTZ = self.args.ltz
         LOGGER.propagate = False
@@ -199,6 +222,27 @@ class UtConst:
         else:
             if not os.path.isfile(self.icon_file):
                 self.process_message('Error: Icon file not found: [{}]'.format(self.icon_file), log_flag=True)
+
+    def wrap(self, message: any, indent: int = 0, length: int = 80) -> str:
+        """ Function to wrap long items at nearest space to the length limit.
+
+        :param message:  target string to wrap
+        :param indent:   indent amount for wrapped strings
+        :param length:   max length of the string.
+        :return:  The wrapped string.
+        """
+        if not isinstance(message, str): return message
+        length = len(message)
+        if length < length:
+            return message
+        trunc_loc = 0
+        for i in range(length, 0, -1):
+            if message[i] == ' ':
+                trunc_loc = i
+                break
+        if trunc_loc:
+            message = message[:trunc_loc] + '\n{}'.format(' '.ljust(indent, ' ')) + self.wrap(message[trunc_loc:], indent)
+        return message
 
     @staticmethod
     def log_print(message: str) -> None:
@@ -268,23 +312,3 @@ class UtConst:
 
 
 UT_CONST = UtConst()
-
-
-def about() -> None:
-    """ Display details about this module.
-
-    :return:  None
-    """
-    print(__doc__)
-    print('Author: ', __author__)
-    print('Copyright: ', __copyright__)
-    print('Credits: ', *['\n      {}'.format(item) for item in __credits__])
-    print('License: ', __license__)
-    print('Version: ', __version__)
-    print('Maintainer: ', __maintainer__)
-    print('Status: ', __status__)
-    sys.exit(0)
-
-
-if __name__ == '__main__':
-    about()

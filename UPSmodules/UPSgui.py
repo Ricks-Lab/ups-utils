@@ -26,10 +26,11 @@ __docformat__ = 'reStructuredText'
 # pylint: disable=line-too-long
 # pylint: disable=bad-continuation
 
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Union, Generator
 import sys
 import re
 import logging
+import pprint
 import warnings
 try:
     import gi
@@ -41,12 +42,14 @@ except ModuleNotFoundError as error:
     print('   In a venv, first install vext:  pip install --no-cache-dir vext')
     print('   Then install vext.gi:  pip install --no-cache-dir vext.gi')
     sys.exit(0)
-from UPSmodules import __version__, __status__, __credits__
 from UPSmodules import env
+from UPSmodules import UPSmodule
 
 ColorDict = Dict[str, str]
+GuiCompDict = Dict[str, Dict[str, Dict[str, any]]]
 LOGGER = logging.getLogger('ups-utils')
 PATTERNS = env.UT_CONST.PATTERNS
+Text_style: UPSmodule.UpsEnum = UPSmodule.UpsEnum('style', 'warn crit green bold normal')
 
 
 def get_color(value: str) -> str:
@@ -59,9 +62,68 @@ def get_color(value: str) -> str:
     return GuiProps.color_name_to_hex(value)
 
 
-class GuiProps:
+class GuiComp:
+    """ Object to represent Gui component and associate with data dict.
     """
-    Class to manage style properties of Gtk widgets.
+    def __init__(self, data_dict: UPSmodule.UpsList, max_width: int):
+        # {uuid: {name: {'label': label, 'box': box, 'box_name': box_name 'data': data}}}
+        self.gc: GuiCompDict = {}
+        self.data_dict = data_dict
+        self.max_width = max_width
+
+    def __str__(self) -> str:
+        return re.sub(r'\'', '\"', pprint.pformat(self.gc, indent=2, width=120))
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def items(self) -> Generator[Union[str, dict], None, None]:
+        """ Get uuid, gui component pairs from a gui component object.
+
+        :return:  uuid, gc pair
+        """
+        for key, value in self.gc.items():
+            yield key, value
+
+    def add(self, uuid: str, name: str, label: any, box: any = None, box_name: Union[str, None] = None):
+        """ Add a new gui element and associate data source
+
+        :param uuid:  Key for first element in the data dict
+        :param name:  Key for gui item and data item
+        :param label: Label gui element
+        :param box:   Box gui element
+        :param box_name: Name of the Box element.  Need for dynamic background colors.
+        """
+        if uuid not in self.gc:
+            self.gc.update({uuid: {name: {'label': label, 'box': box, 'box_name': box_name, 'data': '---'}}})
+        else:
+            self.gc[uuid].update({name: {'label': label, 'box': box, 'box_name': box_name, 'data': '---'}})
+
+    def all_refresh_gui_data(self) -> None:
+        """ Refresh all gui elements with data from the data dict.
+        """
+        for uuid in self.data_dict.uuids():
+            self.refresh_gui_data(uuid)
+
+    def refresh_gui_data(self, uuid: str) -> None:
+        """ Refresh gui element with data from the data dict.
+
+        :param uuid:  Key for first level of gui and data dicts.
+        """
+        for item_name, item_dict in self.gc[uuid].items():
+            try:
+                data_value = self.data_dict[uuid][item_name]
+            except KeyError:
+                data_value = None
+            if data_value in ['-1', None, '', 'No data']:
+                data_value = '---'
+            data_value = str(data_value)[:self.max_width]
+            item_dict['label'].set_text(data_value)
+            self.gc[uuid][item_name]['data'] = data_value
+
+
+class GuiProps:
+    """ Class to manage style properties of Gtk widgets.
     """
     _colors: ColorDict = {'white':     '#FFFFFF',
                           'white_off': '#FCFCFC',
@@ -239,22 +301,3 @@ class GuiProps:
             provider.load_from_data(css)
             style_context = Gtk.StyleContext()
             style_context.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-
-
-def about() -> None:
-    """
-    Display details of this module.
-    """
-    print(__doc__)
-    print('Author: ', __author__)
-    print('Copyright: ', __copyright__)
-    print('Credits: ', *['\n      {}'.format(item) for item in __credits__])
-    print('License: ', __license__)
-    print('Version: ', __version__)
-    print('Maintainer: ', __maintainer__)
-    print('Status: ', __status__)
-    sys.exit(0)
-
-
-if __name__ == '__main__':
-    about()

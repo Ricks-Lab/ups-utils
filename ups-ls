@@ -93,67 +93,61 @@ def main() -> None:
         env.UT_CONST.log_print('Error in environment. Exiting...')
         sys.exit(-1)
 
-    ups = UPS.UPSsnmp()
-    num_ups = ups.get_num_ups_tuple()
+    ups_list = UPS.UpsList(daemon=args.list_params)
+    num_ups = ups_list.num_upss()
 
     if env.UT_CONST.fatal:
         env.UT_CONST.log_print('Fatal Error. Exiting...')
         sys.exit(-1)
 
-    if num_ups[0] == 0:
+    if not num_ups['total']:
         env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file))
         print('    For more information: `man {0}`, exiting...'.format(env.UT_CONST.ups_json_file))
         sys.exit(-1)
-    print('{} UPSs listed in {}.'.format(num_ups[0], env.UT_CONST.ups_json_file))
-    print('    {} are compatible, {} are accessible, {} are responsive\n'.format(num_ups[1], num_ups[2], num_ups[3]))
+    print(ups_list)
 
+    LOGGER.debug('nmc types: %s', ups_list.get_ups_type_list())
     if args.list_decoders:
-        ups.print_decoders()
+        UPS.UpsComm.print_decoders()
         sys.exit(0)
 
     if args.list_params:
-        ups.print_daemon_parameters()
+        ups_list.daemon.print_daemon_parameters()
         sys.exit(0)
 
-    if args.list_commands:
-        ups.print_snmp_commands()
-        sys.exit(0)
-
-    for ups_item in ups.ups_list.values():
-        ups.set_active_ups(ups_item)
-        if not ups.is_compatible(ups_item):
+    for ups in ups_list.upss():
+        if args.list_commands:
+            cmd_group = UPS.UpsComm.MIB_group.static
+            ups.read_ups_list_items(cmd_group, display=False)
+            ups.print_snmp_commands()
+            sys.exit(0)
+        if not ups.is_compatible():
             print('ERROR: {} is not compatible type: {}'.format(ups.ups_name(), ups.ups_type()))
             print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
             continue
-        if not ups.is_accessible(ups_item):
+        if not ups.is_accessible():
             print('ERROR: {} is not an accessible IP: {}'.format(ups.ups_name(), ups.ups_ip()))
             print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
             continue
-        if not ups.is_responsive(ups_item):
+        if not ups.is_responsive():
             print('ERROR: {} is not responsive to snmp IP: {}'.format(ups.ups_name(), ups.ups_ip()))
             print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
             continue
-        print('UPS Name: {}'.format(ups.ups_name()))
-        print('UPS IP: {}'.format(ups.ups_ip()))
-        _ = ups.read_ups_list_items(['mib_ups_info'], tups=ups_item)
-        print('UPS NMC Model: {}'.format(ups.ups_nmc_model()))
+        cmd_group = UPS.UpsComm.MIB_group.all
         if args.input or args.output:
             if args.input:
-                for oc in ups.input_mib_cmds:
-                    if ups.send_snmp_command(oc, display=True) == 'UPS Not Responding':
-                        print('Giving up on {}'.format(ups.ups_name()))
-                        break
-            if args.output:
-                for oc in ups.output_mib_cmds:
-                    if ups.send_snmp_command(oc, display=True) == 'UPS Not Responding':
-                        print('Giving up on {}'.format(ups.ups_name()))
-                        break
+                cmd_group = UPS.UpsComm.MIB_group.input
+            else:
+                cmd_group = UPS.UpsComm.MIB_group.output
+            if not ups.read_ups_list_items(cmd_group, display=False):
+                print('Giving up on {}'.format(ups.ups_name()))
+                break
+            ups.print(short=True, input=args.input, output=args.output)
         else:
-            for mib_name in ups.get_mib_commands(ups_item).keys():
-                if ups.send_snmp_command(mib_name, display=True) == 'UPS Not Responding':
-                    print('Giving up on {}'.format(ups.ups_name()))
-                    break
-        print('')
+            if not ups.read_ups_list_items(cmd_group, display=False):
+                print('Giving up on {}'.format(ups.ups_name()))
+                break
+            ups.print()
 
     sys.exit(0)
 
