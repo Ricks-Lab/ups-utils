@@ -132,8 +132,7 @@ def main() -> None:
         sys.exit(-1)
 
     ups_list = UPS.UpsList()
-    num_ups = ups_list.num_upss()
-    print(ups_list)
+    print('{}\n'.format(ups_list))
 
     daemon_ups = ups_list.get_daemon_ups()
 

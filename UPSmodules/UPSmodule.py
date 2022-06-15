@@ -49,8 +49,7 @@ LOGGER = logging.getLogger('ups-utils')
 
 
 class UpsEnum(Enum):
-    """
-    Replace __str__ method of Enum so that name excludes type and can be used as key in other dicts.
+    """ Replace __str__ method of Enum so that name excludes type and can be used as key in other dicts.
     """
     def __str__(self) -> str:
         return self.name
@@ -61,8 +60,7 @@ class UpsEnum(Enum):
 
 
 class ObjDict(dict):
-    """
-    Allow access of dictionary keys by key name.
+    """ Allow access of dictionary keys by key name.
     """
     # pylint: disable=attribute-defined-outside-init
     # pylint: disable=too-many-instance-attributes
@@ -82,6 +80,7 @@ class ObjDict(dict):
 
 
 class UpsItem:
+    """ Object to represent a UPS """
     _json_keys: Set[str] = {'ups_IP', 'display_name', 'ups_type', 'daemon', 'snmp_community', 'uuid', 'ups_model'}
     UPS_type: UpsEnum = UpsEnum('type', 'all apc_ap96xx eaton_pw')
 
@@ -183,7 +182,9 @@ class UpsItem:
         self.daemon = None
 
     @classmethod
-    def initialize_cls_table_list(cls):
+    def initialize_cls_table_list(cls) -> None:
+        """ Initialize the class data _table_list.
+        """
         cls._table_list = cls._table_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.monitor])
 
     def __getitem__(self, param_name: str) -> any:
@@ -195,17 +196,11 @@ class UpsItem:
     def __setitem__(self, param_name: str, value: any) -> None:
         self.prm[param_name] = value
 
-    def __str__(self):
-        str_rep = ''
-        for name, value in self.prm.items():
-            if name == 'mib_commands': continue
-            if str_rep:
-                str_rep = '{}\n{}: {}'.format(str_rep, name, value)
-            else:
-                str_rep = '{}: {}'.format(name, value)
-            #for ups_param_name, ups_param_value in value.items():
-                #str_rep = '{}\n    {}: {}\n'.format(str_rep, ups_param_name, ups_param_value)
-        return str_rep
+    def __repr__(self) -> str:
+        return '{} - {} - {}'.format(self['uuid'], self['display_name'], self['ups_IP'])
+
+    def __str__(self) -> str:
+        return re.sub(r'\'', '\"', pprint.pformat(self.prm, indent=2, width=120))
 
     def mib_command_names(self, cmd_group: UpsEnum) -> Generator[str, None, None]:
         print('mib_cmd_names')
@@ -282,8 +277,7 @@ class UpsItem:
         self.ups_comm.print_snmp_commands()
 
     def print(self, short: bool = False, input: bool = False, output: bool = False, newline: bool = True) -> None:
-        """
-        Display ls like listing function for UPS parameters.
+        """ Display ls like listing function for UPS parameters.
 
         :param short:  Display short listing
         :param input:  Display input parameters
@@ -315,6 +309,7 @@ class UpsItem:
 
 
 class UpsDaemon:
+    """ Define a Daemon configuration object """
     # Configuration details
     daemon_paths: Tuple[str, ...] = ('boinc_home', 'ups_utils_script_path')
     daemon_scripts: Tuple[str, ...] = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
@@ -349,9 +344,9 @@ class UpsDaemon:
         self.set_daemon_parameters()
 
     def read_daemon_config(self) -> bool:
-        """
+        """ Read the daemon config file.
 
-        :return:
+        :return:  True on success.
         """
         if not env.UT_CONST.ups_config_ini:
             print('Error ups-utils.ini filename not set.')
@@ -501,6 +496,7 @@ class UpsDaemon:
 
 
 class UpsList:
+    """ Object to represent a list of UPSs """
     def __init__(self, daemon: bool = True):
         self.list: Dict[str, UpsItem] = {}
         self.daemon: Union[UpsDaemon, None] = UpsDaemon() if daemon else None
@@ -539,8 +535,7 @@ class UpsList:
             yield key, value
 
     def uuids(self) -> Generator[str, None, None]:
-        """
-        Get uuids of the UpsList object.
+        """ Get uuids of the UpsList object.
 
         :return: uuids from the UpsList object.
         """
@@ -548,38 +543,39 @@ class UpsList:
             yield key
 
     def upss(self) -> Generator[UpsItem, None, None]:
-        """
-        Get UpsItems from a GpuList object.
+        """ Get UpsItems from a GpuList object.
 
         :return: UpsItem
         """
         return self.__iter__()
 
     def add(self, ups_item: UpsItem) -> None:
-        """
-        Add given UpsItem to the UpsList.
-
-        :param ups_item:  Item to be added
+        """ Add given UpsItem to the UpsList.
         """
         self[ups_item.prm.uuid] = ups_item
         LOGGER.debug('Added UPS Item %s to UPS List', ups_item.prm.uuid)
 
     def print_daemon_parameters(self) -> None:
+        """ Print the daemon parameters read from config file. """
         self.daemon.set_daemon_parameters()
 
     def print(self) -> None:
+        """ Print each UPS item in the UpsList """
         for ups in self.upss():
             ups.print()
 
     def get_daemon_ups(self) -> Union[UpsItem, None]:
+        """ Get the ups object for the daemon UPS.
+
+        :return: The daemon ups object or None if none
+        """
         for ups in self.list.values():
             if ups.prm.daemon:
                 return ups
         return None
 
     def num_upss(self, ups_type: UpsEnum = UpsItem.UPS_type.all) -> Dict[str, int]:
-        """
-        Return the count of UPSs by total, accessible, compatible, responsive, and valid.
+        """ Return the count of UPSs by total, accessible, compatible, responsive, and valid.
 
         :param ups_type: Only count UPSs of specific ups_type or all ups_type by default.
         :return: Dictionary of UPS counts
@@ -649,66 +645,38 @@ class UpsList:
         return True
 
     # Methods to get, check, and list UPSs
-    def get_name_for_ups_uuid(self, ups_uuid: int) -> str:
+    def get_name_for_ups_uuid(self, ups_uuid: int) -> Union[str, None]:
         """ Get the ups name for a given uuid
 
         :param ups_uuid: Universally unique identifier for a UPS
-        :return: name of the ups
+        :return: name of the ups or None if not found
         """
         for name, ups in self.upss():
             if ups['uuid'] == ups_uuid:
                 return ups['display_name']
-        return 'Error'
+        return None
 
-    def get_uuid_for_ups_name(self, ups_name: str) -> str:
+    def get_uuid_for_ups_name(self, ups_name: str) -> Union[str, None]:
         """ Get uuid for ups with given name.
 
         :param ups_name: The target ups name.
-        :return: The uuid as str or 'Error' if not found
+        :return: The uuid as str or None if not found
         """
         for ups in self.upss():
             if ups['display_name'] == ups_name:
                 return ups['uuid']
-        return 'Error'
+        return None
 
     def get_ups_type_list(self) -> Tuple[UpsEnum]:
-        """
-        Get a tuple of unique ups types.
+        """ Get a tuple of unique ups types.
 
-        :return:
+        :return: A tuple of unique types.
         """
         type_list: List[UpsEnum] = []
         for ups in self.upss():
             if ups.prm.ups_type not in type_list:
                 type_list.append(ups.prm.ups_type)
         return tuple(type_list)
-
-    def get_ups_list(self, errups: bool = True) -> dict:
-        """Get the dictionary list of UPSs read at start up.
-
-        :param errups: Flag to indicate if UPSs with errors should be included
-        :return:  dictionary representing the list of UPSs
-        """
-        return_list = {}
-        for uuid, ups in self.items():
-            if not errups:
-                if not ups.prm.responsive:
-                    continue
-            return_list[uuid] = ups
-        return return_list
-
-    def get_num_ups_tuple(self) -> Tuple[int]:
-        """ This function will return a tuple of the UPS counts.
-
-        :return: tuple represents listed, compatible, accessible, responsive UPSs
-        """
-        cnt = [0, 0, 0, 0]
-        for ups in self.upss():
-            cnt[0] += 1
-            if ups.prm.compatible: cnt[1] += 1
-            if ups.prm.accessible: cnt[2] += 1
-            if ups.prm.responsive: cnt[3] += 1
-        return tuple(cnt)
 
 
 class UpsComm:
@@ -981,8 +949,7 @@ class UpsComm:
 
     @staticmethod
     def is_valid_ip_fqdn(test_value: str) -> bool:
-        """
-        Check if given string is a valid IP address of FQDN.
+        """ Check if given string is a valid IP address of FQDN.
 
         :param test_value: String to be tested.
         :return:  True if valid
@@ -1037,7 +1004,7 @@ class UpsComm:
             ups.prm[cmd] = self.send_snmp_command(cmd, ups, display=display)
             if not ups.prm[cmd]:
                 ups.prm['valid'] = False
-                break
+                return False
             if cmd == 'mib_ups_info':
                 if ups.prm['ups_type'] == UpsComm.MIB_nmc.apc_ap96xx:
                     try:
@@ -1052,7 +1019,7 @@ class UpsComm:
                 ups.prm['mib_output_current'] = round((230 / ups.prm['mib_output_voltage']) *
                                                       ups.prm['mib_output_current'], 1)
             except:
-                pass
+                return False
         return True
 
     def send_snmp_command(self, command_name: str, ups: UpsItem,
@@ -1072,8 +1039,8 @@ class UpsComm:
         if command_name == 'mib_ups_env_temp' and ups.ups_nmc_model() != 'AP9641':
             return 'No data'
         cmd_mib = snmp_mib_commands[command_name]['iso']
-        cmd_str = 'snmpget -v2c -c {} {} {}'.format(ups.prm['snmp_community'],
-                                                    ups.prm['ups_IP'], cmd_mib)
+        cmd_str = '{} -v2c -c {} {} {}'.format(self.snmp_command, ups.prm['snmp_community'],
+                                               ups.prm['ups_IP'], cmd_mib)
         try:
             snmp_output = subprocess.check_output(shlex.split(cmd_str), shell=False,
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
@@ -1156,8 +1123,6 @@ class UpsComm:
     @classmethod
     def print_decoders(cls) -> None:
         """ Prints all bit decoders.
-
-        :return: None
         """
         for decoder_name, decoder_list in cls.decoders.items():
             print('decode key: {}'.format(decoder_name))
@@ -1166,8 +1131,6 @@ class UpsComm:
 
     def print_snmp_commands(self) -> None:
         """ Print all supported mib commands for the target UPS, which is the active UPS when not specified.
-
-        :param ups:  The target ups dictionary from list or None.
         """
         for mib_name, mib_dict in self.mib_commands.items():
             print('{}: Value: {}'.format(mib_name, mib_dict['iso']))
@@ -1175,4 +1138,3 @@ class UpsComm:
             if mib_dict['decode']:
                 for decoder_name, decoder_list in mib_dict['decode'].items():
                     print('        {}: {}'.format(decoder_name, decoder_list))
-

@@ -47,7 +47,7 @@ import sys
 import re
 import time
 import logging
-from typing import TextIO, List, Any, Callable, Tuple, Union
+from typing import TextIO, Any, Callable
 try:
     import gi
     gi.require_version('Gtk', '3.0')
@@ -131,7 +131,10 @@ class MonitorWindow(Gtk.Window):
         for param_name in UPS.UpsItem.ordered_table_items:
             if param_name not in UPS.UpsItem._table_list: continue
             param_label = UPS.UpsItem._param_labels[param_name]
-            row_labels[param_name] = Gtk.Label(name='white_label')
+            if param_name == 'display_name':
+                row_labels[param_name] = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+            else:
+                row_labels[param_name] = Gtk.Label(name='white_label')
             row_labels[param_name].set_markup('<b>{}</b>'.format(param_label))
         # Set boxes for each row label
         for row_label_item in row_labels.values():
@@ -148,7 +151,7 @@ class MonitorWindow(Gtk.Window):
         for ups in ups_list.upss():
             row = row_start
             # Header items do not need to be in gui component since they are static
-            label = Gtk.Label(name='white_label')
+            label = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
             label.set_markup('<b>{}</b>'.format(ups['display_name']))
             label.set_use_markup(True)
             lbox = Gtk.Box(spacing=6, name='head_box')
@@ -201,7 +204,6 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
     :param gc: A dictionary of Gtk components and values
     :return: None
     """
-    daemon_params = ups_list.daemon.daemon_params
     ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic, errups=env.UT_CONST.show_unresponsive)
     gc.all_refresh_gui_data()
     if env.UT_CONST.LOG:
@@ -327,20 +329,21 @@ def print_monitor_table(ups_list: UPS.UpsList) -> bool:
         print('┼', '─'.ljust(irw, '─'), sep='', end='')
     print('┤')
 
-    for table_item, item_name in UPS.UpsItem._param_labels.items():
-        if table_item not in UPS.UpsItem._table_list: continue
+    for param_name in UPS.UpsItem.ordered_table_items:
+        if param_name not in UPS.UpsItem._table_list: continue
+        param_label = UPS.UpsItem._param_labels[param_name]
         print('│{}{}{}'.format(env.UT_CONST.mark_up_codes['bcyan'],
-              item_name.ljust(hrw, ' ')[:hrw], env.UT_CONST.mark_up_codes['reset']), sep='', end='')
+              param_label.ljust(hrw, ' ')[:hrw], env.UT_CONST.mark_up_codes['reset']), sep='', end='')
         for ups in ups_list.upss():
             try:
                 color = reset = 'none'
-                if table_item == 'mib_system_status':
-                    color = 'ok' if re.match(env.UT_CONST.PATTERNS['ONLINE'], ups[table_item]) else 'error'
+                if param_name == 'mib_system_status':
+                    color = 'ok' if re.match(env.UT_CONST.PATTERNS['ONLINE'], ups[param_name]) else 'error'
                     reset = 'reset'
-                elif table_item == 'mib_battery_status':
-                    color = 'ok' if re.match(env.UT_CONST.PATTERNS['NORMAL'], ups[table_item]) else 'error'
+                elif param_name == 'mib_battery_status':
+                    color = 'ok' if re.match(env.UT_CONST.PATTERNS['NORMAL'], ups[param_name]) else 'error'
                     reset = 'reset'
-                value = '---' if ups[table_item] is None else str(ups[table_item])
+                value = '---' if ups[param_name] is None else str(ups[param_name])
                 item_str = '{}{}{}'.format(env.UT_CONST.mark_up_codes[color],
                                            value.ljust(irw, ' ')[:irw],
                                            env.UT_CONST.mark_up_codes[reset])
@@ -366,13 +369,13 @@ def print_log(fileptr: TextIO, ups_list: UPS.UpsList) -> None:
     time_str = (str(env.UT_CONST.now(ltz=True).strftime('%c')).strip())
     for ups in ups_list.upss():
         print('{}'.format(time_str), file=fileptr, end='')
-        for table_item, item_name in UPS.UpsItem._param_labels.items():
-            if table_item not in UPS.UpsItem._table_list: continue
-            print('|{}'.format(ups[table_item]), file=fileptr, end='')
+        for param_name in UPS.UpsItem._param_labels:
+            if param_name not in UPS.UpsItem._table_list: continue
+            print('|{}'.format(ups[param_name]), file=fileptr, end='')
         print('', file=fileptr)
 
 
-def print_log_header(fileptr: TextIO, ups_list: UPS.UpsList) -> None:
+def print_log_header(fileptr: TextIO) -> None:
     """ Print the logfile header line.
 
     :param fileptr:  The logfile fileptr
@@ -380,9 +383,9 @@ def print_log_header(fileptr: TextIO, ups_list: UPS.UpsList) -> None:
     :return: None
     """
     print('time', file=fileptr, end='')
-    for table_item, item_name in UPS.UpsItem._param_labels.items():
-        if table_item not in UPS.UpsItem._table_list: continue
-        print('|{}'.format(table_item), file=fileptr, end='')
+    for param_name in UPS.UpsItem._param_labels:
+        if param_name not in UPS.UpsItem._table_list: continue
+        print('|{}'.format(param_name), file=fileptr, end='')
     print('', file=fileptr)
 
 
@@ -456,7 +459,7 @@ def main() -> None:
         env.UT_CONST.log_file = './log_monitor_{}.txt'.format(
             env.UT_CONST.now(ltz=env.UT_CONST.USELTZ).strftime('%m%d_%H%M%S'))
         env.UT_CONST.log_file_ptr = open(env.UT_CONST.log_file, 'w', 1)
-        print_log_header(env.UT_CONST.log_file_ptr, ups_list)
+        print_log_header(env.UT_CONST.log_file_ptr)
 
     if args.gui:
         # Display Gtk style Monitor

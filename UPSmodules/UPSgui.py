@@ -63,6 +63,8 @@ def get_color(value: str) -> str:
 
 
 class GuiComp:
+    """ Object to represent Gui component and associate with data dict.
+    """
     def __init__(self, data_dict: UPSmodule.UpsList, max_width: int):
         # {uuid: {name: {'label': label, 'box': box, 'box_name': box_name 'data': data}}}
         self.gc: GuiCompDict = {}
@@ -73,11 +75,10 @@ class GuiComp:
         return re.sub(r'\'', '\"', pprint.pformat(self.gc, indent=2, width=120))
 
     def __repr__(self) -> str:
-        self.__str__()
+        return self.__str__()
 
     def items(self) -> Generator[Union[str, dict], None, None]:
-        """
-        Get uuid, gui component pairs from a gui component object.
+        """ Get uuid, gui component pairs from a gui component object.
 
         :return:  uuid, gc pair
         """
@@ -85,16 +86,30 @@ class GuiComp:
             yield key, value
 
     def add(self, uuid: str, name: str, label: any, box: any = None, box_name: Union[str, None] = None):
+        """ Add a new gui element and associate data source
+
+        :param uuid:  Key for first element in the data dict
+        :param name:  Key for gui item and data item
+        :param label: Label gui element
+        :param box:   Box gui element
+        :param box_name: Name of the Box element.  Need for dynamic background colors.
+        """
         if uuid not in self.gc:
             self.gc.update({uuid: {name: {'label': label, 'box': box, 'box_name': box_name, 'data': '---'}}})
         else:
             self.gc[uuid].update({name: {'label': label, 'box': box, 'box_name': box_name, 'data': '---'}})
 
-    def all_refresh_gui_data(self):
+    def all_refresh_gui_data(self) -> None:
+        """ Refresh all gui elements with data from the data dict.
+        """
         for uuid in self.data_dict.uuids():
             self.refresh_gui_data(uuid)
 
-    def refresh_gui_data(self, uuid: str):
+    def refresh_gui_data(self, uuid: str) -> None:
+        """ Refresh gui element with data from the data dict.
+
+        :param uuid:  Key for first level of gui and data dicts.
+        """
         for item_name, item_dict in self.gc[uuid].items():
             try:
                 data_value = self.data_dict[uuid][item_name]
@@ -108,8 +123,7 @@ class GuiComp:
 
 
 class GuiProps:
-    """
-    Class to manage style properties of Gtk widgets.
+    """ Class to manage style properties of Gtk widgets.
     """
     _colors: ColorDict = {'white':     '#FFFFFF',
                           'white_off': '#FCFCFC',

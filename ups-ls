@@ -139,12 +139,12 @@ def main() -> None:
                 cmd_group = UPS.UpsComm.MIB_group.input
             else:
                 cmd_group = UPS.UpsComm.MIB_group.output
-            if ups.read_ups_list_items(cmd_group, display=False) == 'UPS Not Responding':
+            if not ups.read_ups_list_items(cmd_group, display=False):
                 print('Giving up on {}'.format(ups.ups_name()))
                 break
             ups.print(short=True, input=args.input, output=args.output)
         else:
-            if ups.read_ups_list_items(cmd_group, display=False) == 'UPS Not Responding':
+            if not ups.read_ups_list_items(cmd_group, display=False):
                 print('Giving up on {}'.format(ups.ups_name()))
                 break
             ups.print()

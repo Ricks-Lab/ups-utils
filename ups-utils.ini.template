@@ -15,6 +15,7 @@ cancel_shutdown_script = cancelShutdownBOINC.sh
 # read_interval = (monitor,daemon)
 read_interval = (10,30)
 # param = (crit,warn)
+threshold_env_temp = (35, 28)
 threshold_battery_time_rem = (5,10)
 threshold_time_on_battery = (3,2)
 threshold_battery_load =  (90,80)

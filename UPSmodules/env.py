@@ -223,13 +223,20 @@ class UtConst:
             if not os.path.isfile(self.icon_file):
                 self.process_message('Error: Icon file not found: [{}]'.format(self.icon_file), log_flag=True)
 
-    def wrap(self, message: any, indent: int = 0) -> str:
+    def wrap(self, message: any, indent: int = 0, length: int = 80) -> str:
+        """ Function to wrap long items at nearest space to the length limit.
+
+        :param message:  target string to wrap
+        :param indent:   indent amount for wrapped strings
+        :param length:   max length of the string.
+        :return:  The wrapped string.
+        """
         if not isinstance(message, str): return message
         length = len(message)
-        if length < 80:
+        if length < length:
             return message
         trunc_loc = 0
-        for i in range(80, 0, -1):
+        for i in range(length, 0, -1):
             if message[i] == ' ':
                 trunc_loc = i
                 break
