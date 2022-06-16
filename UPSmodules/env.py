@@ -37,7 +37,7 @@ import logging
 from pathlib import Path
 import shutil
 from datetime import datetime
-from typing import Dict, Union, TextIO
+from typing import Dict, Union, TextIO, Set
 from UPSmodules import __version__, __status__, __credits__, __required_pversion__, __required_kversion__
 
 LOGGER = logging.getLogger('ups-utils')
@@ -133,12 +133,14 @@ class UtConst:
     _icons: Dict[str, str] = {'ups-mon': 'ups-utils-monitor.icon.png'}
     _config_file_names: Dict[str, str] = {'json': 'ups-config.json', 'ini': 'ups-utils.ini'}
     _config_files: Dict[str, Union[str, None]] = {'json': None, 'ini': None}
+    _all_args: Set[str] = {'debug', 'show_unresponsive' 'log' 'no_markup' 'use_ltz' 'verbose'}
 
     # Public items
     gui_window_title: str = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file: str = 'ups-utils-monitor.icon.png'
 
     def __init__(self):
+        self.calling_program = ''
         self.args: Union[argparse.Namespace, None] = None
         self.program_name: Union[str, None] = None
         self.fatal: bool = False
@@ -146,6 +148,7 @@ class UtConst:
         self.ups_config_ini: Union[str, None] = None
         self.install_type: Union[str, None] = None
         self.package_path: str = inspect.getfile(inspect.currentframe())
+        # Flags used by signals
         self.quit: bool = False
         self.refresh_daemon: bool = False
 
@@ -175,6 +178,7 @@ class UtConst:
         self.ups_config_ini = self._config_files['ini']
 
         # Utility Execution Flags
+        self.debug: bool = False
         self.show_unresponsive: bool = False
         self.log: bool = False
         self.no_markup: bool = False
@@ -190,16 +194,18 @@ class UtConst:
         :param args: The object return by args parser.
         :param program_name: Name of calling program.
         """
+        self.calling_program = program_name
         self.args = args
-        self.program_name = program_name
         if not self.ups_config_ini and program_name == 'ups-daemon':
             self.fatal = True
-        for target_arg in vars(self.args):
-            if target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
-            elif target_arg == 'log': self.log = self.args.log
-            elif target_arg == 'no_markup': self.no_markup = self.args.no_markup
-            elif target_arg == 'verbose': self.verbose = self.args.verbose
-            elif target_arg == 'ltz': self.use_ltz = self.args.ltz
+        for target_arg in self._all_args:
+            if target_arg in self.args:
+                if target_arg == 'debug': self.debug = self.args.debug
+                elif target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
+                elif target_arg == 'log': self.log = self.args.log
+                elif target_arg == 'no_markup': self.no_markup = self.args.no_markup
+                elif target_arg == 'verbose': self.verbose = self.args.verbose
+                elif target_arg == 'use_ltz': self.use_ltz = self.args.ltz
         LOGGER.propagate = False
         formatter = logging.Formatter("%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s")
         stream_handler = logging.StreamHandler()
@@ -214,11 +220,14 @@ class UtConst:
             file_handler.setFormatter(formatter)
             file_handler.setLevel(logging.DEBUG)
             LOGGER.addHandler(file_handler)
-        LOGGER.debug('Command line arguments:\n  %s', args)
-        LOGGER.debug('Module directory: %s', inspect.getfile(inspect.currentframe()))
         LOGGER.debug('Install type: %s', self.install_type)
+        LOGGER.debug('Calling program: %s', program_name)
+        LOGGER.debug('Command line arguments:\n  %s', args)
         LOGGER.debug('Local TZ: %s', self.ltz)
+        LOGGER.debug('Module directory: %s', inspect.getfile(inspect.currentframe()))
         LOGGER.debug('Icon path set to: %s', self._icon_path)
+        LOGGER.debug('Config file set to: %s', self.ups_config_ini)
+        LOGGER.debug('Json file set to: %s', self.ups_config_ini)
         try:
             self.icon_file = os.path.join(self._icon_path, self._icons[program_name])
         except KeyError:

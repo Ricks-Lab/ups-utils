@@ -501,7 +501,6 @@ def main() -> None:
                               env.UT_CONST.mark_up_codes['bold'])
         try:
             while not env.UT_CONST.quit:
-                # TODO: Need to understand why env_temp goes invalid with monitor group is used.
                 ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic,
                                                  errups=args.show_unresponsive, display=False)
                 if args.status:
