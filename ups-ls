@@ -90,18 +90,18 @@ def main() -> None:
     LOGGER.debug('########## %s %s', __program_name__, __version__)
 
     if not env.UT_CONST.check_env():
-        env.UT_CONST.log_print('Error in environment. Exiting...')
+        env.UT_CONST.process_message('Error in environment. Exiting...', log_flag=True)
         sys.exit(-1)
 
     ups_list = UPS.UpsList(daemon=args.list_params)
     num_ups = ups_list.num_upss()
 
     if env.UT_CONST.fatal:
-        env.UT_CONST.log_print('Fatal Error. Exiting...')
+        env.UT_CONST.process_message('Fatal Error. Exiting...', log_flag=True)
         sys.exit(-1)
 
     if not num_ups['total']:
-        env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file))
+        env.UT_CONST.process_message('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file), log_flag=True)
         print('    For more information: `man {0}`, exiting...'.format(env.UT_CONST.ups_json_file))
         sys.exit(-1)
     print(ups_list)

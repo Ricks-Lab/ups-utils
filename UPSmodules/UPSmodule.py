@@ -40,7 +40,7 @@ import logging
 import pprint
 import configparser
 from enum import Enum
-from typing import Tuple, List, Union, Dict, Generator, Set
+from typing import Tuple, List, Union, Dict, Generator, Set, Optional
 from uuid import uuid4
 from UPSmodules import env
 
@@ -86,7 +86,7 @@ class UpsItem:
                             'snmp_community', 'uuid', 'ups_model', 'ups_nmc_model'}
     UPS_type: UpsEnum = UpsEnum('type', 'all apc_ap96xx eaton_pw')
 
-    _param_labels: Dict[str, str] = {
+    param_labels: Dict[str, str] = {
         'display_name': 'UPS Name',
         'ups_IP': 'UPS IP/FQDN',
         'ups_type': 'UPS Type',
@@ -139,7 +139,7 @@ class UpsItem:
         'mib_battery_capacity', 'mib_time_on_battery', 'mib_battery_runtime_remain', 'mib_system_status',
         'mib_battery_status')
     _short_list: Set[str] = {'ups_IP', 'display_name', 'mib_ups_model', 'responsive', 'daemon'}
-    _table_list: Set[str] = {'display_name', 'ups_IP', 'ups_type', 'mib_ups_model', 'ups_nmc_model', 'daemon'}
+    table_list: Set[str] = {'display_name', 'ups_IP', 'ups_type', 'mib_ups_model', 'ups_nmc_model', 'daemon'}
     mark_up_codes = env.UT_CONST.mark_up_codes
     TXT_style: UpsEnum = UpsEnum('style', 'warn crit green bold normal')
 
@@ -190,9 +190,9 @@ class UpsItem:
 
     @classmethod
     def initialize_cls_table_list(cls) -> None:
-        """ Initialize the class data _table_list.
+        """ Initialize the class data table_list.
         """
-        cls._table_list = cls._table_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.monitor])
+        cls.table_list = cls.table_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.monitor])
 
     def __getitem__(self, param_name: str) -> any:
         try:
@@ -209,10 +209,14 @@ class UpsItem:
     def __str__(self) -> str:
         return re.sub(r'\'', '\"', pprint.pformat(self.prm, indent=2, width=120))
 
-    def mib_command_names(self, cmd_group: UpsEnum) -> Generator[str, None, None]:
-        """ Returns mib command names for the given command group """
-        # TODO: fix this
-        print('mib_cmd_names')
+    def mib_command_names(self, cmd_group: Optional[UpsEnum] = None) -> Generator[str, None, None]:
+        """ Returns mib command names for the given command group.
+
+        :param cmd_group: Specifies the group of MIB commands.  Default is all.
+        :return: Generator yielding mib command names
+        """
+        if not cmd_group:
+            cmd_group = UpsComm.MIB_group.all
         if cmd_group == UpsComm.MIB_group.all:
             if self.prm.ups_type == UpsComm.MIB_nmc.apc_ap96xx:
                 cmd_group = UpsComm.MIB_group.all_apc
@@ -303,11 +307,11 @@ class UpsItem:
         if short:
             show_list = self._short_list
         else:
-            show_list: Set[str] = UpsComm.all_mib_cmd_names[UpsComm.MIB_group.all].union(self._table_list)
+            show_list: Set[str] = UpsComm.all_mib_cmd_names[UpsComm.MIB_group.all].union(self.table_list)
         if input_arg: show_list = show_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.input])
         if output_arg: show_list = show_list.union(UpsComm.all_mib_cmd_names[UpsComm.MIB_group.output])
 
-        for param_name, param_label in self._param_labels.items():
+        for param_name, param_label in self.param_labels.items():
             if param_name not in show_list: continue
             color = self.mark_up_codes['none']
             color_reset = self.mark_up_codes['none'] if env.UT_CONST.no_markup else self.mark_up_codes['reset']
@@ -561,6 +565,8 @@ class UpsList:
         self.get_daemon_ups().daemon = self.daemon
 
     def read_set_daemon(self) -> None:
+        """ Used to refresh the daemon configuration parameters by rereading file.
+        """
         self.daemon: Union[UpsDaemon, None] = UpsDaemon()
         self.get_daemon_ups().daemon = self.daemon
         print('daemon refreshed')
@@ -627,6 +633,8 @@ class UpsList:
         """ Print each UPS item in the UpsList """
         for ups in self.upss():
             ups.print(short, input_arg, output_arg)
+        if newline:
+            print('')
 
     def get_daemon_ups(self) -> Union[UpsItem, None]:
         """ Get the ups object for the daemon UPS.
@@ -978,7 +986,7 @@ class UpsComm:
     # UPS MiB Commands lists
     _mib_all_apc_ap96xx: Set[str] = set(all_mib_cmds[MIB_nmc.apc_ap96xx].keys())
     _mib_all_eaton_pw: Set[str] = set(all_mib_cmds[MIB_nmc.eaton_pw].keys())
-    _mib_statmon: Set[str] = {'mib_ups_name', 'mib_ups_type', 'mib_ups_location', 'ups_nmc_model'}
+    _mib_statmon: Set[str] = {'mib_ups_name', 'mib_ups_type', 'mib_ups_location', 'mib_ups_info', 'mib_ups_model'}
     _mib_static: Set[str] = {'mib_ups_name', 'mib_ups_info', 'mib_bios_serial_number', 'mib_firmware_revision',
                              'mib_ups_type', 'mib_ups_location', 'mib_ups_uptime'}
     _mib_dynamic: Set[str] = {'mib_ups_env_temp', 'mib_battery_capacity', 'mib_time_on_battery',
@@ -1003,10 +1011,9 @@ class UpsComm:
 
     # Check if snmp tools are installed
     _snmp_command: str = shutil.which('snmpget')
-    _fatal: bool = False
     if not _snmp_command:
-        print('Missing dependency: `sudo apt install snmp`')
-        _fatal = True
+        env.UT_CONST.process_message('Missing dependency: `sudo apt install snmp`', log_flag=True, verbose=True)
+        sys.exit(-1)
 
     def __init__(self, ups_item: UpsItem):
         """
@@ -1014,6 +1021,7 @@ class UpsComm:
         """
         self.snmp_command = self._snmp_command
         self.daemon: bool = ups_item.prm.daemon
+        self.ups_type = ups_item.prm['ups_type']
         if ups_item.prm['ups_type'] in self.MIB_nmc.list():
             self.ups_type = ups_item.prm['ups_type'] = self.MIB_nmc[ups_item.prm['ups_type']]
         self.mib_commands = self.all_mib_cmds[self.ups_type]
@@ -1083,6 +1091,7 @@ class UpsComm:
                 if ups.prm['ups_type'] == UpsComm.MIB_nmc.apc_ap96xx:
                     try:
                         ups.prm['ups_nmc_model'] = re.sub(r'.*MN:', '', ups.prm[cmd]).split()[0]
+                        LOGGER.debug('From [%s] got ups_nmc_model of [%s]', ups.prm[cmd], ups.prm['ups_nmc_model'])
                     except(KeyError, IndexError):
                         ups.prm['ups_nmc_model'] = ups.ups_type().name
                 else:

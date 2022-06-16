@@ -176,11 +176,11 @@ class UtConst:
 
         # Utility Execution Flags
         self.show_unresponsive: bool = False
-        self.LOG: bool = False
+        self.log: bool = False
         self.no_markup: bool = False
         self.log_file_ptr: Union[TextIO, None] = None
-        self.USELTZ: bool = False
-        self.LTZ = datetime.utcnow().astimezone().tzinfo
+        self.use_ltz: bool = False
+        self.ltz = datetime.utcnow().astimezone().tzinfo
         self.verbose = False
 
     def set_env_args(self, args: argparse.Namespace, program_name: str = None) -> None:
@@ -196,10 +196,10 @@ class UtConst:
             self.fatal = True
         for target_arg in vars(self.args):
             if target_arg == 'show_unresponsive': self.show_unresponsive = self.args.show_unresponsive
-            elif target_arg == 'log': self.LOG = self.args.log
+            elif target_arg == 'log': self.log = self.args.log
             elif target_arg == 'no_markup': self.no_markup = self.args.no_markup
             elif target_arg == 'verbose': self.verbose = self.args.verbose
-            elif target_arg == 'ltz': self.USELTZ = self.args.ltz
+            elif target_arg == 'ltz': self.use_ltz = self.args.ltz
         LOGGER.propagate = False
         formatter = logging.Formatter("%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s")
         stream_handler = logging.StreamHandler()
@@ -217,7 +217,7 @@ class UtConst:
         LOGGER.debug('Command line arguments:\n  %s', args)
         LOGGER.debug('Module directory: %s', inspect.getfile(inspect.currentframe()))
         LOGGER.debug('Install type: %s', self.install_type)
-        LOGGER.debug('Local TZ: %s', self.LTZ)
+        LOGGER.debug('Local TZ: %s', self.ltz)
         LOGGER.debug('Icon path set to: %s', self._icon_path)
         try:
             self.icon_file = os.path.join(self._icon_path, self._icons[program_name])
@@ -248,16 +248,6 @@ class UtConst:
             message = message[:trunc_loc] + '\n{}'.format(' '.ljust(indent, ' ')) + self.wrap(message[trunc_loc:],
                                                                                               indent, length)
         return message
-
-    @staticmethod
-    def log_print(message: str) -> None:
-        """ Print and log message
-
-        :param message:  message to be processed
-        :return:  None
-        """
-        print(message)
-        LOGGER.debug(message)
 
     @staticmethod
     def now(ltz: bool = False) -> datetime:

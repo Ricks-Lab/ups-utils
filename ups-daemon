@@ -125,7 +125,7 @@ def main() -> None:
     print('Install type: {}'.format(env.UT_CONST.install_type))
 
     if not env.UT_CONST.check_env():
-        env.UT_CONST.log_print('Error in environment. Exiting...')
+        env.UT_CONST.process_message('Error in environment. Exiting...', log_flag=True)
         sys.exit(-1)
 
     ups_list = UPS.UpsList()
@@ -134,11 +134,11 @@ def main() -> None:
     daemon_ups = ups_list.get_daemon_ups()
 
     if not daemon_ups.is_responsive():
-        env.UT_CONST.log_print('The daemon UPS [{}] is unresponsive.'.format(daemon_ups['display_name']))
+        env.UT_CONST.process_message('The daemon UPS [{}] is unresponsive.'.format(daemon_ups['display_name']), log_flag=True)
         env.UT_CONST.fatal = True
 
     if env.UT_CONST.fatal:
-        env.UT_CONST.log_print('Fatal Error. Exiting...')
+        env.UT_CONST.process_message('Fatal Error. Exiting...', log_flag=True)
         sys.exit(-1)
 
     # Display current status of target UPS

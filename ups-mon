@@ -138,7 +138,7 @@ class MonitorWindow(Gtk.Window):
             lbox.pack_start(log_label, True, True, 0)
             grid.attach(lbox, 0, row, num_ups + 1, 1)
         row += 1
-        if env.UT_CONST.LOG:
+        if env.UT_CONST.log:
             log_label = Gtk.Label(name='warn_label')
             log_label.set_markup('<big><b> Logging to:    </b>' + env.UT_CONST.log_file + '</big>')
             lbox = Gtk.Box(spacing=6, name='warn_box')
@@ -154,8 +154,8 @@ class MonitorWindow(Gtk.Window):
         row_labels['display_name'].set_markup('<b>UPS Parameters</b>')
         # Set row labels for header items
         for param_name in UPS.UpsItem.ordered_table_items:
-            if param_name not in UPS.UpsItem._table_list: continue
-            param_label = UPS.UpsItem._param_labels[param_name]
+            if param_name not in UPS.UpsItem.table_list: continue
+            param_label = UPS.UpsItem.param_labels[param_name]
             if param_name == 'display_name':
                 row_labels[param_name] = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
             else:
@@ -186,7 +186,7 @@ class MonitorWindow(Gtk.Window):
             grid.attach(lbox, col, row, 1, 1)
             row += 1
             for param_name in UPS.UpsItem.ordered_table_items:
-                if param_name not in UPS.UpsItem._table_list: continue
+                if param_name not in UPS.UpsItem.table_list: continue
                 if param_name == 'display_name': continue
                 label = Gtk.Label(label=ups[param_name], name='white_label')
                 label.set_width_chars(self.max_width)
@@ -231,7 +231,7 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
     """
     ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic, errups=env.UT_CONST.show_unresponsive)
     gc.all_refresh_gui_data()
-    if env.UT_CONST.LOG:
+    if env.UT_CONST.log:
         print_log(env.UT_CONST.log_file_ptr, ups_list)
 
     # update gui
@@ -274,7 +274,6 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
                 else:
                     state_style = UPS.UpsItem.TXT_style.normal
                     data_value = '---'
-            #def_box_css = "{ background-image: image(%s); }" % UPSgui.GuiProps.color_name_to_hex('slate_md')
             set_gtk_prop(lv, width_chars=MonitorWindow.max_width + 1)
             if state_style == UPS.UpsItem.TXT_style.crit:
                 lv.set_markup('<b>{}</b>'.format(data_value))
@@ -354,8 +353,8 @@ def print_monitor_table(ups_list: UPS.UpsList) -> bool:
     print('┤')
 
     for param_name in UPS.UpsItem.ordered_table_items:
-        if param_name not in UPS.UpsItem._table_list: continue
-        param_label = UPS.UpsItem._param_labels[param_name]
+        if param_name not in UPS.UpsItem.table_list: continue
+        param_label = UPS.UpsItem.param_labels[param_name]
         color = env.UT_CONST.mark_up_codes['bcyan']
         print('│{}{}{}'.format(color, param_label.ljust(hrw, ' ')[:hrw], reset), sep='', end='')
         for ups in ups_list.upss():
@@ -369,7 +368,7 @@ def print_monitor_table(ups_list: UPS.UpsList) -> bool:
                     color = env.UT_CONST.mark_up_codes[color]
                 elif param_name in UPS.UpsDaemon.daemon_param_dict:
                     text_format = ups_list.daemon.daemon_format(param_name, ups[param_name])
-                    LOGGER.debug('{}, {}: {}'.format(param_name, ups[param_name], text_format))
+                    LOGGER.debug('%s, %s: %s', param_name, ups[param_name], text_format)
                     color = env.UT_CONST.mark_up_codes[text_format]
                 value = '---' if ups[param_name] is None else str(ups[param_name])
                 item_str = '{}{}{}'.format(color, value[:irw].center(irw), reset)
@@ -394,8 +393,8 @@ def print_log(fileptr: TextIO, ups_list: UPS.UpsList) -> None:
     time_str = (str(env.UT_CONST.now(ltz=True).strftime('%c')).strip())
     for ups in ups_list.upss():
         print('{}'.format(time_str), file=fileptr, end='')
-        for param_name in UPS.UpsItem._param_labels:
-            if param_name not in UPS.UpsItem._table_list: continue
+        for param_name in UPS.UpsItem.param_labels:
+            if param_name not in UPS.UpsItem.table_list: continue
             print('|{}'.format(ups[param_name]), file=fileptr, end='')
         print('', file=fileptr)
 
@@ -406,8 +405,8 @@ def print_log_header(fileptr: TextIO) -> None:
     :param fileptr:  The logfile fileptr
     """
     print('time', file=fileptr, end='')
-    for param_name in UPS.UpsItem._param_labels:
-        if param_name not in UPS.UpsItem._table_list: continue
+    for param_name in UPS.UpsItem.param_labels:
+        if param_name not in UPS.UpsItem.table_list: continue
         print('|{}'.format(param_name), file=fileptr, end='')
     print('', file=fileptr)
 
@@ -445,7 +444,7 @@ def main() -> None:
     LOGGER.debug('########## %s %s', __program_name__, __version__)
 
     if not env.UT_CONST.check_env():
-        env.UT_CONST.log_print('Error in environment. Exiting...')
+        env.UT_CONST.process_message('Error in environment. Exiting...', log_flag=True)
         sys.exit(-1)
 
     print('Reading and verifying UPSs listed in {}. '.format(env.UT_CONST.ups_json_file))
@@ -453,7 +452,7 @@ def main() -> None:
     num_ups = ups_list.num_upss()
 
     if not num_ups['total']:
-        env.UT_CONST.log_print('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file))
+        env.UT_CONST.process_message('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file), log_flag=True)
         print('    For more information: `man {0}`, exiting...'.format(env.UT_CONST.ups_json_file))
         sys.exit(-1)
     print(ups_list)
@@ -463,22 +462,22 @@ def main() -> None:
     if int(args.sleep) >= ups_list.daemon.daemon_param_defaults['read_interval']['limit']:
         env.UT_CONST.SLEEP = int(args.sleep)
     else:
-        env.UT_CONST.log_print('Invalid value for sleep specified.  Must be an integer >= {}'.format(
-            ups_list.daemon.daemon_param_defaults['read_interval']['limit']))
+        env.UT_CONST.process_message('Invalid value for sleep specified.  Must be an integer >= {}'.format(
+            ups_list.daemon.daemon_param_defaults['read_interval']['limit']), log_flag=True)
         env.UT_CONST.fatal = True
 
     if env.UT_CONST.fatal:
-        env.UT_CONST.log_print('Fatal Error. Exiting...')
+        env.UT_CONST.process_message('Fatal Error. Exiting...', log_flag=True)
         sys.exit(-1)
 
-    ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.all, errups=args.show_unresponsive, display=False)
+    ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.monitor, errups=args.show_unresponsive, display=False)
 
     env.UT_CONST.show_unresponsive = args.show_unresponsive
 
     if args.log:
-        env.UT_CONST.LOG = True
+        env.UT_CONST.log = True
         env.UT_CONST.log_file = './log_monitor_{}.txt'.format(
-            env.UT_CONST.now(ltz=env.UT_CONST.USELTZ).strftime('%m%d_%H%M%S'))
+            env.UT_CONST.now(ltz=env.UT_CONST.use_ltz).strftime('%m%d_%H%M%S'))
         env.UT_CONST.log_file_ptr = open(env.UT_CONST.log_file, 'w', 1)
         print_log_header(env.UT_CONST.log_file_ptr)
 
@@ -503,7 +502,7 @@ def main() -> None:
         try:
             while not env.UT_CONST.quit:
                 # TODO: Need to understand why env_temp goes invalid with monitor group is used.
-                ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.monitor,
+                ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic,
                                                  errups=args.show_unresponsive, display=False)
                 if args.status:
                     print_monitor_table(ups_list)
@@ -512,14 +511,14 @@ def main() -> None:
                     os.system('clear')
                 if LOGGER.getEffectiveLevel() == logging.DEBUG:
                     print('{}Debug Logger Active{}'.format(color, env.UT_CONST.mark_up_codes['reset']))
-                if env.UT_CONST.LOG:
+                if env.UT_CONST.log:
                     print('{}Logging to:  {}{}'.format(color, env.UT_CONST.log_file,
                                                        env.UT_CONST.mark_up_codes['reset']))
                     print_log(env.UT_CONST.log_file_ptr, ups_list)
                 print_monitor_table(ups_list)
                 time.sleep(env.UT_CONST.SLEEP)
-        except KeyboardInterrupt as err:
-            if env.UT_CONST.LOG:
+        except KeyboardInterrupt:
+            if env.UT_CONST.log:
                 env.UT_CONST.log_file_ptr.close()
             sys.exit(0)
 
