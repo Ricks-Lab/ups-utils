@@ -92,9 +92,10 @@ class UtConst:
                                    r'?\d))$'),
                 'FQDN': re.compile(r'^[a-z\d]([a-z\d-]{0,61}[a-z\d])?(.[a-z\d]([a-z\d-]{0,61}[a-z\d]))*$',
                                    re.IGNORECASE),
-                'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)'),
+                'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)', re.IGNORECASE),
+                'APC': re.compile(r'^apc_.*', re.IGNORECASE),
                 'INI': re.compile(r'^\(\s*\d+\s*,\s*\d+\s*\)\s*$'),
-                'NORMAL': re.compile(r'(.*Battery Normal.*)')}
+                'NORMAL': re.compile(r'(.*Battery Normal.*)', re.IGNORECASE)}
 
     mark_up_codes: Dict[str, str] = {'none':      '',
                                      'bold':      '\033[1m',
@@ -110,6 +111,8 @@ class UtConst:
                                      'red':       '\033[31m',
                                      # Named formats
                                      'amd':       '\033[1;37;41m',
+                                     'limit':     '\033[6;37;41m',
+                                     'crit':      '\033[1;37;41m',
                                      'error':     '\033[1;37;41m',
                                      'ok':        '\033[1;37;42m',
                                      'nvidia':    '\033[1;30;42m',
@@ -143,6 +146,8 @@ class UtConst:
         self.ups_config_ini: Union[str, None] = None
         self.install_type: Union[str, None] = None
         self.package_path: str = inspect.getfile(inspect.currentframe())
+        self.quit: bool = False
+        self.refresh_daemon: bool = False
 
         if 'dist-packages' in self.package_path: self.install_type = 'debian'
         elif '.local' in self.package_path: self.install_type = 'pypi-linux'

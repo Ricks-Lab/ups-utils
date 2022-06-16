@@ -59,19 +59,18 @@ from UPSmodules import __version__, __status__, __credits__
 
 
 LOGGER = logging.getLogger('ups-utils')
-QUIT_SIGNAL = False
 
 
-def signal_handler(_sig: Any, _frame: Any) -> None:
+def ctrl_c_handler(target_signal: Any, _frame: Any) -> None:
     """
-    Manage quit signal.
+    Signal catcher for ctrl-c to exit monitor loop.
 
-    :param _sig:
-    :param _frame:
-    :return:  None
+    :param target_signal: Target signal name
+    :param _frame: Ignored
     """
-    global QUIT_SIGNAL
-    QUIT_SIGNAL = True
+    LOGGER.debug('ctrl_c_handler (ID: %s) has been caught. Setting quit flag...', target_signal)
+    print('Setting quit flag...')
+    env.UT_CONST.quit = True
 
 
 def daemon_sleep(sleep_time: int = 30) -> None:
@@ -81,10 +80,9 @@ def daemon_sleep(sleep_time: int = 30) -> None:
     :param sleep_time:  Sleep time in seconds
     :return: None
     """
-    global QUIT_SIGNAL
     for _sleep_index in range(0, sleep_time):
         time.sleep(1)
-        if QUIT_SIGNAL:
+        if env.UT_CONST.quit:
             print('{}: Received Quit Signal'.format(datetime.now().strftime('%c')))
             sys.exit(0)
 
@@ -102,12 +100,11 @@ def main() -> None:
 
     # Verbosity, logging, and debug options
     parser.add_argument('--logfile', help='Specify logfile', type=str, default='')
-    parser.add_argument('--verbose', help='Output normal readings', action='store_true', default=False)
+    parser.add_argument('--verbose', help='Output execution exception notices', action='store_true', default=False)
     parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
     args = parser.parse_args()
 
-    signal.signal(signal.SIGINT, signal_handler)
-    global QUIT_SIGNAL
+    signal.signal(signal.SIGINT, ctrl_c_handler)
 
     # About me
     if args.about:
@@ -172,7 +169,7 @@ def main() -> None:
             time_on_bat = daemon_ups.send_snmp_command('mib_time_on_battery')[0]
             remain_run_time = daemon_ups.send_snmp_command('mib_battery_runtime_remain')[0]
 
-            if QUIT_SIGNAL:
+            if env.UT_CONST.quit:
                 print('{}: Received Quit Signal'.format(time_str))
                 sys.exit(0)
 

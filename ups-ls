@@ -142,7 +142,7 @@ def main() -> None:
             if not ups.read_ups_list_items(cmd_group, display=False):
                 print('Giving up on {}'.format(ups.ups_name()))
                 break
-            ups.print(short=True, input=args.input, output=args.output)
+            ups.print(short=True, input_arg=args.input, output_arg=args.output)
         else:
             if not ups.read_ups_list_items(cmd_group, display=False):
                 print('Giving up on {}'.format(ups.ups_name()))

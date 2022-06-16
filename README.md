@@ -173,6 +173,8 @@ use defaults if missing.
 * Implement code improvements from gpu-utils project.
 * Move listing like functions from *ups-daemon* to *ups-ls*.
 * Complete rewrite.
+* USR1 signal will cause *ups-mon* to reread daemon ini file.
+* Moved logic of daemon parameter color coding to the daemon class.
 
 ## Known Issues
 

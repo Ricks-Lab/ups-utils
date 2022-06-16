@@ -49,7 +49,6 @@ ColorDict = Dict[str, str]
 GuiCompDict = Dict[str, Dict[str, Dict[str, any]]]
 LOGGER = logging.getLogger('ups-utils')
 PATTERNS = env.UT_CONST.PATTERNS
-Text_style: UPSmodule.UpsEnum = UPSmodule.UpsEnum('style', 'warn crit green bold normal')
 
 
 def get_color(value: str) -> str:
