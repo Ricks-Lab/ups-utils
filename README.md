@@ -1,8 +1,7 @@
 ![](https://img.shields.io/github/license/Ricks-Lab/ups-utils)
-[![PyPI version](https://badge.fury.io/py/rickslab-ups-utils.svg)](https://badge.fury.io/py/rickslab-ups-utils)
-[![Downloads](https://pepy.tech/badge/rickslab-ups-utils)](https://pepy.tech/project/rickslab-ups-utils)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/Ricks-Lab/ups-utils)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ricks-Lab/ups-utils)
+![Libraries.io SourceRank](https://img.shields.io/librariesio/sourcerank/pypi/rickslab-ups-utils)
 
 # rickslab-ups-utils
 
@@ -36,100 +35,9 @@ For a detailed introduction, a community sourced
 is available. All tools are demonstrated and use cases are presented.  Additions
 to the guide are welcome.  Please submit a pull request with your suggested additions!
 
-### Debian Package Installation
+## Commands
 
-First, remove any previous PyPI installation and exit that terminal:
-
-```shell
-pip uninstall rickslab-ups-utils
-exit
-```
-
-Next, add the *rickslab-ups-utils* repository:
-
-```shell
-wget -q -O - https://debian.rickslab.com/PUBLIC.KEY | sudo gpg --dearmour -o /usr/share/keyrings/rickslab-agent.gpg
-
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rickslab-agent.gpg] https://debian.rickslab.com/ups-utils/ stable main' | sudo tee /etc/apt/sources.list.d/rickslab-ups-utils.list
-
-sudo apt update
-```
-
-Then install the package with apt:
-
-```shell
-sudo apt install rickslab-ups-utils
-```
-
-After installation, you will need to create a new group, *upsutils*, and add trusted users to this group.
-This required for this type of installation in order to secure the snmp shared secret stored in the configuration
-files:
-
-```shell
-sudo groupadd upsutils
-sudo usermod -a -G upsutils $LOGNAME
-```
-
-After adding the user to a new group, the user must logout and relogin before the change is in effect.
-
-### PyPI Installation
-
-Install the latest package from [PyPI](https://pypi.org/project/rickslab-ups-utils/) with the following
-commands:
-
-```shell
-pip3 install rickslab-ups-utils
-```
-
-For an install from PyPI, all files will be installed in a subdirectory of
-`~/.local/share/rickslab-ups-utils/config`. Files will be owned by you and there is no
-need to setup a special group, but permissions will need to be read only by you.
-
-## Configuration
-
-Application configuration parameters must be specified in the `ups-utils.ini` file.  A
-template files is provided: `ups-utils.ini.template`. You can verify the values of the
-configuration settings by executing:
-
-```shell
-ups-ls --list_params
-```
-
-Also, a UPS list must be specified in the `ups-config.json` file using `ups-config.json.template`
-as a template.  This file contains details about each UPS that make snmp communication possible.
-The utility requires snmp v2c in order to communicate with the network accessible UPSs.  As a
-result, you must configure your target Network attached UPS devices to use SNMPv2 with a known
-Private Community String.
-
-If you installed from debian package, the template configuration files will be owned by root.  When
-you create your configuration files from the templates, you MUST change group ownership to
-*upsutils* and change permissions to 660:
-
-```shell
-cd /usr/share/rickslab-ups-utils/config/
-sudo chgrp upsutils ups-utils.ini ups-config.json
-sudo chmod 660 ups-utils.ini ups-config.json
-```
-
-If you installed from PyPI, you will be the owner of the file, so there is no need to change
-group ownership, but the configuration files must be readable by only you:
-
-```shell
-cd ~/.local/share/rickslab-ups-utils/config
-chmod 600 ups-utils.ini ups-config.json
-```
-
-To assure the use of the utilities only with secure configuration files, all utilities should
-exit with an error if not properly secured.
-
-The ups-utils rely on the command *snmpget* which is part of the snmp package that must
-be installed:
-
-```shell
-sudo apt install snmp
-```
-
-## ups-daemon
+### ups-daemon
 
 With no options specified, the utility will give the current status of the
 UPS configured with *daemon = true* in the ups-config.json file. With the
@@ -148,7 +56,7 @@ The *--logfile filename* option is used to specify a logfile, but is not
 implemented at this time.  The threshold and script definitions must be
 made in the config.py file using *config.py.template* as a template.
 
-## ups-ls
+### ups-ls
 
 This utility displays most relevant parameters for installed and compatible
 UPSs listed in the config.json file.  By default, all available parameters
@@ -159,7 +67,7 @@ the *--list_params* option, the daemon configuration parameters will be listed.
 The *--list_decoders* option will display list of all MiB decoders available
 for the UPS defined as daemon target.
 
-## ups-mon
+### ups-mon
 
 A utility to give the current state of all compatible UPSs. The default behavior
 is to continuously update a text based table in the current window until Ctrl-C is
