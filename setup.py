@@ -74,6 +74,6 @@ setup(name='rickslab-ups-utils',
                                                        'ups-config.json.template']),
                   ('share/man/man1', ['man/ups-ls.1',
                                       'man/ups-daemon.1',
-                                      'man/ups-monitor.1']),
+                                      'man/ups-mon.1']),
                   ('share/man/man4', ['man/ups-config.json.4',
                                       'man/ups-util.ini.4'])])
