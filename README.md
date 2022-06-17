@@ -9,8 +9,7 @@ A set of utilities to monitor and react to the status of a set of supported UPSs
 
 ## Installation
 
-There are currently 3 possible ways of installing *rickslab-ups-utils*.  These are summarized in
-order of preference as:
+There are currently 3 possible ways of installing *rickslab-ups-utils* as summarized here:
 
 * [Repository](https://github.com/Ricks-Lab/ups-utils/blob/master/docs/USER_GUIDE.md#repository-installation) -
 You can always clone the repository and run that version. This is useful if you want to contribute to the project.
