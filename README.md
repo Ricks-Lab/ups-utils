@@ -86,9 +86,9 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Current Release  -  v1.2.1 
+## New in Development  -  v1.2.3
 
-* Fixed issue in referencing PyPI install resource paths.
+* Nothing yet
 
 ## Known Issues
 
@@ -118,7 +118,17 @@ to support it, feel free to make a pull request.
 
 ## History
 
-## New in Previous Release  -  v1.2.0
+### New in Current Release  -  v1.2.2
+
+* Fixed crash when config files are missing and improved feedback to help
+  user resolve. Update documents to make more clear to user on how to setup.
+* Modified the *--about* of *ups-ls* to aid user in configuring the utility.
+
+### New in Previous Release  -  v1.2.1
+
+* Fixed issue in referencing PyPI install resource paths.
+
+### New in Previous Release  -  v1.2.0
 
 * Delay sys exit on failure to allow more information to be available for user to troubleshoot.
 * Check file permissions for security issues and exit if not secure.
