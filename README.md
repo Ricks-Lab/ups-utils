@@ -6,21 +6,35 @@
 
 # rickslab-ups-utils
 
-A set of utilities to monitor and react to the status of a supported UPS
+A set of utilities to monitor and react to the status of a set of supported UPSs.
 
 ## Installation
 
 There are currently 3 possible ways of installing *rickslab-ups-utils*.  These are summarized in
 order of preference as:
 
-* Debian Package - This will install a Debian package file from my public
-server.  It is signed and verified with my GPG key.  This will be installed
-as root and can be removed and updated with apt tools.
-* PyPI - Uses the Python Package Index as the source.  This should work on
-systems other than Debian based, but I have ony verified Ubuntu.  Feel free
-to report any issues, and I will work them out to support other distros.
-* Repository - You can always clone the repository and run that version.
-This is useful if you want to contribute to the project.
+* [Repository](https://github.com/Ricks-Lab/ups-utils/blob/master/docs/USER_GUIDE.md#repository-installation) -
+You can always clone the repository and run that version. This is useful if you want to contribute to the project.
+
+  ![Custom badge](https://img.shields.io/endpoint?color=%23417B5D&url=https%3A%2F%2Frickslab.com%2Fbadges%2Fgh_ups_version.json)
+* [PyPI](https://github.com/Ricks-Lab/ups-utils/blob/master/docs/USER_GUIDE.md#pypi-installation) -
+Meant for users wanting to run the very latest version.  All **PATCH** level versions are released
+here first.  This installation method is also meant for users not on a Debian distribution.
+
+  [![PyPI version](https://badge.fury.io/py/rickslab-ups-utils.svg)](https://badge.fury.io/py/rickslab-ups-utils)
+  [![Downloads](https://pepy.tech/badge/rickslab-ups-utils)](https://pepy.tech/project/rickslab-ups-utils)
+* [Rickslab.com Debian](https://github.com/Ricks-Lab/gpu-utils/blob/master/docs/USER_GUIDE.md#rickslabcom-debian-installation) -
+  Lags the PyPI release in order to assure robustness. May not include every **PATCH** version.
+
+  ![Custom badge](https://img.shields.io/endpoint?color=%23417B5D&url=https%3A%2F%2Frickslab.com%2Fbadges%2Fdeb_ups_version.json)
+  ![Custom badge](https://img.shields.io/endpoint?color=%23417B5D&url=https%3A%2F%2Frickslab.com%2Fbadges%2Fdeb_ups_down.json)
+
+## User Guide
+
+For a detailed introduction, a community sourced
+[User Guide](https://github.com/Ricks-Lab/ups-utils/blob/master/docs/USER_GUIDE.md)
+is available. All tools are demonstrated and use cases are presented.  Additions
+to the guide are welcome.  Please submit a pull request with your suggested additions!
 
 ### Debian Package Installation
 
