@@ -174,7 +174,11 @@ class UtConst:
         if None in self._config_files.values():
             print('Missing required configuration files.  Exiting...')
             print('     See man pages for {} or {} for more information.'.format(*self._config_file_names.values()))
-            self.fatal = True
+            print('You must first create configuration files from templates per README')
+            print('You are running with {} type installation'.format(self.install_type))
+            print('Configuration file templates are located at [{}]'.format(self._local_config_list[self.install_type]))
+            sys.exit(-1)
+
         self.ups_json_file = self._config_files['json']
         self.ups_config_ini = self._config_files['ini']
 

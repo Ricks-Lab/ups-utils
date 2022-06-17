@@ -86,9 +86,11 @@ def main() -> None:
         print('Credits: ', *['\n      {}'.format(item) for item in __credits__])
         print('License: ', __license__)
         print('Version: ', __version__)
-        print('Install Type: ', env.UT_CONST.install_type)
         print('Maintainer: ', __maintainer__)
         print('Status: ', __status__)
+        print('Install Type: {}'.format(env.UT_CONST.install_type))
+        print('Config File: {}'.format(env.UT_CONST.ups_config_ini))
+        print('Json File: {}'.format(env.UT_CONST.ups_config_ini))
         sys.exit(0)
 
     env.UT_CONST.set_env_args(args, __program_name__)

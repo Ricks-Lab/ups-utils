@@ -120,8 +120,15 @@ echo '' | sudo tee /etc/apt/sources.list.d/rickslab-ups-utils.list
 # Configuration
 
 Application configuration parameters must be specified in the `ups-utils.ini` file.  A
-template files is provided: `ups-utils.ini.template`. You can verify the values of the
-configuration settings by executing:
+set of template files are provided: `ups-utils.ini.template` and `ups-config.ini.template`.
+You can determine the location of the template files to modify by executing the following command:
+
+```shell
+ups-ls --about
+```
+
+Once you have created the .json and .ini files from the template files, you can verify
+the values of the configuration settings by executing:
 
 ```shell
 ups-ls --list_params
