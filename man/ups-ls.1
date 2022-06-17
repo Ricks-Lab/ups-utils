@@ -1,4 +1,4 @@
-.TH UPS\-LS 1 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
+.TH UPS\-LS 1 "June 2022" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
 .nh
 .SH NAME
 ups-ls \- displays most relevant parameters for installed, accessible, and compatible UPSs.
@@ -9,7 +9,7 @@ ups-ls \- displays most relevant parameters for installed, accessible, and compa
 .br
 .RB [ \-\-input " | " \-\-output " | " \-\-list_commands " | " \-\-list_params " | " \-\-list_decoders "]"
 .br
-.RB [ \-\-verbose "] [" \-\-debug "]"
+.RB [ \-\-verbose "] [" \-\-debug "] [" \-\-no_markup "]"
 
 .SH DESCRIPTION
 .B ups-ls
@@ -18,18 +18,18 @@ the config.json file.  By default, all available parameters are displayed. The
 \fB--input\fR and \fB--output\fR options can be used to get relevant UPS input
 and output parameters. With the \fB--list_commands\fR option, the utility will
 list all available SNMP commands for the configured UPS.  With the
-\fB--list_\fR option, the daemon configuration parameters will be listed.
+\fB--list_params\fR option, the daemon configuration parameters will be listed.
 The \fB--list_decoders\fR option will display list of all MiB decoders
-available for the UPS defined with \fBdaemon = true\fR.
+available for the UPS defined with \fBdaemon = true\fR.  The \fB--verbose\fR
+will cause informational messages to be displayed and \fB--no_markup\fR option
+will result in plain text output instead of color coded text.  The logger is
+enabled with the \fB--debug\fR option.
 
 .SH OPTIONS
 .TP
 .BR "\-\-about"
 Will display details about 
 .B ups-ls\fP.
-.TP
-.BR \-d , " \-\-debug"
-Will run in debug mode which enables the logger at debug level.
 .TP
 .BR "\-\-input"
 Will display short list of configured UPSs with input power parameters.
@@ -48,6 +48,15 @@ file
 .TP
 .BR "\-\-list_decoders"
 Will display list of all MiB decoders available for the UPS defined with \fBdaemon = true\fR.
+.TP
+.BR " \-\-no_markup"
+Outputs plain text instead of color formatted text.
+.TP
+.BR " \-\-verbose"
+Display informational messages generated during execution.
+.TP
+.BR \-d , " \-\-debug"
+Will run in debug mode which enables the logger at debug level.
 .TP
 .BR \-h , " \-\-help"
 Display help text and exit.

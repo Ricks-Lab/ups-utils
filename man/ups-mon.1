@@ -1,11 +1,11 @@
-.TH UPS\-MON 1 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
+.TH UPS\-MON 1 "JUNE 2022" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
 .nh
 .SH NAME
 ups-mon \- displays continuously updating status of all active UPSs
 
 .SH SYNOPSIS
 .B ups-mon
-.RB [ \-\-help "] [" \-\-about "] [" \-\-status "] [" \-\-long "] [" \-\-show_unresponsive " ] [" \-\-gui "]"
+.RB [ \-\-help "] [" \-\-about "] [" \-\-status "] [" \-\-show_unresponsive " ] [" \-\-gui "]"
 .RB [ \-\-log "] [" \-\-sleep " N ] [" \-\-debug "]"
 .br
 
@@ -29,14 +29,8 @@ informational parameters. By default, unresponsive UPSs will not be displayed, b
 Will display details about 
 .B ups-mon\fP.
 .TP
-.BR \-d , " \-\-debug"
-Will run in debug mode which enables the logger at debug level.
-.TP
 .BR "\-\-status"
 Will display a snapshot of the current status of configured UPSs.
-.TP
-.BR "\-\-long"
-Will use the full list of MiB commands in a more comprehensive view of the configured UPSs.
 .TP
 .BR "\-\-show_unresponsive"
 Will result in unresponsive configured UPSs to be included in the summary.
@@ -50,34 +44,43 @@ Will output the continuous stream of data to a log file to facilitate offline an
 .BR "\-\-sleep" N
 Specifies the update interval for the continuously updating status.
 .TP
+.BR \-d , " \-\-debug"
+Will run in debug mode which enables the logger at debug level.
+.TP
 .BR \-h , " \-\-help"
 Display help text and exit.
 
 .SH "EXAMPLES"
 .nf
-.B ups-mon
+.B ups-mon --status
 .br
-Reading and verifying UPSs listed in config.json
-3 UPSs listed in config.json file.
-    3 are compatible, 3 are accessible, 3 are responsive
-
+Reading and verifying UPSs listed in /home/rick/pydev/ups-utils/UPSmodules/../ups-config.json.
+3 UPSs listed in /home/rick/pydev/ups-utils/UPSmodules/../ups-config.json.
+    3 are compatible, 3 are accessible, 3 are responsive, and 3 are valid.
 ┌─────────────────────────────┬────────────────────────┬────────────────────────┬────────────────────────┐
-│UPS Parameters               │UPS1                    │UPS2                    │UPS3                    │
+│UPS Parameters               │          UPS1          │          UPS3          │        UPS1-PDX        │
 ├─────────────────────────────┼────────────────────────┼────────────────────────┼────────────────────────┤
-│ups_type                     │apc-ap9630              │eaton-pw                │apc-ap9630              │
-│ups_IP                       │192.168.1.241           │192.168.1.242           │UPS3.rickslab.com       │
-│Percentage of Total Capacity │100                     │100                     │100                     │
-│Time on Battery              │(0.0, ' 0:00:00.00')    │[0.0, '0:00:00']        │(0.0, ' 0:00:00.00')    │
-│Runtime Remaining            │(153.61, ' 1:32:10.00') │[47.0, '0:47:00']       │(37.36, ' 0:22:25.00')  │
-│Input Voltage                │115                     │118.1                   │115                     │
-│Input Frequency Hz           │60                      │60.0                    │60                      │
-│Output Voltage               │120                     │110.0                   │120                     │
-│Output Frequency Hz          │60                      │60.0                    │60                      │
-│Output Load as % of Capacity │27                      │20                      │25                      │
-│Output Current in Amps       │6                       │4.6                     │6                       │
-│Output Power in W            │733                     │474                     │660                     │
-│UPS System Status            │OnLine-SCE-On           │Standby                 │OnLine-SCE-On           │
-│Battery Status               │Battery Normal          │Battery Normal          │Battery Normal          │
+│UPS Name                     │          UPS1          │          UPS3          │        UPS1-PDX        │
+│UPS Real Name                │     RicksLab_UPS1      │     RicksLab_UPS3      │        APC UPS         │
+│UPS IP/FQDN                  │     192.168.1.241      │     192.168.1.243      │    192.168.100.140     │
+│UPS Model                    │     SRT3000XLA-TW      │     SRT3000XLA-TW      │    SRT3000RMXLA-NC     │
+│UPS Type                     │       apc_ap96xx       │       apc_ap96xx       │       apc_ap96xx       │
+│NMC Model                    │         AP9630         │         AP9630         │         AP9641         │
+│UPS Location                 │     RicksLab-Rack      │       SophiasLab       │        NatsLab         │
+│Daemon                       │          True          │         False          │         False          │
+│UPS Environment Temp (C)     │          ---           │          ---           │           30           │
+│Input Voltage (V)            │          117           │          118           │          122           │
+│Input Frequency (Hz)         │           59           │           60           │           60           │
+│Output Voltage (V)           │          120           │          120           │          120           │
+│Output Frequency (Hz)        │           60           │           60           │           60           │
+│Output Current (A)           │           7            │           0            │           3            │
+│Output Power (W)             │          747           │           0            │          292           │
+│Output Load as % of Capacity │           28           │           0            │           11           │
+│Percentage of Total Capacity │          100           │          100           │          100           │
+│Time on Battery              │  (0.0, ' 0:00:00.00')  │  (0.0, ' 0:00:00.00')  │  (0.0, ' 0:00:00.00')  │
+│Runtime Remaining            │(148.25, ' 1:28:57.00') │(2400.0, ' 1 day, 0:00:0│(114.81, ' 1:08:53.00') │
+│UPS System Status            │     OnLine-SCE-On      │     OnLine-SCE-On      │     OnLine-SCE-On      │
+│Battery Status               │     Battery Normal     │     Battery Normal     │     Battery Normal     │
 └─────────────────────────────┴────────────────────────┴────────────────────────┴────────────────────────┘
 .fi
 

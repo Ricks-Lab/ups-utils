@@ -16,7 +16,7 @@
     execute the cancel shutdown script.  With the *--verbose* option set,
     event update messages will be output, otherwise, only events are output.
     The *--no_markup* option will cause the output to be in plain text, with
-    not color markup codes. The *--logfile filename* option is used to specify
+    no color markup codes. The *--logfile filename* option is used to specify
     a logfile, but is not implemented at this time.  The threshold and script
     definitions must be made in the config.py file using *config.py.template*
     as a template.  The logger is enabled with the *--debug* option.

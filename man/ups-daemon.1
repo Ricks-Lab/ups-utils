@@ -1,4 +1,4 @@
-.TH UPS\-DAEMON 1 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
+.TH UPS\-DAEMON 1 "June 2022" "rickslab-ups-utils" "Ricks-Lab UPS Utilities"
 .nh
 .SH NAME
 ups-daemon \- enables the monitoring of and response to UPS events
@@ -7,9 +7,9 @@ ups-daemon \- enables the monitoring of and response to UPS events
 .B ups-daemon
 .RB [ \-\-help "] [" \-\-about "]"
 .br
-.RB [ \-\-daemon "]"
+.RB [ \-\-daemon "] [" \-\-logfile " LOGFILE]"
 .br
-.RB [ \-\-verbose "] [" \-\-logfile " LOGFILE ] [" \-\-debug "]"
+.RB [ \-\-verbose "] [" \-\-no_markup "] [" \-\-debug "]"
 
 .SH DESCRIPTION
 .B ups-daemon
@@ -26,15 +26,17 @@ When the utility detects a Battery Low event from the UPS or that time
 remaining for battery or the battery charge is below specified thresholds,
 then the shutdown script will be executed. If \fBups-daemon\fR detects a return
 to line power has occurred before the shutdown has completed, it will execute
-the cancel shutdown script. The \fB--logfile LOGFILE\fR option is used to
-specify a logfile, but is not implemented at this time.  The threshold and
-script definitions must be made in the
+the cancel shutdown script.  The threshold and script definitions must be made in the
 .ul
 ups-utils.ini
 file using
 .ul
 ups-utils.ini.template
-as a template.
+as a template.  The \fB--logfile\fR option is used to specify a logfile, but is
+not implemented at this time.  The \fB--verbose\fR will cause informational
+messages to be displayed and \fB--no_markup\fR option will result in plain
+text output instead of color coded text.  The logger is enabled with the
+\fB--debug\fR option.
 
 .SH OPTIONS
 .TP
@@ -45,14 +47,17 @@ Will display details about
 .BR "\-\-daemon"
 Run in daemon mode which is meant to run as a system service.
 .TP
+.BR "\-\-logfile LOGFILE"
+Will set the logfile used in daemon mode.  By default, stdout is used.
+.TP
 .BR \-d , " \-\-debug"
 Will run in debug mode which enables the logger at debug level.
 .TP
+.BR " \-\-no_markup"
+Outputs plain text instead of color formatted text.
+.TP
 .BR "\-\-verbose"
 Output messages for normal events.
-.TP
-.BR "\-\-logfile LOGFILE"
-Will set the logfile used in daemon mode.  By default, stdout is used.
 .TP
 .BR \-h , " \-\-help"
 Display help text and exit.

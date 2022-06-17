@@ -1,11 +1,13 @@
-.TH UPS\-UTILS.INI 4 "October 2020" "rickslab-ups-utils" "Ricks-Lab UPS Utilities File Formats"
+.TH UPS\-UTILS.INI 4 "JUNE 2022" "rickslab-ups-utils" "Ricks-Lab UPS Utilities File Formats"
 .nh
 .SH NAME
 ups-utils.ini \- defines required directory paths, script names, and script parameters
 
 .SH SYNOPSIS
 .ul
-\fB[REPOSITORY Directory]\fR/ups-utils.ini
+\fB[REPOSITORY Directory]\fR
+.br
+/ups-utils.ini
 .br
 /usr/share/rickslab-ups-utils/config/ups-utils.ini
 .br
@@ -70,15 +72,17 @@ and \fBthreshold_battery_load\fR, the \fBsuspend_script\fR will be executed on t
 .RS 12
 \fB[DaemonParameters]\fR
 .br
-\fBread_interval\fR = (10,30)
+\fBread_interval\fR = (10, 30)
 .br
-\fBthreshold_battery_time_rem\fR = (5,10)
+\fBthreshold_env_temp\fR = (35, 28)
 .br
-\fBthreshold_time_on_battery\fR = (3,2)
+\fBthreshold_battery_time_rem\fR = (5, 10)
 .br
-\fBthreshold_battery_load\fR = (90,80)
+\fBthreshold_time_on_battery\fR = (3, 2)
 .br
-\fBthreshold_battery_capacity\fR = (10,50)
+\fBthreshold_battery_load\fR = (90, 80)
+.br
+\fBthreshold_battery_capacity\fR = (10, 50)
 .RE
 
 .SH "FILES"
