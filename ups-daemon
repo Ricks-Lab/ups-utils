@@ -75,6 +75,18 @@ def ctrl_c_handler(target_signal: Any, _frame: Any) -> None:
     env.UT_CONST.quit = True
 
 
+def ctrl_u_handler(target_signal: Any, _frame: Any) -> None:
+    """
+    Signal catcher for ctrl-c to exit monitor loop.
+
+    :param target_signal: Target signal name
+    :param _frame: Ignored
+    """
+    LOGGER.debug('ctrl_u_handler (ID: %s) has been caught. Setting refresh daemon flag...', target_signal)
+    print('Setting refresh daemon flag...')
+    env.UT_CONST.refresh_daemon = True
+
+
 def daemon_sleep(sleep_time: int = 30) -> None:
     """
     Interruptable sleep routine for daemon loop.
@@ -126,14 +138,16 @@ def main() -> None:
     env.UT_CONST.set_env_args(args, __program_name__)
     env.UT_CONST.cmd_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
     LOGGER.debug('########## %s %s [%s]', __program_name__, __version__, env.UT_CONST.cmd_path)
-    print('Install type: {}'.format(env.UT_CONST.install_type))
+    if args.verbose:
+        print('Install type: {}'.format(env.UT_CONST.install_type))
 
     if not env.UT_CONST.check_env():
         env.UT_CONST.process_message('Error in environment. Exiting...', log_flag=True)
         sys.exit(-1)
 
     ups_list = UPS.UpsList()
-    print('{}\n'.format(ups_list))
+    if args.verbose:
+        print('{}\n'.format(ups_list))
 
     daemon_ups = ups_list.get_daemon_ups()
 
@@ -150,17 +164,22 @@ def main() -> None:
     daemon_ups.print()
 
     if args.daemon:
+        signal.signal(signal.SIGUSR1, ctrl_u_handler)
+        # Daemon flags
+        overload_fault = False
+        suspend_state = False
+        shutting_down = False
+
+        # Control thresholds
         crit_bat_level = daemon_ups.daemon.daemon_params['threshold_battery_capacity']['crit']
         warn_bat_level = daemon_ups.daemon.daemon_params['threshold_battery_capacity']['warn']
         crit_load_level = daemon_ups.daemon.daemon_params['threshold_battery_load']['crit']
         warn_load_level = daemon_ups.daemon.daemon_params['threshold_battery_load']['warn']
         crit_runtime_rem = daemon_ups.daemon.daemon_params['threshold_battery_time_rem']['crit']
         warn_runtime_rem = daemon_ups.daemon.daemon_params['threshold_battery_time_rem']['warn']
-        overload_fault = False
-        suspend_state = False
-        shutting_down = False
         normal_sleep = daemon_ups.daemon.daemon_params['read_interval']['daemon']
         fault_sleep = daemon_ups.daemon.daemon_param_defaults['read_interval']['limit']
+
         active_sleep = normal_sleep
         if env.UT_CONST.no_markup:
             norm_style = warn_style = crit_style = ok_style = err_style = reset_style = ''
@@ -181,12 +200,29 @@ def main() -> None:
         }
         while True:
             time_str = datetime.now().strftime(env.UT_CONST.TIME_FORMAT)
+
+            # Check status of UPS
             bat_status = daemon_ups.send_snmp_command('mib_battery_status', display=False)
             if not bat_status:
                 print('[{}] {} UPS [{}] is unresponsive'.format(
                     time_str, ups_states['error'], daemon_ups['display_name']))
                 daemon_sleep(active_sleep)
                 continue
+
+            # Check for request to refresh Daemon parameters
+            if env.UT_CONST.refresh_daemon:
+                ups_list.read_set_daemon()
+                # Control thresholds
+                crit_bat_level = daemon_ups.daemon.daemon_params['threshold_battery_capacity']['crit']
+                warn_bat_level = daemon_ups.daemon.daemon_params['threshold_battery_capacity']['warn']
+                crit_load_level = daemon_ups.daemon.daemon_params['threshold_battery_load']['crit']
+                warn_load_level = daemon_ups.daemon.daemon_params['threshold_battery_load']['warn']
+                crit_runtime_rem = daemon_ups.daemon.daemon_params['threshold_battery_time_rem']['crit']
+                warn_runtime_rem = daemon_ups.daemon.daemon_params['threshold_battery_time_rem']['warn']
+                normal_sleep = daemon_ups.daemon.daemon_params['read_interval']['daemon']
+                fault_sleep = daemon_ups.daemon.daemon_param_defaults['read_interval']['limit']
+
+            # Read data from UPS
             out_power = int(daemon_ups.send_snmp_command('mib_output_power', display=False))
             bat_load = int(daemon_ups.send_snmp_command('mib_output_load', display=False))
             bat_capacity = int(daemon_ups.send_snmp_command('mib_battery_capacity', display=False))

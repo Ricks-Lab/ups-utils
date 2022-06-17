@@ -362,6 +362,9 @@ class UpsDaemon:
         self.read_daemon_config()
         self.set_daemon_parameters()
 
+    def __str__(self) -> str:
+        return re.sub(r'\'', '\"', pprint.pformat(self.daemon_params, indent=2, width=120))
+
     def daemon_format(self, command_name: str, value: Union[int, float, str],
                       gui_text_style: bool = False) -> Union[str, None, UpsEnum]:
         """
@@ -570,6 +573,8 @@ class UpsList:
         self.daemon: Union[UpsDaemon, None] = UpsDaemon()
         self.get_daemon_ups().daemon = self.daemon
         print('daemon refreshed')
+        if env.UT_CONST.verbose:
+            self.print_daemon_parameters()
         env.UT_CONST.refresh_daemon = False
 
     def __repr__(self) -> str:
@@ -626,7 +631,7 @@ class UpsList:
 
     def print_daemon_parameters(self) -> None:
         """ Print the daemon parameters read from config file. """
-        self.daemon.set_daemon_parameters()
+        self.daemon.print_daemon_parameters()
 
     def print(self, short: bool = False, input_arg: bool = False, output_arg: bool = False,
               newline: bool = True) -> None:
