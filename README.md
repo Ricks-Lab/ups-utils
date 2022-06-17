@@ -124,6 +124,8 @@ to support it, feel free to make a pull request.
 * [MIB Browser](http://www.ireasoning.com/)
 * [Eaton PowerWalker NMC](https://powerwalker.com/?page=nmc&lang=en)
 
-## New in Previous Release  -  v1.0.0
+## History
+
+### New in Previous Release  -  v1.0.0
 
 * Initial Release - Full functionality and working debian package!

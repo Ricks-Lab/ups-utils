@@ -12,9 +12,14 @@ A set of utilities to monitor and react to the status of a set of supported UPSs
 ## Installation
 
 There are 4 methods of installation available and summarized here:
-* [Repository](#repository-installation) - This approach is recommended for those interested in contributing to the project or helping to troubleshoot an issue in realtime with the developer. This type of installation can exist along with any of the other installation type.
-* [PyPI](#pypi-installation) - Meant for users wanting to run the very latest version.  All **PATCH** level versions are released here first.  This install method is also meant for users not on a Debian distribution.
-* [Rickslab.com Debian](#rickslabcom-debian-installation) - Lags the PyPI release in order to assure robustness. May not include every **PATCH** version.
+* [Repository](#repository-installation) - This approach is recommended for those interested
+in contributing to the project or helping to troubleshoot an issue in realtime with the
+developer. This type of installation can exist along with any of the other installation type.
+* [PyPI](#pypi-installation) - Meant for users wanting to run the very latest version.  All
+**PATCH** level versions are released here first.  This install method is also meant for
+users not on a Debian distribution.
+* [Rickslab.com Debian](#rickslabcom-debian-installation) - Lags the PyPI release in order
+to assure robustness. May not include every **PATCH** version.
 
 ### Repository Installation
 
