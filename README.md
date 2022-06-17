@@ -86,7 +86,7 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Development  -  v1.2.0 
+## New in Current Release  -  v1.2.0 
 
 * Delay sys exit on failure to allow more information to be available for user to troubleshoot.
 * Check file permissions for security issues and exit if not secure.
@@ -100,7 +100,7 @@ use defaults if missing.
 * Implement code improvements from gpu-utils project.
 * Move listing like functions from *ups-daemon* to *ups-ls*.
 * Complete rewrite.
-* USR1 signal will cause *ups-mon* to reread daemon ini file.
+* USR1 signal will cause *ups-mon* and *ups-daemon* to reread daemon ini file.
 * Moved logic of daemon parameter color coding to the daemon class.
 
 ## Known Issues
