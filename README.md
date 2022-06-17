@@ -88,7 +88,7 @@ force their display.  The logger is enabled with the *--debug* option.
 
 ## New in Development  -  v1.2.3
 
-* Nothing yet
+* Fixed issue in installation instructions that indicated gpu instead of ups.
 
 ## Known Issues
 
