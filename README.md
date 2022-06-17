@@ -86,22 +86,9 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Current Release  -  v1.2.0 
+## New in Current Release  -  v1.2.1 
 
-* Delay sys exit on failure to allow more information to be available for user to troubleshoot.
-* Check file permissions for security issues and exit if not secure.
-* Determine installation type (Local Git Repository, PyPI, or Debian), and force use
-of Debian location for configuration files if it is a debian installation.
-* The ups-utils.ini file is now only required for ups-daemon.  Other utilities will
-use defaults if missing.
-* Added verbose option to ups-daemon to output status message for normal readings.
-* Changes in documentation to describe steps necessary to secure snmp shared secret.
-* Added check of configuration files readability.
-* Implement code improvements from gpu-utils project.
-* Move listing like functions from *ups-daemon* to *ups-ls*.
-* Complete rewrite.
-* USR1 signal will cause *ups-mon* and *ups-daemon* to reread daemon ini file.
-* Moved logic of daemon parameter color coding to the daemon class.
+* Fixed issue in referencing PyPI install resource paths.
 
 ## Known Issues
 
@@ -130,6 +117,23 @@ to support it, feel free to make a pull request.
 * [Eaton PowerWalker NMC](https://powerwalker.com/?page=nmc&lang=en)
 
 ## History
+
+## New in Previous Release  -  v1.2.0
+
+* Delay sys exit on failure to allow more information to be available for user to troubleshoot.
+* Check file permissions for security issues and exit if not secure.
+* Determine installation type (Local Git Repository, PyPI, or Debian), and force use
+  of Debian location for configuration files if it is a debian installation.
+* The ups-utils.ini file is now only required for ups-daemon.  Other utilities will
+  use defaults if missing.
+* Added verbose option to ups-daemon to output status message for normal readings.
+* Changes in documentation to describe steps necessary to secure snmp shared secret.
+* Added check of configuration files readability.
+* Implement code improvements from gpu-utils project.
+* Move listing like functions from *ups-daemon* to *ups-ls*.
+* Complete rewrite.
+* USR1 signal will cause *ups-mon* and *ups-daemon* to reread daemon ini file.
+* Moved logic of daemon parameter color coding to the daemon class.
 
 ### New in Previous Release  -  v1.0.0
 

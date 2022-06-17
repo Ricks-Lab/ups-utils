@@ -126,10 +126,10 @@ class UtConst:
     _repository_path: str = os.path.join(_repository_module_path, '..')
     _local_icon_list: Dict[str, str] = {'repository': os.path.join(_repository_path, 'icons'),
                                         'debian': '/usr/share/rickslab-ups-utils/icons',
-                                        'pypi': '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))}
+                                        'pypi-linux': '{}/.local/share/rickslab-ups-utils/icons'.format(str(Path.home()))}
     _local_config_list: Dict[str, str] = {'repository': _repository_path,
                                           'debian': '/usr/share/rickslab-ups-utils/config',
-                                          'pypi': '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))}
+                                          'pypi-linux': '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))}
     _icons: Dict[str, str] = {'ups-mon': 'ups-utils-monitor.icon.png'}
     _config_file_names: Dict[str, str] = {'json': 'ups-config.json', 'ini': 'ups-utils.ini'}
     _config_files: Dict[str, Union[str, None]] = {'json': None, 'ini': None}
