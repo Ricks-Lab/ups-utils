@@ -10,10 +10,9 @@
     option is used to write all monitor data to a psv log file.  When writing
     to a log file, the utility will indicate this in red at the top of the
     window with a message that includes the log file name.  The *--status*
-    option will output a table of the current status.  The *--long* option will
-    include additional informational parameters. By default, unresponsive UPSs
-    will not be displayed, but the *--show_unresponsive* can be used to force
-    their display.
+    option will output a table of the current status.  By default, unresponsive
+    UPSs will not be displayed, but the *--show_unresponsive* can be used to
+    force their display.  The logger is enabled with the *--debug* option.
 
     Copyright (C) 2019  RicksLab
 
@@ -418,7 +417,6 @@ def main() -> None:
     parser.add_argument('--about', help='README', action='store_true', default=False)
     parser.add_argument('--verbose', help='Output execution exception notices', action='store_true', default=False)
     parser.add_argument('--status', help='Display table of current status of UPSs', action='store_true', default=False)
-    parser.add_argument('--long', help='Include static items', action='store_true', default=False)
     parser.add_argument('--show_unresponsive', help='Display unresponsive UPSs', action='store_true', default=False)
     parser.add_argument('--gui', help='Display GTK Version of Monitor', action='store_true', default=False)
     parser.add_argument('--log', help='Write all monitor data to logfile', action='store_true', default=False)

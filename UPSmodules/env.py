@@ -133,7 +133,7 @@ class UtConst:
     _icons: Dict[str, str] = {'ups-mon': 'ups-utils-monitor.icon.png'}
     _config_file_names: Dict[str, str] = {'json': 'ups-config.json', 'ini': 'ups-utils.ini'}
     _config_files: Dict[str, Union[str, None]] = {'json': None, 'ini': None}
-    _all_args: Set[str] = {'debug', 'show_unresponsive' 'log' 'no_markup' 'use_ltz' 'verbose'}
+    _all_args: Set[str] = {'debug', 'show_unresponsive', 'log', 'no_markup', 'use_ltz', 'verbose'}
 
     # Public items
     gui_window_title: str = 'Ricks-Lab UPS Utilities'

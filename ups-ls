@@ -3,12 +3,15 @@
 
     This utility displays most relevant parameters for installed and compatible
     UPSs listed in the config.json file.  By default, all available parameters
-    are displayed. The --input and --output options can be used to get relevant
+    are displayed. The *--input* and *--output* options can be used to get relevant
     UPS input and output parameters.  With the *--list_commands* option, the
     utility will list all available SNMP commands for the configured UPS.  With
     the *--list_params* option, the daemon configuration parameters will be listed.
     The *--list_decoders* option will display list of all MiB decoders available
-    for the UPS defined as daemon target.
+    for the UPS defined as daemon target. The *--verbose* will cause informational
+    messages to be displayed and *--no_markup* option will result in plain text
+    output instead of color coded text.  The logger is enabled with the *--debug*
+    option.
 
     Copyright (C) 2019  RicksLab
 
@@ -67,6 +70,8 @@ def main() -> None:
                               action='store_true', default=False)
 
     # Verbosity, and debug options
+    parser.add_argument('--no_markup', help='Output plane text',
+                        action='store_true', default=False)
     parser.add_argument('--verbose', help='Output normal readings',
                         action='store_true', default=False)
     parser.add_argument('-d', '--debug', help='Debug output',

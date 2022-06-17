@@ -37,6 +37,20 @@ to the guide are welcome.  Please submit a pull request with your suggested addi
 
 ## Commands
 
+### ups-ls
+
+This utility displays most relevant parameters for installed and compatible
+UPSs listed in the config.json file.  By default, all available parameters
+are displayed. The *--input* and *--output* options can be used to get relevant
+UPS input and output parameters.  With the *--list_commands* option, the
+utility will list all available SNMP commands for the configured UPS.  With
+the *--list_params* option, the daemon configuration parameters will be listed.
+The *--list_decoders* option will display list of all MiB decoders available
+for the UPS defined as daemon target. The *--verbose* will cause informational
+messages to be displayed and *--no_markup* option will result in plain text
+output instead of color coded text.  The logger is enabled with the *--debug*
+option.
+
 ### ups-daemon
 
 With no options specified, the utility will give the current status of the
@@ -50,36 +64,28 @@ When the utility detects a Battery Low event from the UPS or that time
 remaining for battery or the battery charge is below specified thresholds,
 then the shutdown script will be executed. If *ups-daemon* detects a return
 to line power has occurred before the shutdown has completed, it will
-execute the cancel shutdown script.  With the *--verbose* option set, no
+execute the cancel shutdown script.  With the *--verbose* option set,
 event update messages will be output, otherwise, only events are output.
-The *--logfile filename* option is used to specify a logfile, but is not
-implemented at this time.  The threshold and script definitions must be
-made in the config.py file using *config.py.template* as a template.
-
-### ups-ls
-
-This utility displays most relevant parameters for installed and compatible
-UPSs listed in the config.json file.  By default, all available parameters
-are displayed. The --input and --output options can be used to get relevant
-UPS input and output parameters.  With the *--list_commands* option, the
-utility will list all available SNMP commands for the configured UPS.  With
-the *--list_params* option, the daemon configuration parameters will be listed.
-The *--list_decoders* option will display list of all MiB decoders available
-for the UPS defined as daemon target.
+The *--no_markup* option will cause the output to be in plain text, with
+not color markup codes. The *--logfile filename* option is used to specify
+a logfile, but is not implemented at this time.  The threshold and script
+definitions must be made in the config.py file using *config.py.template*
+as a template.  The logger is enabled with the *--debug* option.
 
 ### ups-mon
 
-A utility to give the current state of all compatible UPSs. The default behavior
-is to continuously update a text based table in the current window until Ctrl-C is
-pressed.  With the *--gui* option, a table of relevant parameters will be updated
-in a Gtk window.  You can specify the delay between updates with the *--sleep N*
-option where N is an integer > 10 that specifies the number of seconds to sleep
-between updates.  The *--log* option is used to write all monitor data to a psv log
-file.  When writing to a log file, the utility will indicate this in red at the top of
-the window with a message that includes the log file name.  The *--status* option will
-output a table of the current status.  The *--long* option will include additional
-informational parameters. By default, unresponsive UPSs will not be displayed, but the
-*--show_unresponsive* can be used to force their display.
+A utility to give the current state of all compatible UPSs. The default
+behavior is to continuously update a text based table in the current window
+until Ctrl-C is pressed.  With the *--gui* option, a table of relevant
+parameters will be updated in a Gtk window.  You can specify the delay
+between updates with the *--sleep N* option where N is an integer > 10 that
+specifies the number of seconds to sleep between updates.  The *--log*
+option is used to write all monitor data to a psv log file.  When writing
+to a log file, the utility will indicate this in red at the top of the
+window with a message that includes the log file name.  The *--status*
+option will output a table of the current status.  By default, unresponsive
+UPSs will not be displayed, but the *--show_unresponsive* can be used to
+force their display.  The logger is enabled with the *--debug* option.
 
 ## New in Development  -  v1.2.0 
 

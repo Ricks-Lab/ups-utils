@@ -255,13 +255,6 @@ class UpsItem:
         """
         return self.prm['ups_type']
 
-    def ups_nmc_model(self) -> str:
-        """ Get the type value for the target UPS or active UPS if target is None.
-
-        :return:  The ups_type as a str.
-        """
-        return self.prm['ups_nmc_model']
-
     def ups_ip(self) -> None:
         """ Get the IP address value for the target UPS or active UPS if target is None.
 
@@ -523,9 +516,14 @@ class UpsDaemon:
     def print_daemon_parameters(cls) -> None:
         """ Print all daemon parameters.
         """
+        if env.UT_CONST.no_markup:
+            color = reset = ''
+        else:
+            color = env.UT_CONST.mark_up_codes['data']
+            reset = env.UT_CONST.mark_up_codes['reset']
         print('Daemon parameters:')
         for param_name, param_value in cls.daemon_params.items():
-            print('    {}: {}'.format(param_name, param_value))
+            print('    {}: {}{}{}'.format(param_name, color, param_value, reset))
 
     def execute_script(self, script_name: str) -> Tuple[int, str]:
         """ Execute script defined in the daemon parameters
@@ -1208,17 +1206,30 @@ class UpsComm:
     def print_decoders(cls) -> None:
         """ Prints all bit decoders.
         """
+        if env.UT_CONST.no_markup:
+            color = reset = ''
+        else:
+            color = env.UT_CONST.mark_up_codes['data']
+            reset = env.UT_CONST.mark_up_codes['reset']
         for decoder_name, decoder_list in cls.decoders.items():
-            print('decode key: {}'.format(decoder_name))
+            print('decode key: {}{}{}'.format(color, decoder_name, reset))
             for i, item in enumerate(decoder_list, start=1):
-                print('  {:2d}: {}'.format(i, item))
+                print('  {:2d}: {}{}{}'.format(i, color, item, reset))
 
     def print_snmp_commands(self) -> None:
         """ Print all supported mib commands for the target UPS, which is the active UPS when not specified.
         """
+        if env.UT_CONST.no_markup:
+            mib_color = color = reset = ''
+        else:
+            mib_color = env.UT_CONST.mark_up_codes['green']
+            color = env.UT_CONST.mark_up_codes['data']
+            reset = env.UT_CONST.mark_up_codes['reset']
         for mib_name, mib_dict in self.mib_commands.items():
-            print('{}: Value: {}'.format(mib_name, mib_dict['iso']))
-            print('    Description: {}'.format(mib_dict['name']))
+            print('{}{}{}:'.format(mib_color, mib_name, reset))
+            print('    Value: {}{}{}'.format(color, mib_dict['iso'], reset))
+            print('    Description: {}{}{}'.format(color, mib_dict['name'], reset))
             if mib_dict['decode']:
+                print('    Decoder:')
                 for decoder_name, decoder_list in mib_dict['decode'].items():
-                    print('        {}: {}'.format(decoder_name, decoder_list))
+                    print('        {}: {}{}{}'.format(decoder_name, color, decoder_list, reset))

@@ -13,11 +13,13 @@
     remaining for battery or the battery charge is below specified thresholds,
     then the shutdown script will be executed. If *ups-daemon* detects a return
     to line power has occurred before the shutdown has completed, it will
-    execute the cancel shutdown script.  With the *--verbose* option set, no
+    execute the cancel shutdown script.  With the *--verbose* option set,
     event update messages will be output, otherwise, only events are output.
-    The *--logfile filename* option is used to specify a logfile, but is not
-    implemented at this time.  The threshold and script definitions must be
-    made in the config.py file using *config.py.template* as a template.
+    The *--no_markup* option will cause the output to be in plain text, with
+    not color markup codes. The *--logfile filename* option is used to specify
+    a logfile, but is not implemented at this time.  The threshold and script
+    definitions must be made in the config.py file using *config.py.template*
+    as a template.  The logger is enabled with the *--debug* option.
 
     Copyright (C) 2019  RicksLab
 
@@ -99,6 +101,8 @@ def main() -> None:
     parser.add_argument('--daemon', help='Run in daemon mode', action='store_true', default=False)
 
     # Verbosity, logging, and debug options
+    parser.add_argument('--no_markup', help='Output plane text',
+                        action='store_true', default=False)
     parser.add_argument('--logfile', help='Specify logfile', type=str, default='')
     parser.add_argument('--verbose', help='Output execution exception notices', action='store_true', default=False)
     parser.add_argument('-d', '--debug', help='Debug output', action='store_true', default=False)
