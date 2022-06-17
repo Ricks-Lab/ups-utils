@@ -21,7 +21,7 @@ here first.  This installation method is also meant for users not on a Debian di
 
   [![PyPI version](https://badge.fury.io/py/rickslab-ups-utils.svg)](https://badge.fury.io/py/rickslab-ups-utils)
   [![Downloads](https://pepy.tech/badge/rickslab-ups-utils)](https://pepy.tech/project/rickslab-ups-utils)
-* [Rickslab.com Debian](https://github.com/Ricks-Lab/gpu-utils/blob/master/docs/USER_GUIDE.md#rickslabcom-debian-installation) -
+* [Rickslab.com Debian](https://github.com/Ricks-Lab/ups-utils/blob/master/docs/USER_GUIDE.md#rickslabcom-debian-installation) -
   Lags the PyPI release in order to assure robustness. May not include every **PATCH** version.
 
   ![Custom badge](https://img.shields.io/endpoint?color=%23417B5D&url=https%3A%2F%2Frickslab.com%2Fbadges%2Fdeb_ups_version.json)

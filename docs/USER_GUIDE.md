@@ -6,7 +6,7 @@ A set of utilities to monitor and react to the status of a set of supported UPSs
 
  - [Installation](#installation)
  - [Getting Started](#getting-started)
- - [Using ups-ls](#using-gpu-ls)
+ - [Using ups-ls](#using-ups-ls)
 
 
 ## Installation
@@ -97,7 +97,7 @@ Next, add the *rickslab-ups-utils* repository:
 ```shell
 wget -q -O - https://debian.rickslab.com/PUBLIC.KEY | sudo gpg --dearmour -o /usr/share/keyrings/rickslab-agent.gpg
 
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rickslab-agent.gpg] https://debian.rickslab.com/ups-utils/ stable main' | sudo tee /etc/apt/sources.list.d/rickslab-gpu-utils.list
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rickslab-agent.gpg] https://debian.rickslab.com/ups-utils/ stable main' | sudo tee /etc/apt/sources.list.d/rickslab-ups-utils.list
 
 sudo apt update
 ```
