@@ -527,7 +527,7 @@ class UpsDaemon:
         for param_name, param_value in cls.daemon_params.items():
             print('    {}: {}'.format(param_name, param_value))
 
-    def execute_script(self, script_name: str) -> bool:
+    def execute_script(self, script_name: str) -> Tuple[int, str]:
         """ Execute script defined in the daemon parameters
 
         :param: script_name: name of script to be executed
@@ -536,24 +536,26 @@ class UpsDaemon:
         if script_name not in self.daemon_scripts:
             raise AttributeError('Error: {} no valid script name: [{}]'.format(script_name, self.daemon_scripts))
         if not self.daemon_params[script_name]:
-            print('No {} defined'.format(script_name))
-            return False
+            message = 'No {} defined'.format(script_name)
+            env.UT_CONST.process_message('No {} defined'.format(script_name))
+            return -1, message
         try:
             cmd = subprocess.Popen(shlex.split(self.daemon_params[script_name]),
-                                   shell=False, stdout=subprocess.PIPE)
+                                   shell=False, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             while True:
                 if cmd.poll() is not None:
                     break
-                time.sleep(0.2)
+                time.sleep(0.1)
+            message = cmd.communicate()[0].decode("utf-8")
+            LOGGER.debug(message)
             if cmd.returncode:
                 env.UT_CONST.process_message('{} failed with return code: [{}]'.format(script_name, cmd.returncode),
                                              verbose=True)
-                return False
+            return cmd.returncode, message
         except subprocess.CalledProcessError as err:
-            print('Error [{}]: could not execute script: {}'.format(err,
-                  self.daemon_params[script_name]), file=sys.stderr)
-            return False
-        return True
+            message = 'Error [{}]: could not execute script: {}'.format(err, self.daemon_params[script_name])
+            env.UT_CONST.process_message(message)
+            return False, message
 
 
 class UpsList:

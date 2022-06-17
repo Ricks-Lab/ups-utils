@@ -51,7 +51,7 @@ import inspect
 import time
 import signal
 import logging
-from typing import Any
+from typing import Any, Dict
 from datetime import datetime
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
@@ -142,7 +142,8 @@ def main() -> None:
         sys.exit(-1)
 
     # Display current status of target UPS
-    daemon_ups.read_ups_list_items(UPS.UpsComm.MIB_group.all, display=True)
+    daemon_ups.read_ups_list_items(UPS.UpsComm.MIB_group.all, display=False)
+    daemon_ups.print()
 
     if args.daemon:
         crit_bat_level = daemon_ups.daemon.daemon_params['threshold_battery_capacity']['crit']
@@ -157,94 +158,109 @@ def main() -> None:
         normal_sleep = daemon_ups.daemon.daemon_params['read_interval']['daemon']
         fault_sleep = daemon_ups.daemon.daemon_param_defaults['read_interval']['limit']
         active_sleep = normal_sleep
+        if env.UT_CONST.no_markup:
+            norm_style = warn_style = crit_style = ok_style = err_style = reset_style = ''
+        else:
+            norm_style = env.UT_CONST.mark_up_codes['cyan']
+            warn_style = env.UT_CONST.mark_up_codes['warn']
+            crit_style = env.UT_CONST.mark_up_codes['crit']
+            ok_style = env.UT_CONST.mark_up_codes['ok']
+            err_style = env.UT_CONST.mark_up_codes['error']
+            reset_style = env.UT_CONST.mark_up_codes['reset']
+        ups_states: Dict[str, str] = {
+            'good':     '{} READY:   {}'.format(ok_style, reset_style),
+            'ready':    '{} READY:   {}'.format(ok_style, reset_style),
+            'fault':    '{} FAULT:   {}'.format(warn_style, reset_style),
+            'warning':  '{} WARNING: {}'.format(warn_style, reset_style),
+            'error':    '{} ERROR:   {}'.format(err_style, reset_style),
+            'critical': '{} CRITICAL:{}'.format(crit_style, reset_style),
+        }
         while True:
-            time_str = datetime.now().strftime('%c')
-            bat_status = daemon_ups.send_snmp_command('mib_battery_status')
+            time_str = datetime.now().strftime(env.UT_CONST.TIME_FORMAT)
+            bat_status = daemon_ups.send_snmp_command('mib_battery_status', display=False)
             if not bat_status:
-                print('{}: UPS [{}] is unresponsive'.format(time_str, daemon_ups['display_name']))
+                print('[{}] {} UPS [{}] is unresponsive'.format(
+                    time_str, ups_states['error'], daemon_ups['display_name']))
                 daemon_sleep(active_sleep)
                 continue
-            bat_load = int(daemon_ups.send_snmp_command('mib_output_load'))
-            bat_capacity = int(daemon_ups.send_snmp_command('mib_battery_capacity'))
-            time_on_bat = daemon_ups.send_snmp_command('mib_time_on_battery')[0]
-            remain_run_time = daemon_ups.send_snmp_command('mib_battery_runtime_remain')[0]
+            out_power = int(daemon_ups.send_snmp_command('mib_output_power', display=False))
+            bat_load = int(daemon_ups.send_snmp_command('mib_output_load', display=False))
+            bat_capacity = int(daemon_ups.send_snmp_command('mib_battery_capacity', display=False))
+            time_on_bat = float(daemon_ups.send_snmp_command('mib_time_on_battery', display=False)[0])
+            remain_run_time = float(daemon_ups.send_snmp_command('mib_battery_runtime_remain', display=False)[0])
 
             if env.UT_CONST.quit:
-                print('{}: Received Quit Signal'.format(time_str))
+                print('[{}] {} Received Quit Signal'.format(
+                    time_str, ups_states['warning']))
                 sys.exit(0)
 
             # Check for load alarms
             if bat_load > crit_load_level:
-                print('{}: Battery Load Critical: {}%'.format(time_str, bat_load))
-                print('{}: Overload Fault, Suspend will execute with no resume possible.'.format(time_str))
+                print('[{}] {} Overload Fault {}%, Suspend will execute with no resume possible. {}'.format(
+                    time_str, ups_states['critical'], bat_load, reset_style))
                 overload_fault = True
             elif bat_load > warn_load_level:
-                print('{}: Battery Load High: {}%'.format(time_str, bat_load))
+                print('[{}] {} Battery Load High: {}%'.format(
+                    time_str, ups_states['warning'], bat_load))
 
             # Not on Battery
             if time_on_bat == 0.0:
+                if args.verbose:
+                    print('[{}] {} Loading: {}%, Capacity: {}%, Power: {}W, Battery Status: {}'.format(
+                        time_str, ups_states['ready'], bat_load, bat_capacity, out_power, bat_status))
                 if shutting_down:
                     daemon_ups.daemon.execute_script('cancel_shutdown_script')
-                    print('{}: Cancelling Shutdown'.format(time_str))
+                    print('[{}] {} Cancelling Shutdown'.format(
+                        time_str, ups_states['good']))
                     shutting_down = False
                 if active_sleep != normal_sleep:
-                    print('{}:WARNING condition has ended: increase update interval from {} to {}'.format(
-                          time_str, active_sleep, normal_sleep))
+                    print('[{}] {} WARNING condition has ended: increase update interval from {} to {}'.format(
+                          time_str, ups_states['ready'], active_sleep, normal_sleep))
                     active_sleep = normal_sleep
-                if args.verbose:
-                    print('{}: Battery Status: {}: Load: {}%'.format(time_str, bat_status, bat_load))
                 if bat_capacity < crit_bat_level:
-                    print('{}: Battery Nearly Exhausted'.format(time_str))
-                    print('{}: UPS Runtime Remaining: {:.3f} min'.format(time_str, remain_run_time))
-                    print('{}: UPS Battery Capacity Remaining: {}%'.format(time_str, bat_capacity))
-                    print('{}: UPS Battery Charging'.format(time_str))
+                    print('[{}] {} Battery Nearly Exhausted, {:.2f}m/{}% remaining'.format(
+                        time_str, ups_states['critical'], remain_run_time, bat_capacity))
+                    print('[{}] {} UPS Battery Charging'.format(
+                        time_str, ups_states['ready']))
                 elif bat_capacity < warn_bat_level:
-                    print('{}: Battery Level Low'.format(time_str))
-                    print('{}: UPS Runtime Remaining: {:.3f} min'.format(time_str, remain_run_time))
-                    print('{}: UPS Battery Capacity Remaining: {}%'.format(time_str, bat_capacity))
-                    print('{}: UPS Battery Charging'.format(time_str))
+                    print('[{}] {} Battery Low, {}m/{}% remaining'.format(
+                        time_str, ups_states['warning'], remain_run_time, bat_capacity))
+                    print('[{}]: {} UPS Battery Charging {}'.format(
+                        time_str, norm_style, reset_style))
             # On Battery condition
             elif time_on_bat > 0.0:
+                print('[{}] {} System on UPS Power for {:.2f}m: {:.2f}m/{}% of battery remaining'.format(
+                    time_str, ups_states['fault'], time_on_bat, remain_run_time, bat_capacity))
                 if active_sleep != fault_sleep:
-                    if remain_run_time < warn_runtime_rem:
+                    if (remain_run_time < warn_runtime_rem) or (bat_capacity < warn_bat_level):
                         # Warning Condition
-                        print('{}:WARNING runtime below {}: reduce update interval from {} to {}'.format(
-                              time_str, warn_runtime_rem, normal_sleep, fault_sleep))
+                        print('[{}] {} battery low {:.2f}/{}%: reduce update interval from {} to {}'.format(
+                              time_str, ups_states['warning'], remain_run_time, bat_capacity, normal_sleep, fault_sleep))
                         active_sleep = fault_sleep
-                    if bat_capacity < warn_bat_level:
-                        # Warning Condition
-                        print('{}:WARNING battery capacity below {}: reduce update interval from {} to {}'.format(
-                            time_str, warn_bat_level, normal_sleep, fault_sleep))
-                        active_sleep = fault_sleep
-                print('{}: Time on UPS Power: {:.3f} min'.format(time_str, time_on_bat))
-                print('{}: UPS Runtime Remaining: {:.3f} min'.format(time_str, remain_run_time))
-                print('{}: UPS Battery Capacity Remaining: {}%'.format(time_str, bat_capacity))
                 if not shutting_down:
-                    if bat_status == 'Battery Low':
+                    if bat_status == 'Battery Low' or bat_capacity < crit_bat_level or remain_run_time < crit_runtime_rem:
                         # Call shutdown script
-                        print('{}: Battery Low Signal'.format(time_str))
-                        print('{}: Calling Shutdown Script'.format(time_str))
-                        shutting_down = True
-                        daemon_ups.daemon.execute_script('shutdown_script')
-                    if bat_capacity < crit_bat_level or remain_run_time < crit_runtime_rem:
-                        # Call shutdown script
-                        print('{}: Battery Nearly Exhausted'.format(time_str))
-                        print('{}: Calling Shutdown Script'.format(time_str))
+                        print('[{}] {} Battery Low Signal. Calling shutdown script'.format(
+                            time_str, ups_states['critical']))
                         shutting_down = True
                         daemon_ups.daemon.execute_script('shutdown_script')
 
             if suspend_state:
                 if time_on_bat < daemon_ups.daemon.daemon_params['threshold_time_on_battery']['crit'] and not overload_fault:
-                    # Resume
-                    print('{}: Resuming'.format(time_str))
-                    daemon_ups.daemon.execute_script('resume_script')
+                    print('[{}] {} Running Resume Script'.format(time_str, ups_states['good']))
+                    execute_result = daemon_ups.daemon.execute_script('resume_script')
+                    if execute_result[0]:
+                        print('[{}] {} Resume Script failed to execute - {}'.format(
+                            time_str, ups_states['error'], execute_result))
                     suspend_state = False
 
             if not suspend_state:
                 if time_on_bat > daemon_ups.daemon.daemon_params['threshold_time_on_battery']['crit'] or bat_load > crit_load_level:
-                    # Suspend
-                    print('{}: Suspending'.format(time_str))
-                    daemon_ups.daemon.execute_script('suspend_script')
+                    print('[{}] {} Running Suspend Script'.format(time_str, ups_states['warning']))
+                    execute_result = daemon_ups.daemon.execute_script('suspend_script')
+                    if execute_result[0]:
+                        print('[{}] {} Suspend Script failed to execute - {}'.format(
+                            time_str, ups_states['error'], execute_result))
                     suspend_state = True
 
             daemon_sleep(active_sleep)

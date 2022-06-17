@@ -138,6 +138,7 @@ class UtConst:
     # Public items
     gui_window_title: str = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file: str = 'ups-utils-monitor.icon.png'
+    TIME_FORMAT: str = '%d-%b-%Y %H:%M:%S'
 
     def __init__(self):
         self.calling_program = ''
