@@ -1,6 +1,6 @@
 #    This file is part the ups-util package
 #
-#    Copyright (C) 2019  RueiKe
+#    Copyright (C) 2019  RicksLab
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 __version__ = '1.2.3'
-#__status__ = 'Development Status :: 5 - Production/Stable'
-__status__ = 'Development Status :: 4 - Beta'
+__status__ = 'Development Status :: 5 - Production/Stable'
+#__status__ = 'Development Status :: 4 - Beta'
 __credits__ = ['Natalya Langford - Configuration Parser']
 __required_pversion__ = (3, 6)
 __required_kversion__ = (4, 8)

@@ -86,10 +86,10 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Development  -  v1.2.3
+## New in Current Release  -  v1.2.3
 
 * Fixed issue in installation instructions that indicated gpu instead of ups.
-* More error checking.  Make APC NMC names backward compatible.
+* More error checking.  Make APC NMC names backward compatible and more flexible.
 
 ## Known Issues
 
