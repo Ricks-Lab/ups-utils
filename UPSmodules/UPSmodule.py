@@ -444,7 +444,13 @@ class UpsDaemon:
 
         # Set path definitions
         for path_name in self.daemon_paths:
-            if isinstance(self.config['DaemonPaths'][path_name], str):
+            self.daemon_params[path_name] = None
+            if path_name not in self.config['DaemonPaths']:
+                env.UT_CONST.process_message('Item [{}] missing in [{}]'.format(path_name,
+                                                                                env.UT_CONST.ups_config_ini))
+                env.UT_CONST.process_message('Setting to None')
+                self.daemon_params[path_name] = None
+            elif isinstance(self.config['DaemonPaths'][path_name], str):
                 self.daemon_params[path_name] = os.path.expanduser(self.config['DaemonPaths'][path_name])
                 if self.daemon_params[path_name]:
                     if not os.path.isdir(self.daemon_params[path_name]):
@@ -468,8 +474,12 @@ class UpsDaemon:
                 env.UT_CONST.process_message('Setting to None')
                 self.daemon_params[script_name] = None
             elif isinstance(self.config['DaemonScripts'][script_name], str):
-                self.daemon_params[script_name] = os.path.join(self.daemon_params['ups_utils_script_path'],
-                                                               self.config['DaemonScripts'][script_name])
+                if self.daemon_params['ups_utils_script_path']:
+                    self.daemon_params[script_name] = os.path.join(self.daemon_params['ups_utils_script_path'],
+                                                                   self.config['DaemonScripts'][script_name])
+                else:
+                    self.daemon_params[script_name] = None
+                    read_status = False
                 if self.daemon_params[script_name]:
                     if not os.path.isfile(self.daemon_params[script_name]):
                         print('Missing {} script: {}'.format(script_name, self.daemon_params[script_name]))
