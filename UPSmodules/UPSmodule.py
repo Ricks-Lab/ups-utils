@@ -168,7 +168,20 @@ class UpsItem:
             if item_name not in self._json_keys:
                 LOGGER.debug('%s: Invalid key [%s] ignored', env.UT_CONST.ups_json_file, item_name)
                 continue
-            self.prm[item_name] = item_value
+            if item_name == 'ups_type':
+                if re.search(env.UT_CONST.PATTERNS['APC96'], item_value): item_value = 'apc_ap96xx'
+                if item_value in UpsComm.MIB_nmc.list():
+                    self.prm['valid'] = True
+                    self.prm['compatible'] = True
+                    self.prm[item_name] = UpsComm.MIB_nmc[item_value]
+                else:
+                    env.UT_CONST.process_message('Invalid ups_type [{}] from [{}]'.format(
+                        item_name, env.UT_CONST.ups_json_file))
+                    self.prm['valid'] = False
+                    self.prm['compatible'] = False
+                    self.prm[item_name] = UpsComm.MIB_nmc['none']
+            else:
+                self.prm[item_name] = item_value
 
         if self.prm['ups_type'] in UpsComm.MIB_nmc.list():
             self.prm['compatible'] = True
@@ -176,7 +189,7 @@ class UpsItem:
         # Check accessibility
         self.ups_comm: UpsComm = UpsComm(self)
         if self.ups_comm.is_valid_ip_fqdn(self.prm['ups_IP']):
-            self.prm['valid'] = True
+            self.prm['valid'] = self.prm['valid'] and True
         if self.ups_comm.check_ip_access(self.prm['ups_IP']):
             self.prm['accessible'] = True
         if self.ups_comm.check_snmp_response(self):
@@ -721,12 +734,12 @@ class UpsList:
             env.UT_CONST.ups_json_file("Error: permission error for [{}]: {}".format(
                 env.UT_CONST.ups_json_file, error), verbose=True)
             return False
-        for ups in ups_items.values():
+        for ups_dict in ups_items.values():
             uuid = uuid4().hex
-            ups['uuid'] = uuid
-            if re.search(env.UT_CONST.PATTERNS['APC96'], ups['ups_type']):
-                ups['ups_type'] = 'apc_ap96xx'
-            self.list[uuid] = UpsItem(ups)
+            ups_dict['uuid'] = uuid
+            #if re.search(env.UT_CONST.PATTERNS['APC96'], ups_dict['ups_type']):
+                #ups_dict['ups_type'] = 'apc_ap96xx'
+            self.list[uuid] = UpsItem(ups_dict)
         return True
 
     # Methods to get, check, and list UPSs
@@ -789,9 +802,10 @@ class UpsComm:
                               'HotStandby', 'EPO', 'LoadAlarmViolation', 'BypassPhaseFault',
                               'UPSinternalComFail', 'EffBoosterMode', 'Off', 'Standby', 'Minor/EnvAlarm')}
 
-    MIB_nmc: UpsEnum = UpsEnum('nmc', 'all apc_ap96xx eaton_pw')
+    MIB_nmc: UpsEnum = UpsEnum('nmc', 'none all apc_ap96xx eaton_pw')
     all_mib_cmds: Dict[MIB_nmc, Dict[str, Dict[str, Union[str, Dict[str, str], None]]]] = {
         # MiBs for APC UPS with AP96xx NMC
+        MIB_nmc.none: {},
         MIB_nmc.apc_ap96xx: {
             'mib_ups_info': {'iso': 'iso.3.6.1.2.1.1.1.0',
                              'name': 'General UPS Information',
