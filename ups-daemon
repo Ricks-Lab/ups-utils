@@ -162,6 +162,7 @@ def main() -> None:
     # Display current status of target UPS
     daemon_ups.read_ups_list_items(UPS.UpsComm.MIB_group.all, display=False)
     daemon_ups.print()
+    ups_list.daemon.print_daemon_parameters()
 
     if args.daemon:
         signal.signal(signal.SIGUSR1, ctrl_u_handler)

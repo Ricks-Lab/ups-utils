@@ -86,10 +86,12 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Current Release  -  v1.2.3
+## New in Current Release  -  v1.2.4
 
-* Fixed issue in installation instructions that indicated gpu instead of ups.
-* More error checking.  Make APC NMC names backward compatible and more flexible.
+* More robust reading of config file.  Missing items will generate a warning
+message and defaults will be used.
+* The PyPI installation still seems to include *ups-monitor*, so I will print 
+message and inform user to use *ups-mon* instead.
 
 ## Known Issues
 
@@ -119,7 +121,12 @@ to support it, feel free to make a pull request.
 
 ## History
 
-### New in Current Release  -  v1.2.2
+## New in Previous Release  -  v1.2.3
+
+* Fixed issue in installation instructions that indicated gpu instead of ups.
+* More error checking.  Make APC NMC names backward compatible and more flexible.
+
+### New in Previous Release  -  v1.2.2
 
 * Fixed crash when config files are missing and improved feedback to help
   user resolve. Update documents to make more clear to user on how to setup.

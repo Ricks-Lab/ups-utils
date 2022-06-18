@@ -93,8 +93,8 @@ class UtConst:
                 'FQDN': re.compile(r'^[a-z\d]([a-z\d-]{0,61}[a-z\d])?(.[a-z\d]([a-z\d-]{0,61}[a-z\d]))*$',
                                    re.IGNORECASE),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)', re.IGNORECASE),
-                'APC': re.compile(r'^apc_.*', re.IGNORECASE),
-                'APC96': re.compile(r'^apc_ap96.*', re.IGNORECASE),
+                'APC': re.compile(r'^apc[_-].*', re.IGNORECASE),
+                'APC96': re.compile(r'^apc[_-]ap96.*', re.IGNORECASE),
                 'INI': re.compile(r'^\(\s*\d+\s*,\s*\d+\s*\)\s*$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)', re.IGNORECASE)}
 
@@ -200,6 +200,11 @@ class UtConst:
         :param args: The object return by args parser.
         :param program_name: Name of calling program.
         """
+        if program_name == 'ups-monitor':
+            # Not sure why old version of ups-monitor is still installed from PyPI even
+            # though I removed it from setup.py
+            print('The ups-monitor executable no longer valid.  Use ups-mon instead.')
+            sys.exit(-1)
         self.calling_program = program_name
         self.args = args
         if not self.ups_config_ini and program_name == 'ups-daemon':

@@ -339,15 +339,16 @@ class UpsDaemon:
     # Configuration details
     daemon_paths: Tuple[str, ...] = ('boinc_home', 'ups_utils_script_path')
     daemon_scripts: Tuple[str, ...] = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
-    daemon_param_names: Tuple[str, ...] = ('read_interval', 'threshold_env_temp', 'threshold_battery_time_rem', 'threshold_time_on_battery',
-                                           'threshold_battery_load', 'threshold_battery_capacity')
+    daemon_param_names: Tuple[str, ...] = ('read_interval', 'threshold_env_temp', 'threshold_battery_time_rem',
+                                           'threshold_time_on_battery', 'threshold_battery_load',
+                                           'threshold_battery_capacity')
     daemon_param_defaults: Dict[str, Union[str, Dict[str, int]]] = {
         'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
         'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
-        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
         'threshold_env_temp': {'crit': 35, 'warn': 30, 'limit': 5},
-        'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 5},
         'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
+        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
+        'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 5},
         'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
     daemon_param_dict: Dict[str, str] = {
         'mib_ups_env_temp': 'threshold_env_temp',
@@ -356,7 +357,7 @@ class UpsDaemon:
         'mib_battery_capacity': 'threshold_battery_capacity'}
 
     # Set params to defaults
-    daemon_params: Dict[str, Union[str, dict]] = {
+    daemon_params: Dict[str, Union[str, dict, None]] = {
         'boinc_home': None, 'ups_utils_script_path': daemon_param_defaults['ups_utils_script_path'],
         'suspend_script': None, 'resume_script': None,
         'shutdown_script': None, 'cancel_shutdown_script': None,
@@ -459,31 +460,58 @@ class UpsDaemon:
 
         # Set script definitions
         for script_name in self.daemon_scripts:
-            if isinstance(self.config['DaemonScripts'][script_name], str):
+            # Use default of script_name not found in config file
+            self.daemon_params[script_name] = None
+            if script_name not in self.config['DaemonScripts']:
+                env.UT_CONST.process_message('Item [{}] missing in [{}]'.format(script_name,
+                                                                                env.UT_CONST.ups_config_ini))
+                env.UT_CONST.process_message('Setting to None')
+                self.daemon_params[script_name] = None
+            elif isinstance(self.config['DaemonScripts'][script_name], str):
                 self.daemon_params[script_name] = os.path.join(self.daemon_params['ups_utils_script_path'],
                                                                self.config['DaemonScripts'][script_name])
                 if self.daemon_params[script_name]:
                     if not os.path.isfile(self.daemon_params[script_name]):
                         print('Missing {} script: {}'.format(script_name, self.daemon_params[script_name]))
+                        self.daemon_params[script_name] = None
                         read_status = False
 
         # Set script parameters
         for parameter_name in self.daemon_param_names:
-            if re.search(env.UT_CONST.PATTERNS['INI'], self.config['DaemonParameters'][parameter_name]):
-                raw_param = re.sub(r'\s+', '', self.config['DaemonParameters'][parameter_name])
-                params = tuple(int(x) for x in raw_param[1:-1].split(','))
-                if parameter_name == 'read_interval':
-                    self.daemon_params[parameter_name]['monitor'] = params[0]
-                    self.daemon_params[parameter_name]['daemon'] = params[1]
-                else:
-                    self.daemon_params[parameter_name]['crit'] = params[0]
-                    self.daemon_params[parameter_name]['warn'] = params[1]
-            else:
-                LOGGER.debug('Incorrect format for %s parameter: %s',
-                             parameter_name, self.config['DaemonParameters'][parameter_name])
-                print('Incorrect format for {} parameter: {}'.format(
+            # Use default of parameter_name not found in config file
+            if parameter_name not in self.config['DaemonParameters']:
+                env.UT_CONST.process_message('Item [{}] missing in [{}]'.format(parameter_name,
+                                                                                env.UT_CONST.ups_config_ini))
+                env.UT_CONST.process_message('Using defaults')
+                param_dict = self.daemon_param_defaults
+            elif not re.search(env.UT_CONST.PATTERNS['INI'], self.config['DaemonParameters'][parameter_name]):
+                env.UT_CONST.process_message('Incorrect format for {} parameter: {}'.format(
                     parameter_name, self.config['DaemonParameters'][parameter_name]))
-                print('Using default value: {}'.format(self.daemon_params[parameter_name]))
+                env.UT_CONST.process_message('Using default value: {}'.format(self.daemon_params[parameter_name]))
+                param_dict = self.daemon_param_defaults
+            else:
+                param_dict = dict(self.config['DaemonParameters'])
+
+            # Set parameter based on config or defaults
+            params = (0, 0)
+            if isinstance(param_dict[parameter_name], str):
+                raw_param = re.sub(r'\s+', '', param_dict[parameter_name])
+                params = tuple(int(x) for x in raw_param[1:-1].split(','))
+            elif isinstance(param_dict[parameter_name], dict):
+                try:
+                    params = (param_dict[parameter_name]['crit'], param_dict[parameter_name]['warn'])
+                except KeyError:
+                    try:
+                        params = (param_dict[parameter_name]['monitor'], param_dict[parameter_name]['daemon'])
+                    except KeyError:
+                        env.UT_CONST.process_message('Invalid entry: [{}]'.format(param_dict[parameter_name]))
+
+            if parameter_name == 'read_interval':
+                self.daemon_params[parameter_name]['monitor'] = params[0]
+                self.daemon_params[parameter_name]['daemon'] = params[1]
+            else:
+                self.daemon_params[parameter_name]['crit'] = params[0]
+                self.daemon_params[parameter_name]['warn'] = params[1]
 
         # Check Daemon Parameter Values
         for parameter_name in self.daemon_param_names:
@@ -540,6 +568,7 @@ class UpsDaemon:
         print('Daemon parameters:')
         for param_name, param_value in cls.daemon_params.items():
             print('    {}: {}{}{}'.format(param_name, color, param_value, reset))
+        print('')
 
     def execute_script(self, script_name: str) -> Tuple[int, str]:
         """ Execute script defined in the daemon parameters
@@ -1246,6 +1275,7 @@ class UpsComm:
             print('decode key: {}{}{}'.format(color, decoder_name, reset))
             for i, item in enumerate(decoder_list, start=1):
                 print('  {:2d}: {}{}{}'.format(i, color, item, reset))
+        print('')
 
     def print_snmp_commands(self) -> None:
         """ Print all supported mib commands for the target UPS, which is the active UPS when not specified.
@@ -1264,3 +1294,4 @@ class UpsComm:
                 print('    Decoder:')
                 for decoder_name, decoder_list in mib_dict['decode'].items():
                     print('        {}: {}{}{}'.format(decoder_name, color, decoder_list, reset))
+        print('')
