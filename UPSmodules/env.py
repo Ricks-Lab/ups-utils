@@ -94,6 +94,7 @@ class UtConst:
                                    re.IGNORECASE),
                 'ONLINE': re.compile(r'(.*Standby.*)|(.*OnLine.*)', re.IGNORECASE),
                 'APC': re.compile(r'^apc_.*', re.IGNORECASE),
+                'APC96': re.compile(r'^apc_ap96.*', re.IGNORECASE),
                 'INI': re.compile(r'^\(\s*\d+\s*,\s*\d+\s*\)\s*$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)', re.IGNORECASE)}
 

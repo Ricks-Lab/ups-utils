@@ -724,7 +724,8 @@ class UpsList:
         for ups in ups_items.values():
             uuid = uuid4().hex
             ups['uuid'] = uuid
-            #ups['ups_nmc_model'] = ups['ups_type']
+            if re.search(env.UT_CONST.PATTERNS['APC96'], ups['ups_type']):
+                ups['ups_type'] = 'apc_ap96xx'
             self.list[uuid] = UpsItem(ups)
         return True
 
@@ -993,6 +994,7 @@ class UpsComm:
                                         'name': 'Date of Last Self Test',
                                         'decode': None}}}
 
+    _valid_type_keys = [x.name for x in all_mib_cmds]
     # UPS MiB Commands lists
     _mib_all_apc_ap96xx: Set[str] = set(all_mib_cmds[MIB_nmc.apc_ap96xx].keys())
     _mib_all_eaton_pw: Set[str] = set(all_mib_cmds[MIB_nmc.eaton_pw].keys())
@@ -1034,7 +1036,12 @@ class UpsComm:
         self.ups_type = ups_item.prm['ups_type']
         if ups_item.prm['ups_type'] in self.MIB_nmc.list():
             self.ups_type = ups_item.prm['ups_type'] = self.MIB_nmc[ups_item.prm['ups_type']]
-        self.mib_commands = self.all_mib_cmds[self.ups_type]
+        try:
+            self.mib_commands = self.all_mib_cmds[self.ups_type]
+        except KeyError:
+            print('Invalid entry in [{}].  Value {} not in {}'.format(
+                  env.UT_CONST.ups_json_file, ups_item.prm['ups_type'], self._valid_type_keys))
+            ups_item.valid = False
 
     @staticmethod
     def is_valid_ip_fqdn(test_value: str) -> bool:

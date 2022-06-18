@@ -89,6 +89,7 @@ force their display.  The logger is enabled with the *--debug* option.
 ## New in Development  -  v1.2.3
 
 * Fixed issue in installation instructions that indicated gpu instead of ups.
+* More error checking.  Make APC NMC names backward compatible.
 
 ## Known Issues
 

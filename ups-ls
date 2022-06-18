@@ -90,7 +90,7 @@ def main() -> None:
         print('Status: ', __status__)
         print('Install Type: {}'.format(env.UT_CONST.install_type))
         print('Config File: {}'.format(env.UT_CONST.ups_config_ini))
-        print('Json File: {}'.format(env.UT_CONST.ups_config_ini))
+        print('Json File: {}'.format(env.UT_CONST.ups_json_file))
         sys.exit(0)
 
     env.UT_CONST.set_env_args(args, __program_name__)
