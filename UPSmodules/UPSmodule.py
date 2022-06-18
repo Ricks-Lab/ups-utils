@@ -1145,7 +1145,7 @@ class UpsComm:
             if not ups.prm[cmd]:
                 ups.skip_list.append(cmd)
                 ups.prm[cmd] = '---'
-                env.UT_CONST.process_message('UPS {} not valid: Skipping: {}'.format(
+                env.UT_CONST.process_message('UPS {} invalid response: Skipping: {}'.format(
                     ups['display_name'], cmd), verbose=False)
             if cmd == 'mib_ups_info':
                 if ups.prm['ups_type'] == UpsComm.MIB_nmc.apc_ap96xx:
