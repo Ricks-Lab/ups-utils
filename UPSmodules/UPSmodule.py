@@ -337,11 +337,17 @@ class UpsItem:
 class UpsDaemon:
     """ Define a Daemon configuration object """
     # Configuration details
-    daemon_paths: Tuple[str, ...] = ('boinc_home', 'ups_utils_script_path')
-    daemon_scripts: Tuple[str, ...] = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
-    daemon_param_names: Tuple[str, ...] = ('read_interval', 'threshold_env_temp', 'threshold_battery_time_rem',
-                                           'threshold_time_on_battery', 'threshold_battery_load',
-                                           'threshold_battery_capacity')
+    _daemon_paths: Tuple[str, ...] = ('boinc_home', 'ups_utils_script_path')
+    _daemon_scripts: Tuple[str, ...] = ('suspend_script', 'resume_script', 'shutdown_script', 'cancel_shutdown_script')
+    _daemon_param_names: Tuple[str, ...] = ('read_interval', 'threshold_env_temp', 'threshold_battery_time_rem',
+                                            'threshold_time_on_battery', 'threshold_battery_load',
+                                            'threshold_battery_capacity')
+    daemon_items_dict: Dict[str, tuple] = {
+        'DaemonPaths': _daemon_paths,
+        'DaemonScripts': _daemon_scripts,
+        'DaemonParameters': _daemon_param_names}
+    config_name_list: List[str] = ['DaemonPaths', 'DaemonScripts', 'DaemonParameters']
+
     daemon_param_defaults: Dict[str, Union[str, Dict[str, int]]] = {
         'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
         'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
@@ -442,89 +448,77 @@ class UpsDaemon:
         """
         read_status = True
 
-        # Set path definitions
-        for path_name in self.daemon_paths:
-            self.daemon_params[path_name] = None
-            if path_name not in self.config['DaemonPaths']:
-                env.UT_CONST.process_message('Item [{}] missing in [{}]'.format(path_name,
-                                                                                env.UT_CONST.ups_config_ini))
-                env.UT_CONST.process_message('Setting to None')
-                self.daemon_params[path_name] = None
-            elif isinstance(self.config['DaemonPaths'][path_name], str):
-                self.daemon_params[path_name] = os.path.expanduser(self.config['DaemonPaths'][path_name])
-                if self.daemon_params[path_name]:
-                    if not os.path.isdir(self.daemon_params[path_name]):
-                        if path_name == 'boinc_home':
-                            print('BOINC_HOME directory [{}] not found. Set to None'.format(
-                                self.daemon_params[path_name]))
+        def param_error(c_name: str, c_item: str) -> None:
+            """ Output standard error messages on issue with reading config file.
+
+            :param c_name:  Top level config names.
+            :param c_item: Name of second level item.
+            """
+            env.UT_CONST.process_message('Config [{}] item [{}] missing in [{}]'.format(
+                c_name, c_item, env.UT_CONST.ups_config_ini))
+            env.UT_CONST.process_message('Setting to default')
+
+        def param_check_set(c_name: str, c_item: str, c_value: str) -> bool:
+            """ Checks daemon values from config and sets if pass.
+
+            :param c_name:
+            :param c_item:
+            :param c_value:
+            :return: True if everything QX
+            """
+            if c_name == 'DaemonPaths':
+                self.daemon_params[c_item] = os.path.expanduser(c_value)
+                if self.daemon_params[c_item]:
+                    if not os.path.isdir(self.daemon_params[c_item]):
+                        self.daemon_params[c_item] = None
+                        env.UT_CONST.process_message('Config [{}] item [{}] invalid file/path [{}]'.format(
+                            c_name, c_item, c_value))
+                        return False
+            elif c_name == 'DaemonScripts':
+                if not self.daemon_params['ups_utils_script_path']:
+                    self.daemon_params[c_item] = None
+                    env.UT_CONST.process_message('Config [{}] item [{}] invalid file/path [{}]'.format(
+                        c_name, c_item, c_value))
+                    return False
+                self.daemon_params[c_item] = os.path.join(self.daemon_params['ups_utils_script_path'], c_value)
+                if not os.path.isfile(self.daemon_params[c_item]):
+                    self.daemon_params[c_item] = None
+                    env.UT_CONST.process_message('Config [{}] item [{}] invalid file/path [{}]'.format(
+                        c_name, c_item, c_value))
+            elif c_name == 'DaemonParameters':
+                if re.search(env.UT_CONST.PATTERNS['INI'], c_value):
+                    params = (0, 0)
+                    if isinstance(c_value, str):
+                        raw_param = re.sub(r'\s+', '', c_value)
+                        params = tuple(int(x) for x in raw_param[1:-1].split(','))
+                    try:
+                        if c_item == 'read_interval':
+                            self.daemon_params[c_item]['monitor'] = params[0]
+                            self.daemon_params[c_item]['daemon'] = params[1]
                         else:
-                            print('Missing directory for {} path_name: {}'.format(
-                                path_name, self.daemon_params[path_name]))
-                            read_status = False
+                            self.daemon_params[c_item]['crit'] = params[0]
+                            self.daemon_params[c_item]['warn'] = params[1]
+                    except KeyError:
+                        env.UT_CONST.process_message('Config [{}] item [{}] invalid value [{}]'.format(
+                            c_name, c_item, c_value))
+            return True
+
+        # Sets all daemon parameter items.  Any unexpected items are skipped.
+        for config_name in self.config_name_list:
+            config_items = self.daemon_items_dict[config_name]
+            for config_item_name in config_items:
+                if config_item_name in self.config[config_name]:
+                    config_item_value = self.config[config_name][config_item_name]
+                    if isinstance(config_item_value, str):
+                        param_check_set(config_name, config_item_name, config_item_value)
+                    else: param_error(config_name, config_item_name)
+                else: param_error(config_name, config_item_name)
+
         if self.daemon_params['boinc_home']:
             os.environ['BOINC_HOME'] = self.daemon_params['boinc_home']
 
-        # Set script definitions
-        for script_name in self.daemon_scripts:
-            # Use default of script_name not found in config file
-            self.daemon_params[script_name] = None
-            if script_name not in self.config['DaemonScripts']:
-                env.UT_CONST.process_message('Item [{}] missing in [{}]'.format(script_name,
-                                                                                env.UT_CONST.ups_config_ini))
-                env.UT_CONST.process_message('Setting to None')
-                self.daemon_params[script_name] = None
-            elif isinstance(self.config['DaemonScripts'][script_name], str):
-                if self.daemon_params['ups_utils_script_path']:
-                    self.daemon_params[script_name] = os.path.join(self.daemon_params['ups_utils_script_path'],
-                                                                   self.config['DaemonScripts'][script_name])
-                else:
-                    self.daemon_params[script_name] = None
-                    read_status = False
-                if self.daemon_params[script_name]:
-                    if not os.path.isfile(self.daemon_params[script_name]):
-                        print('Missing {} script: {}'.format(script_name, self.daemon_params[script_name]))
-                        self.daemon_params[script_name] = None
-                        read_status = False
-
-        # Set script parameters
-        for parameter_name in self.daemon_param_names:
-            # Use default of parameter_name not found in config file
-            if parameter_name not in self.config['DaemonParameters']:
-                env.UT_CONST.process_message('Item [{}] missing in [{}]'.format(parameter_name,
-                                                                                env.UT_CONST.ups_config_ini))
-                env.UT_CONST.process_message('Using defaults')
-                param_dict = self.daemon_param_defaults
-            elif not re.search(env.UT_CONST.PATTERNS['INI'], self.config['DaemonParameters'][parameter_name]):
-                env.UT_CONST.process_message('Incorrect format for {} parameter: {}'.format(
-                    parameter_name, self.config['DaemonParameters'][parameter_name]))
-                env.UT_CONST.process_message('Using default value: {}'.format(self.daemon_params[parameter_name]))
-                param_dict = self.daemon_param_defaults
-            else:
-                param_dict = dict(self.config['DaemonParameters'])
-
-            # Set parameter based on config or defaults
-            params = (0, 0)
-            if isinstance(param_dict[parameter_name], str):
-                raw_param = re.sub(r'\s+', '', param_dict[parameter_name])
-                params = tuple(int(x) for x in raw_param[1:-1].split(','))
-            elif isinstance(param_dict[parameter_name], dict):
-                try:
-                    params = (param_dict[parameter_name]['crit'], param_dict[parameter_name]['warn'])
-                except KeyError:
-                    try:
-                        params = (param_dict[parameter_name]['monitor'], param_dict[parameter_name]['daemon'])
-                    except KeyError:
-                        env.UT_CONST.process_message('Invalid entry: [{}]'.format(param_dict[parameter_name]))
-
-            if parameter_name == 'read_interval':
-                self.daemon_params[parameter_name]['monitor'] = params[0]
-                self.daemon_params[parameter_name]['daemon'] = params[1]
-            else:
-                self.daemon_params[parameter_name]['crit'] = params[0]
-                self.daemon_params[parameter_name]['warn'] = params[1]
-
         # Check Daemon Parameter Values
-        for parameter_name in self.daemon_param_names:
+        for parameter_name in self._daemon_param_names:
             if parameter_name == 'read_interval':
                 for sub_parameter_name in {'monitor', 'daemon'}:
                     if self.daemon_params[parameter_name][sub_parameter_name] < \
@@ -586,8 +580,8 @@ class UpsDaemon:
         :param: script_name: name of script to be executed
         :return:  True on success
         """
-        if script_name not in self.daemon_scripts:
-            raise AttributeError('Error: {} no valid script name: [{}]'.format(script_name, self.daemon_scripts))
+        if script_name not in self._daemon_scripts:
+            raise AttributeError('Error: {} no valid script name: [{}]'.format(script_name, self._daemon_scripts))
         if not self.daemon_params[script_name]:
             message = 'No {} defined'.format(script_name)
             env.UT_CONST.process_message('No {} defined'.format(script_name))
@@ -776,8 +770,6 @@ class UpsList:
         for ups_dict in ups_items.values():
             uuid = uuid4().hex
             ups_dict['uuid'] = uuid
-            #if re.search(env.UT_CONST.PATTERNS['APC96'], ups_dict['ups_type']):
-                #ups_dict['ups_type'] = 'apc_ap96xx'
             self.list[uuid] = UpsItem(ups_dict)
         return True
 
