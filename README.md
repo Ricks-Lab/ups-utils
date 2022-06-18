@@ -89,6 +89,7 @@ force their display.  The logger is enabled with the *--debug* option.
 ## New in Development  -  v1.2.5
 
 * Improved message for skipped parameters.
+* Rewrite daemon configuration reader to make more robust.
 
 ## Known Issues
 
