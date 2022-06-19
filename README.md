@@ -86,12 +86,9 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Current Release  -  v1.2.5
+## New in Development  -  v1.2.6
 
-* Improved message for skipped parameters.
-* Rewrite daemon configuration reader to make more robust.
-* Catch errors for json and config readers and handle with feedback to user.
-* User guide updates.
+* Nothing yet.
 
 ## Known Issues
 
@@ -120,6 +117,13 @@ to support it, feel free to make a pull request.
 * [Eaton PowerWalker NMC](https://powerwalker.com/?page=nmc&lang=en)
 
 ## History
+
+### New in Current Release  -  v1.2.5
+
+* Improved message for skipped parameters.
+* Rewrite daemon configuration reader to make more robust.
+* Catch errors for json and config readers and handle with feedback to user.
+* User guide updates.
 
 ### New in Previous Release  -  v1.2.4
 
