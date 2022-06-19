@@ -173,13 +173,125 @@ sudo apt install snmp
 ## Using ups-ls
 
 After getting your system setup to support **rickslab-ups-utils**, it is best to verify functionality by
-listing your UPS details with the *ups-ls* command.  The utility will read the `ups-config.json` to get
-a list of configured UPSs. The utility will also verify accessibility of the listed UPSs. 
+listing your UPS details with the `ups-ls` command.  The utility will read the `ups-config.json` to get
+a list of configured UPSs. The utility will also verify accessibility of the listed UPSs. Here is an
+example of output for a single UPS using `ups-ls` with no command line arguments:
+
+```
+UPS Name: UPS1-PDX
+   UPS IP/FQDN: 192.168.100.140
+   UPS Type: apc_ap96xx
+   UPS Model: SRT3000RMXLA-NC
+   NMC Model: AP9641
+   Daemon: False
+   UPS Real Name: APC UPS
+   General UPS Information: APC Web/SNMP Management Card (MB:v4.2.9 PF:v1.3.3.1 PN:apc_hw21_aos_1.3.3.1.bin
+                            AF1:v1.3.3.1 AN1:apc_hw21_su_1.3.3.1.bin MN:AP9641 HR:5 SN: 5A2128T03472
+                            MD:07/15/2021) (Embedded PowerNet SNMP Agent SW v2.2 compatible)
+   UPS BIOS Serial Number: AS2128296401
+   UPS Firmware Revision: UPS 08.2 (ID1025)
+   UPS Manufacture Date: 07/18/2021
+   UPS Model Type: Smart-UPS SRT    3000
+   UPS Contact: Rick
+   UPS Location: RicksLab
+   Communicating with UPS Device: Communication OK
+   UPS System Status: OnLine-SCE-On
+   Battery Status: Battery Normal
+   Battery Replacement: OK
+   Last Self Test Results: OK
+   Date of Last Self Test: 06/07/2022
+   UPS Up Time: (581111960) 67 days, 6:11:59.60
+   Last Transfer Event: UPS Self Test
+   Battery Temp (C): 28
+   UPS Environment Temp (C): 29
+   Percentage of Total Capacity: 100
+   Time on Battery: (0.0, ' 0:00:00.00')
+   Runtime Remaining: (119.28, ' 1:11:34.00')
+   Input Voltage (V): 122
+   Input Frequency (Hz): 60
+   Output Voltage (V): 120
+   Output Frequency (Hz): 60
+   Output Load as % of Capacity: 12
+   Output Power (W): 294
+   Output Current (A): 3
+```
+
 
 ## Using ups-mon
+
+The `ups-mon` command will produce a continuously updating table of parameters useful in monitoring 
+a UPS.  By default, a text based table will be displayed in the terminal window where the command is 
+executed.  Using `--gui` command line argument will produce a Gtk base GUI to display the same parameters.
+In both types of displays, output will be color coded based on entries in the `ups-utils.ini` file.  Here 
+is example output with the `--gui` option:
 
 ![](ups-mon-gui_screenshot.png)
 
 ## Using ups-daemon
+
+The `ups-daemon` command will interact with only the UPS identified as the daemon UPS in the `ups-config.json`
+file.  The default behavior is similar to the `ups-ls` command, but will also include a summary of
+parameters from `ups-utils.ini`.
+
+```
+UPS Name: UPS1
+   UPS IP/FQDN: 192.168.1.241
+   UPS Type: apc_ap96xx
+   UPS Model: SRT3000XLA-TW
+   NMC Model: AP9630
+   Daemon: True
+   UPS Real Name: RicksLab_UPS1
+   General UPS Information: APC Web/SNMP Management Card (MB:v4.1.0 PF:v6.7.2 PN:apc_hw05_aos_672.bin
+                            AF1:v6.7.2 AN1:apc_hw05_sumx_672.bin MN:AP9630 HR:05 SN: ZA1450081947
+                            MD:12/10/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)
+   UPS BIOS Serial Number: AS1839197322
+   UPS Firmware Revision: UPS 06.0 (ID1010)
+   UPS Manufacture Date: 09/29/2018
+   UPS Model Type: Smart-UPS SRT    3000
+   UPS Contact: Rick
+   UPS Location: RicksLab-Rack
+   Communicating with UPS Device: Communication OK
+   UPS System Status: OnLine-SCE-On
+   Battery Status: Battery Normal
+   Battery Replacement: OK
+   Last Self Test Results: OK
+   Date of Last Self Test: 06/05/2022
+   UPS Up Time: (719602520) 83 days, 6:53:45.20
+   Last Transfer Event: Small Spike
+   Battery Temp (C): 25
+   UPS Environment Temp (C): ---
+   Percentage of Total Capacity: 100
+   Time on Battery: (0.0, ' 0:00:00.00')
+   Runtime Remaining: (154.81, ' 1:32:53.00')
+   Input Voltage (V): 117
+   Input Frequency (Hz): 59
+   Output Voltage (V): 120
+   Output Frequency (Hz): 60
+   Output Load as % of Capacity: 27
+   Output Power (W): 733
+   Output Current (A): 7
+
+Daemon parameters:
+    boinc_home: /home/boinc/BOINC/
+    ups_utils_script_path: /home/rick/pydev/ups-utils/
+    suspend_script: /home/rick/pydev/ups-utils/pauseBOINC.sh
+    resume_script: /home/rick/pydev/ups-utils/resumeBOINC.sh
+    shutdown_script: /home/rick/pydev/ups-utils/shutdownBOINC.sh
+    cancel_shutdown_script: /home/rick/pydev/ups-utils/cancelShutdownBOINC.sh
+    read_interval: {'monitor': 10, 'daemon': 30, 'limit': 5}
+    threshold_env_temp: {'crit': 35, 'warn': 30, 'limit': 5}
+    threshold_battery_time_rem: {'crit': 5, 'warn': 10, 'limit': 4}
+    threshold_time_on_battery: {'crit': 3, 'warn': 2, 'limit': 1}
+    threshold_battery_load: {'crit': 90, 'warn': 80, 'limit': 5}
+    threshold_battery_capacity: {'crit': 10, 'warn': 50, 'limit': 5}
+```
+
+The real purpose of this command is to be used a daemon to monitor a system on
+UPS power.  This is the behavior when used with the `--daemon` option.  Scripts
+to execute pausing and resuming of power intensive applications, like BOINC.  A
+shutdown script can be configured to shutdown the system when battery is below a
+specified threshold.  By default, only exception events are displayed, but with
+the `--verbose` option, status messages of system status are displayed as in the
+example below.
 
 ![](ups-daemon-verbose_screenshot.png)

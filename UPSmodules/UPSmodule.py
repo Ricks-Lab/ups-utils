@@ -644,7 +644,7 @@ class UpsList:
     def __str__(self) -> str:
         num_ups = self.num_upss()
         out_str = '{} UPSs listed in {}.\n'.format(num_ups['total'], env.UT_CONST.ups_json_file)
-        out_str += '    {} are compatible, {} are accessible, {} are responsive, and {} are valid.'.format(
+        out_str += '    {} are compatible, {} are accessible, {} are responsive, and {} are valid.\n'.format(
             num_ups['compatible'], num_ups['accessible'], num_ups['responsive'], num_ups['valid'])
         return out_str
 
