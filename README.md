@@ -86,10 +86,12 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Development  -  v1.2.5
+## New in Current Release  -  v1.2.5
 
 * Improved message for skipped parameters.
 * Rewrite daemon configuration reader to make more robust.
+* Catch errors for json and config readers and handle with feedback to user.
+* User guide updates.
 
 ## Known Issues
 
@@ -119,7 +121,7 @@ to support it, feel free to make a pull request.
 
 ## History
 
-### New in Current Release  -  v1.2.4
+### New in Previous Release  -  v1.2.4
 
 * More robust reading of config file.  Missing items will generate a warning
   message and defaults will be used.
