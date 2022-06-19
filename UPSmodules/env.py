@@ -280,7 +280,7 @@ class UtConst:
             return datetime.now()
         return datetime.utcnow()
 
-    def process_message(self, message: str, log_flag: bool = False, verbose: bool = False) -> None:
+    def process_message(self, message: str, log_flag: bool = True, verbose: bool = False) -> None:
         """ For given message, print to stderr and/or LOGGER depending on command line options and
             the value of log_flag.
 

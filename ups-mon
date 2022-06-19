@@ -367,7 +367,7 @@ def print_monitor_table(ups_list: UPS.UpsList) -> bool:
                     color = env.UT_CONST.mark_up_codes[color]
                 elif param_name in UPS.UpsDaemon.daemon_param_dict:
                     text_format = ups_list.daemon.daemon_format(param_name, ups[param_name])
-                    LOGGER.debug('%s, %s: %s', param_name, ups[param_name], text_format)
+                    LOGGER.debug('%s: %s, format: %s', param_name, ups[param_name], text_format)
                     color = env.UT_CONST.mark_up_codes[text_format]
                 value = '---' if ups[param_name] is None else str(ups[param_name])
                 item_str = '{}{}{}'.format(color, value[:irw].center(irw), reset)

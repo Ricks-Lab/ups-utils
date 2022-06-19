@@ -379,8 +379,8 @@ class UpsDaemon:
         self.daemon_ups: Union[UpsItem, None] = None
         self.daemon_params: Dict[str, Dict[str, Union[str, int]]]
 
-        self.read_daemon_config()
-        self.set_daemon_parameters()
+        if self.read_daemon_config():
+            self.set_daemon_parameters()
 
     def __str__(self) -> str:
         return re.sub(r'\'', '\"', pprint.pformat(self.daemon_params, indent=2, width=120))
@@ -432,9 +432,22 @@ class UpsDaemon:
         self.config = configparser.ConfigParser()
         try:
             self.config.read(env.UT_CONST.ups_config_ini)
+        except configparser.MissingSectionHeaderError as err:
+            LOGGER.debug('config parser error: %s', err)
+            print('Error: Data without section header in ups-utils.ini file.')
+            return False
         except configparser.Error as err:
-            LOGGER.exception('config parser error: %s', err)
-            print('Error in ups-utils.ini file.  Using defaults')
+            LOGGER.debug('config parser error: %s', err)
+            print('Error: Could not read ups-utils.ini file.')
+            return False
+        missing_section = False
+        for config_name in ('DaemonPaths', 'DaemonScripts', 'DaemonParameters'):
+            if config_name not in self.config:
+                env.UT_CONST.process_message('Error reading [{}], missing [{}] section.'.format(
+                    env.UT_CONST.ups_config_ini, config_name))
+                missing_section = True
+        if missing_section:
+            env.UT_CONST.process_message('       Using defaults.')
             return False
         LOGGER.debug('config[DaemonPaths]: %s', dict(self.config['DaemonPaths']))
         LOGGER.debug('config[DaemonScripts]: %s', dict(self.config['DaemonScripts']))
@@ -611,7 +624,7 @@ class UpsList:
         self.list: Dict[str, UpsItem] = {}
         self.daemon: Union[UpsDaemon, None] = UpsDaemon() if daemon else None
         if not self.read_ups_json():
-            print('Fatal error: could not read [{}] file'.format(env.UT_CONST._config_files['json']))
+            env.UT_CONST.process_message('Fatal: Could not read [{}] file.'.format(env.UT_CONST._config_files['json']))
             sys.exit(-1)
         self.get_daemon_ups().daemon = self.daemon
 
@@ -760,11 +773,15 @@ class UpsList:
             with open(env.UT_CONST.ups_json_file, 'r') as ups_list_file:
                 ups_items = json.load(ups_list_file)
         except FileNotFoundError as error:
-            env.UT_CONST.process_message("Error: file not found error for [{}]: {}".format(
+            env.UT_CONST.process_message("Error: File not found error for [{}]: {}".format(
                 env.UT_CONST.ups_json_file, error), verbose=True)
             return False
         except PermissionError as error:
-            env.UT_CONST.ups_json_file("Error: permission error for [{}]: {}".format(
+            env.UT_CONST.process_message("Error: File permission error for [{}]: {}".format(
+                env.UT_CONST.ups_json_file, error), verbose=True)
+            return False
+        except json.decoder.JSONDecodeError as error:
+            env.UT_CONST.process_message("Error: File format error for [{}]:\n       {}".format(
                 env.UT_CONST.ups_json_file, error), verbose=True)
             return False
         for ups_dict in ups_items.values():
