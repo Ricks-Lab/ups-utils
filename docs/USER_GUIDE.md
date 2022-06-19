@@ -7,6 +7,8 @@ A set of utilities to monitor and react to the status of a set of supported UPSs
  - [Installation](#installation)
  - [Getting Started](#getting-started)
  - [Using ups-ls](#using-ups-ls)
+ - [Using ups-mon](#using-ups-mon)
+ - [Using ups-daemon](#using-ups-daemon)
 
 
 ## Installation
@@ -168,9 +170,16 @@ be installed:
 sudo apt install snmp
 ```
 
-
 ## Using ups-ls
 
 After getting your system setup to support **rickslab-ups-utils**, it is best to verify functionality by
 listing your UPS details with the *ups-ls* command.  The utility will read the `ups-config.json` to get
 a list of configured UPSs. The utility will also verify accessibility of the listed UPSs. 
+
+## Using ups-mon
+
+![](ups-mon-gui_screenshot.png)
+
+## Using ups-daemon
+
+![](ups-daemon-verbose_screenshot.png)
