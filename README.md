@@ -86,7 +86,7 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Development  -  v1.2.6
+## New in Current Release  -  v1.2.7
 
 * Updates to the User Guide.
 * Cleaned up implementation of GuiComp object.
@@ -124,7 +124,7 @@ to support it, feel free to make a pull request.
 
 ## History
 
-### New in Current Release  -  v1.2.5
+### New in Previous Release  -  v1.2.5
 
 * Improved message for skipped parameters.
 * Rewrite daemon configuration reader to make more robust.
