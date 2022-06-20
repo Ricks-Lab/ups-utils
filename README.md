@@ -86,15 +86,9 @@ option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
 force their display.  The logger is enabled with the *--debug* option.
 
-## New in Current Release  -  v1.2.7
+## New in Development  -  v1.2.8
 
-* Updates to the User Guide.
-* Cleaned up implementation of GuiComp object.
-* Fixed an error in the calculation of time on battery and battery remaining
-for APC. Now just store time in minutes in data structure and drop the string version.
-* Include time on battery in color coding logic.
-* More code optimizations.
-* Improved LOGGER.debug messages.
+* Nothing yet.
 
 ## Known Issues
 
@@ -123,6 +117,16 @@ to support it, feel free to make a pull request.
 * [Eaton PowerWalker NMC](https://powerwalker.com/?page=nmc&lang=en)
 
 ## History
+
+### New in Current Release  -  v1.2.7
+
+* Updates to the User Guide.
+* Cleaned up implementation of GuiComp object.
+* Fixed an error in the calculation of time on battery and battery remaining
+  for APC. Now just store time in minutes in data structure and drop the string version.
+* Include time on battery in color coding logic.
+* More code optimizations.
+* Improved LOGGER.debug messages.
 
 ### New in Previous Release  -  v1.2.5
 
