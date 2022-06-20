@@ -67,8 +67,8 @@ class GuiComp:
     def __init__(self, data_dict: UPSmodule.UpsList, max_width: int):
         # {uuid: {name: {'label': label, 'box': box, 'box_name': box_name 'data': data}}}
         self.gc: GuiCompDict = {}
-        self.data_dict = data_dict
-        self.max_width = max_width
+        self.data_dict: UPSmodule.UpsList = data_dict
+        self.max_width: int = max_width
 
     def __str__(self) -> str:
         return re.sub(r'\'', '\"', pprint.pformat(self.gc, indent=2, width=120))

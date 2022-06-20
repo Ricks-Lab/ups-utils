@@ -2,7 +2,7 @@
 
 A set of utilities to monitor and react to the status of a set of supported UPSs.
 
-## Current rickslab-ups-utils Version: 1.x.x
+## Current rickslab-ups-utils Version: 1.2.x
 
  - [Installation](#installation)
  - [Getting Started](#getting-started)

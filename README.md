@@ -88,7 +88,8 @@ force their display.  The logger is enabled with the *--debug* option.
 
 ## New in Development  -  v1.2.6
 
-* Nothing yet.
+* Updates to the User Guide.
+* Cleaned up implementation of GuiComp object.
 
 ## Known Issues
 
