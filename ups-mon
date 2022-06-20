@@ -236,44 +236,36 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
     # update gui
     for dev_uuid, dev_data in gc.items():
         ups = ups_list[dev_uuid]
-        if not ups['valid']:
-            mib_name = 'mib_system_status'
-            gui_comp = dev_data[mib_name]
-            gui_comp['label'].set_markup('<b>{}</b>'.format('Unresponsive'))
-            UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
-                gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('yellow')))
-            continue
         for mib_name, gui_comp in dev_data.items():
-            state_style = UPS.UpsItem.TXT_style.normal
+            # default style
+            state_style = UPS.UpsItem.TXT_style.bold
+
+            # Set data value style based on daemon parameters
             if mib_name in ups_list.daemon.daemon_param_dict:
                 state_style = ups_list.daemon.daemon_format(mib_name, ups[mib_name], gui_text_style=True)
-            if mib_name == 'mib_battery_status':
+            elif mib_name == 'mib_battery_status':
                 if re.match(env.UT_CONST.PATTERNS['NORMAL'], gui_comp['data']):
                     state_style = UPS.UpsItem.TXT_style.green
                 else:
                     state_style = UPS.UpsItem.TXT_style.crit
+            elif mib_name == 'daemon':
+                state_style = UPS.UpsItem.TXT_style.daemon if gui_comp['data'] == 'True' else UPS.UpsItem.TXT_style.bold
             elif mib_name == 'mib_system_status':
                 if re.match(env.UT_CONST.PATTERNS['ONLINE'], gui_comp['data']):
                     state_style = UPS.UpsItem.TXT_style.green
                 else:
                     state_style = UPS.UpsItem.TXT_style.crit
-            elif mib_name == 'display_name':
-                state_style = UPS.UpsItem.TXT_style.bold
 
-            if gui_comp['data'] in {None, 'None', ''}:
-                if mib_name == 'mib_ups_name':
-                    state_style = UPS.UpsItem.TXT_style.crit
-                    gui_comp['data'] = 'Unresponsive'
-                else:
-                    state_style = UPS.UpsItem.TXT_style.normal
-                    gui_comp['data'] = '---'
-            set_gtk_prop(gui_comp['label'], width_chars=MonitorWindow.max_width + 1)
+            if gui_comp['data'] in {None, 'None', '', '---'}:
+                state_style = UPS.UpsItem.TXT_style.normal
+
+            # Apply style
             if state_style == UPS.UpsItem.TXT_style.crit:
                 gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('red')))
             elif state_style == UPS.UpsItem.TXT_style.normal:
-                gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
+                gui_comp['label'].set_markup('{}'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('slate_md')))
             elif state_style == UPS.UpsItem.TXT_style.warn:
@@ -284,8 +276,14 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
                 gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('green_dk')))
+            elif state_style == UPS.UpsItem.TXT_style.daemon:
+                gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
+                UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
+                    gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('green_dk')))
             elif state_style == UPS.UpsItem.TXT_style.bold:
                 gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
+                UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
+                    gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('slate_md')))
             else:
                 gui_comp['label'].set_text(gui_comp['data'])
 

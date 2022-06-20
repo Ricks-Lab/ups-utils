@@ -119,6 +119,7 @@ class UtConst:
                                      'nvidia':    '\033[1;30;42m',
                                      'warn':      '\033[1;30;43m',
                                      'other':     '\033[1;37;44m',
+                                     'daemon':    '\033[1;37;44m',
                                      'label':     '\033[1;37;46m',
                                      'reset':     '\033[0;0;0m'}
     # Private items

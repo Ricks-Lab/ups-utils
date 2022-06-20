@@ -160,10 +160,10 @@ cd ~/.local/share/rickslab-ups-utils/config
 chmod 600 ups-utils.ini ups-config.json
 ```
 
-To assure the use of the utilities only with secure configuration files, all utilities should
+To assure the use of the utilities only with secure configuration files, all utilities will
 exit with an error if not properly secured.
 
-The ups-utils rely on the command *snmpget* which is part of the snmp package that must
+The **ups-utils** rely on the command *snmpget* which is part of the snmp package that must
 be installed:
 
 ```shell
@@ -175,7 +175,7 @@ sudo apt install snmp
 After getting your system setup to support **rickslab-ups-utils**, it is best to verify functionality by
 listing your UPS details with the `ups-ls` command.  The utility will read the `ups-config.json` to get
 a list of configured UPSs. The utility will also verify accessibility of the listed UPSs. Here is an
-example of output for a single UPS using `ups-ls` with no command line arguments:
+example of output for a single UPS using `ups-ls --no_markup`:
 
 ```
 UPS Name: UPS1-PDX

@@ -90,6 +90,11 @@ force their display.  The logger is enabled with the *--debug* option.
 
 * Updates to the User Guide.
 * Cleaned up implementation of GuiComp object.
+* Fixed an error in the calculation of time on battery and battery remaining
+for APC. Now just store time in minutes in data structure and drop the string version.
+* Include time on battery in color coding logic.
+* More code optimizations.
+* Improved LOGGER.debug messages.
 
 ## Known Issues
 

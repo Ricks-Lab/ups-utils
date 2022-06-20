@@ -120,8 +120,8 @@ class GuiComp:
                 data_value = self.data_dict[uuid][item_name]
             except KeyError:
                 data_value = None
-            if data_value in ['-1', None, '', 'No data']:
-                data_value = '---'
+            if data_value in {'-1', None, '', 'No data', 'None'}:
+                data_value = 'Unresponsive' if item_name in {'mib_ups_name', 'mib_system_status'} else '---'
             data_value = str(data_value)[:self.max_width]
             item_dict['label'].set_text(data_value)
             self.gc[uuid][item_name]['data'] = data_value
@@ -146,6 +146,7 @@ class GuiProps:
                           'green':     '#8EC3A7',
                           'green_dk':  '#6A907C',
                           'teal':      '#218C8D',
+                          'cyan':      '#008B8B',
                           'olive':     '#6C9040',
                           'red':       '#B73743',
                           'orange':    '#E86850',
@@ -178,7 +179,7 @@ class GuiProps:
         return GuiProps._colors[value]
 
     @staticmethod
-    def color_name_to_rgba(value: str) -> Tuple[float, ...]:
+    def color_name_to_rgba(value: str) -> Tuple[Union[float, int], ...]:
         """
         Convert the given color name to a color tuple.  The given color string mus exist in the project
         color list.
@@ -191,7 +192,7 @@ class GuiProps:
         return GuiProps.hex_to_rgba(GuiProps._colors[value])
 
     @staticmethod
-    def hex_to_rgba(value: str) -> Tuple[float, ...]:
+    def hex_to_rgba(value: str) -> Tuple[Union[float, int], ...]:
         """
         Return rgba tuple for give hex color name.
 

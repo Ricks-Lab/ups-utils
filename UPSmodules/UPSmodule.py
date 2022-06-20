@@ -33,7 +33,6 @@ import re
 import shlex
 import shutil
 import time
-import datetime
 import json
 import subprocess
 import logging
@@ -120,8 +119,8 @@ class UpsItem:
         'mib_ups_env_temp': 'UPS Environment Temp (C)',
         'sep4':                '#',
         'mib_battery_capacity': 'Percentage of Total Capacity',
-        'mib_time_on_battery': 'Time on Battery',
-        'mib_battery_runtime_remain': 'Runtime Remaining',
+        'mib_time_on_battery': 'Time on Battery (min)',
+        'mib_battery_runtime_remain': 'Runtime Remaining (min)',
         'sep5':                '#',
         'mib_input_voltage': 'Input Voltage (V)',
         'mib_input_frequency': 'Input Frequency (Hz)',
@@ -141,7 +140,7 @@ class UpsItem:
     _short_list: Set[str] = {'ups_IP', 'display_name', 'mib_ups_model', 'responsive', 'daemon'}
     table_list: Set[str] = {'display_name', 'ups_IP', 'ups_type', 'mib_ups_model', 'ups_nmc_model', 'daemon'}
     mark_up_codes = env.UT_CONST.mark_up_codes
-    TXT_style: UpsEnum = UpsEnum('style', 'warn crit green bold normal')
+    TXT_style: UpsEnum = UpsEnum('style', 'warn crit green bold normal daemon')
 
     def __init__(self, json_details: dict):
         # UPS list from ups-config.json for monitor and ls utils.
@@ -352,12 +351,13 @@ class UpsDaemon:
         'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
         'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
         'threshold_env_temp': {'crit': 35, 'warn': 30, 'limit': 5},
-        'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
-        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
         'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 5},
+        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
+        'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
         'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
     daemon_param_dict: Dict[str, str] = {
         'mib_ups_env_temp': 'threshold_env_temp',
+        'mib_time_on_battery': 'threshold_time_on_battery',
         'mib_battery_runtime_remain': 'threshold_battery_time_rem',
         'mib_output_load': 'threshold_battery_load',
         'mib_battery_capacity': 'threshold_battery_capacity'}
@@ -395,30 +395,27 @@ class UpsDaemon:
         :return:
         """
         if command_name not in self.daemon_param_dict:
-            return UpsItem.TXT_style.normal if gui_text_style else 'none'
-        if not value:
+            return UpsItem.TXT_style.bold if gui_text_style else 'none'
+        if value in {None, 'none', '', '---'}:
             return UpsItem.TXT_style.normal if gui_text_style else 'none'
         if isinstance(value, str):
             if value.isnumeric():
                 value = int(value)
             else:
-                return UpsItem.TXT_style.normal if gui_text_style else 'none'
+                return UpsItem.TXT_style.bold if gui_text_style else 'none'
 
         limits = self.daemon_params[self.daemon_param_dict[command_name]]
-        if command_name in ['mib_ups_env_temp', 'mib_output_load']:
-            # if value >= limits['limit']: return 'limit'
+        if command_name in {'mib_ups_env_temp', 'mib_output_load', 'mib_time_on_battery'}:
             if value >= limits['crit']:
                 return UpsItem.TXT_style.crit if gui_text_style else 'crit'
             elif value >= limits['warn']:
                 return UpsItem.TXT_style.warn if gui_text_style else 'warn'
         else:
-            if command_name == 'mib_battery_runtime_remain': value = value[0]
-            # if value <= limits['limit']: return 'limit'
             if value <= limits['crit']:
                 return UpsItem.TXT_style.crit if gui_text_style else 'crit'
             elif value <= limits['warn']:
                 return UpsItem.TXT_style.warn if gui_text_style else 'warn'
-        return UpsItem.TXT_style.normal if gui_text_style else 'none'
+        return UpsItem.TXT_style.bold if gui_text_style else 'none'
 
     def read_daemon_config(self) -> bool:
         """ Read the daemon config file.
@@ -1161,7 +1158,7 @@ class UpsComm:
         for cmd in UpsComm.all_mib_cmd_names[cmd_group]:
             if cmd in ups.skip_list: continue
             ups.prm[cmd] = self.send_snmp_command(cmd, ups, display=display)
-            if not ups.prm[cmd]:
+            if ups.prm[cmd] in {None, '', 'none'}:
                 ups.skip_list.append(cmd)
                 ups.prm[cmd] = '---'
                 env.UT_CONST.process_message('UPS {} invalid response: Skipping: {}'.format(
@@ -1185,7 +1182,7 @@ class UpsComm:
         return True
 
     def send_snmp_command(self, command_name: str, ups: UpsItem,
-                          display: bool = False) -> Union[str, int, List[Union[float, str]], float, None]:
+                          display: bool = False) -> Union[str, int, float, None]:
         """ Read the specified mib commands results for specified UPS or active UPS if not specified.
 
         :param command_name:  A command to be read from the target UPS
@@ -1209,12 +1206,12 @@ class UpsComm:
                          command_name, cmd_mib, ups.prm.display_name, ups.ups_ip())
             return None
 
-        value = ''
-        value_minute = -1
-        value_str = 'UNK'
+        value: Union[str, int, float, None] = None
+
+        LOGGER.debug('### command_name: %s', command_name)
         for line in snmp_output:
             if not line: continue
-            LOGGER.debug('line: %s', line)
+            LOGGER.debug('    Raw data: %s', line)
             if re.match(env.UT_CONST.PATTERNS['SNMP_VALUE'], line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()
@@ -1242,20 +1239,17 @@ class UpsComm:
                 else:
                     # Measured in minutes.
                     value = int(value) * 60
-                value_str = str(datetime.timedelta(seconds=int(value)))
-                value_minute = round(float(value) / 60.0, 2)
-                value = [value_minute, value_str]
+                value = round(float(value) / 60.0, 2)
             else:
-                # Process time for apc
+                # Process time for APC, measured in hundredths of seconds
                 value_items = re.sub(r'\(', '', value).split(')')
-                if len(value_items) >= 2:
-                    value_minute, value_str = value_items
-                value = (round(int(value_minute) / 60 / 60, 2), value_str)
+                value = round(float(value_items[0]) / 100 / 60, 2) if len(value_items) >= 2 else None
         if display:
             if command_name == 'mib_output_current' and ups.prm['ups_type'] == UpsComm.MIB_nmc.eaton_pw:
                 print('{}: {} - raw, uncorrected value.'.format(snmp_mib_commands[command_name]['name'], value))
             else:
                 print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
+        LOGGER.debug('    Value: %s', value)
         return value
 
     @staticmethod

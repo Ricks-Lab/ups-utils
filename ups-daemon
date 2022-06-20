@@ -227,8 +227,8 @@ def main() -> None:
             out_power = int(daemon_ups.send_snmp_command('mib_output_power', display=False))
             bat_load = int(daemon_ups.send_snmp_command('mib_output_load', display=False))
             bat_capacity = int(daemon_ups.send_snmp_command('mib_battery_capacity', display=False))
-            time_on_bat = float(daemon_ups.send_snmp_command('mib_time_on_battery', display=False)[0])
-            remain_run_time = float(daemon_ups.send_snmp_command('mib_battery_runtime_remain', display=False)[0])
+            time_on_bat = float(daemon_ups.send_snmp_command('mib_time_on_battery', display=False))
+            remain_run_time = float(daemon_ups.send_snmp_command('mib_battery_runtime_remain', display=False))
 
             if env.UT_CONST.quit:
                 print('[{}] {} Received Quit Signal'.format(
@@ -270,7 +270,7 @@ def main() -> None:
                         time_str, norm_style, reset_style))
             # On Battery condition
             elif time_on_bat > 0.0:
-                print('[{}] {} System on UPS Power for {:.2f}m: {:.2f}m/{}% of battery remaining'.format(
+                print('[{}] {} System on UPS Power for {:.2f}min: {:.2f}m/{}% of battery remaining'.format(
                     time_str, ups_states['fault'], time_on_bat, remain_run_time, bat_capacity))
                 if active_sleep != fault_sleep:
                     if (remain_run_time < warn_runtime_rem) or (bat_capacity < warn_bat_level):
