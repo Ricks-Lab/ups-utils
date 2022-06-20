@@ -229,7 +229,7 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp) -> None:
     :return: None
     """
     ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic, errups=env.UT_CONST.show_unresponsive)
-    gc.all_refresh_gui_data()
+    gc.all_refresh_gui_data(skip_static=True)
     if env.UT_CONST.log:
         print_log(env.UT_CONST.log_file_ptr, ups_list)
 

@@ -98,18 +98,24 @@ class GuiComp:
         else:
             self.gc[uuid].update({name: {'label': label, 'box': box, 'box_name': box_name, 'data': '---'}})
 
-    def all_refresh_gui_data(self) -> None:
+    def all_refresh_gui_data(self, skip_static: bool = False) -> None:
         """ Refresh all gui elements with data from the data dict.
+
+        :param skip_static:  Do not update static items if True
         """
         for uuid in self.data_dict.uuids():
-            self.refresh_gui_data(uuid)
+            self.refresh_gui_data(uuid, skip_static)
 
-    def refresh_gui_data(self, uuid: str) -> None:
+    def refresh_gui_data(self, uuid: str, skip_static: bool = False) -> None:
         """ Refresh gui element with data from the data dict.
 
+        :param skip_static:  Do not update static items if True
         :param uuid:  Key for first level of gui and data dicts.
         """
         for item_name, item_dict in self.gc[uuid].items():
+            if skip_static:
+                if item_name in UPSmodule.UpsComm.all_mib_cmd_names[UPSmodule.UpsComm.MIB_group.static]:
+                    continue
             try:
                 data_value = self.data_dict[uuid][item_name]
             except KeyError:
