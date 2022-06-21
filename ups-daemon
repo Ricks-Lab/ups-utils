@@ -199,6 +199,7 @@ def main() -> None:
             'error':    '{} ERROR:   {}'.format(err_style, reset_style),
             'critical': '{} CRITICAL:{}'.format(crit_style, reset_style),
         }
+        ready_status = True
         while True:
             time_str = datetime.now().strftime(env.UT_CONST.TIME_FORMAT)
 
@@ -246,18 +247,21 @@ def main() -> None:
 
             # Not on Battery
             if time_on_bat == 0.0:
-                if args.verbose:
+                if args.verbose or ready_status:
                     print('[{}] {} Loading: {}%, Capacity: {}%, Power: {}W, Battery Status: {}'.format(
                         time_str, ups_states['ready'], bat_load, bat_capacity, out_power, bat_status))
+                    ready_status = False
                 if shutting_down:
                     daemon_ups.daemon.execute_script('cancel_shutdown_script')
                     print('[{}] {} Cancelling Shutdown'.format(
                         time_str, ups_states['good']))
                     shutting_down = False
+                    ready_status = True
                 if active_sleep != normal_sleep:
                     print('[{}] {} WARNING condition has ended: increase update interval from {} to {}'.format(
                           time_str, ups_states['ready'], active_sleep, normal_sleep))
                     active_sleep = normal_sleep
+                    ready_status = True
                 if bat_capacity < crit_bat_level:
                     print('[{}] {} Battery Nearly Exhausted, {:.2f}m/{}% remaining'.format(
                         time_str, ups_states['critical'], remain_run_time, bat_capacity))
@@ -294,6 +298,7 @@ def main() -> None:
                         print('[{}] {} Resume Script failed to execute - {}'.format(
                             time_str, ups_states['error'], execute_result))
                     suspend_state = False
+                    ready_status = True
 
             if not suspend_state:
                 if time_on_bat > daemon_ups.daemon.daemon_params['threshold_time_on_battery']['crit'] or bat_load > crit_load_level:
