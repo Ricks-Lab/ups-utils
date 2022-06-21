@@ -15,9 +15,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '1.2.7'
-__status__ = 'Development Status :: 5 - Production/Stable'
-#__status__ = 'Development Status :: 4 - Beta'
+__version__ = '1.2.8'
+#__status__ = 'Development Status :: 5 - Production/Stable'
+__status__ = 'Development Status :: 4 - Beta'
 __credits__ = ['Natalya Langford - Configuration Parser']
 __required_pversion__ = (3, 6)
 __required_kversion__ = (4, 8)
