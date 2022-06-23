@@ -409,7 +409,6 @@ class UpsDaemon:
                 return UpsItem.TXT_style.bold if gui_text_style else 'none'
 
         limits = self.daemon_params[self.daemon_param_dict[command_name]]
-        #if command_name in {'mib_ups_env_temp', 'mib_output_load', 'mib_time_on_battery'}:
         if limits['limit_type'] == 'high':
             if value >= limits['crit']:
                 return UpsItem.TXT_style.crit if gui_text_style else 'crit'
@@ -544,36 +543,33 @@ class UpsDaemon:
                         self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
             else:
                 reset = False
-                # if self.daemon_param_defaults[parameter_name]['crit'] > \
-                        # self.daemon_param_defaults[parameter_name]['warn']:
                 if self.daemon_param_defaults[parameter_name]['limit_type'] == 'high':
                     if self.daemon_params[parameter_name]['crit'] <= self.daemon_params[parameter_name]['warn']:
                         reset = True
-                        env.UT_CONST.process_message('Warning: crit must be > warn value, '
-                                                     'using defaults for {}'.format(parameter_name), verbose=True)
+                        env.UT_CONST.process_message('Warning: crit {} NOT > warn {}, using defaults for {}'.format(
+                            self.daemon_params[parameter_name]['crit'], self.daemon_params[parameter_name]['warn'],
+                            parameter_name), verbose=True)
                     if self.daemon_params[parameter_name]['crit'] > self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        env.UT_CONST.process_message('Warning: crit must be <= limit value, '
-                                                     'using defaults for {}'.format(parameter_name), verbose=True)
-                    #if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
-                        #reset = True
-                        #env.UT_CONST.process_message('Warning warn must be >= limit value, '
-                                                     #'using defaults for {}'.format(parameter_name), verbose=True)
+                        env.UT_CONST.process_message('Warning: crit {} NOT <= limit {}, using defaults for {}'.format(
+                            self.daemon_params[parameter_name]['crit'], self.daemon_params[parameter_name]['limit'],
+                            parameter_name), verbose=True)
                 else:
                     if self.daemon_params[parameter_name]['crit'] >= self.daemon_params[parameter_name]['warn']:
                         reset = True
-                        env.UT_CONST.process_message('Warning crit must be < warn value, '
-                                                     'using defaults for {}'.format(parameter_name), verbose=True)
+                        env.UT_CONST.process_message('Warning: crit {} NOT < warn {}, using defaults for {}'.format(
+                            self.daemon_params[parameter_name]['crit'], self.daemon_params[parameter_name]['warn'],
+                            parameter_name), verbose=True)
                     if self.daemon_params[parameter_name]['crit'] < self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        env.UT_CONST.process_message('Warning crit must be >= limit value, '
-                                                     'using defaults for {}'.format(parameter_name), verbose=True)
-                    #if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
-                        #reset = True
-                        #env.UT_CONST.process_message('Warning warn must be >= limit value, '
-                                                     #'using defaults for {}'.format(parameter_name), verbose=True)
+                        env.UT_CONST.process_message('Warning: crit {} NOT >= limit {}, using defaults for {}'.format(
+                            self.daemon_params[parameter_name]['crit'], self.daemon_params[parameter_name]['limit'],
+                            parameter_name), verbose=True)
                 if reset:
                     self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
+                    print('Defaults: {}: crit = {}, warn = {}, limit = {}'.format(parameter_name,
+                          self.daemon_params[parameter_name]['crit'], self.daemon_params[parameter_name]['warn'],
+                          self.daemon_params[parameter_name]['limit']))
         return read_status
 
     @classmethod
