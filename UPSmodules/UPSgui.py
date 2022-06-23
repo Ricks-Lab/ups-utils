@@ -29,6 +29,7 @@ __docformat__ = 'reStructuredText'
 from typing import Tuple, Dict, Union, Generator
 import sys
 import re
+from datetime import datetime
 import logging
 import pprint
 import warnings
@@ -69,6 +70,11 @@ class GuiComp:
         self.gc: GuiCompDict = {}
         self.data_dict: UPSmodule.UpsList = data_dict
         self.max_width: int = max_width
+        self.update_time: dict = {'update_time': {
+            'label': None,
+            'box': None,
+            'box_name': None,
+            'data': env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)}}
 
     def __str__(self) -> str:
         return re.sub(r'\'', '\"', pprint.pformat(self.gc, indent=2, width=120))
@@ -84,7 +90,7 @@ class GuiComp:
         for key, value in self.gc.items():
             yield key, value
 
-    def add(self, uuid: str, name: str, label: any, box: any = None, box_name: Union[str, None] = None):
+    def add(self, uuid: Union[str, None], name: str, label: any, box: any = None, box_name: Union[str, None] = None):
         """ Add a new gui element and associate data source
 
         :param uuid:  Key for first element in the data dict
@@ -93,6 +99,14 @@ class GuiComp:
         :param box:   Box gui element
         :param box_name: Name of the Box element.  Need for dynamic background colors.
         """
+        if not uuid:
+            if name == 'update_time':
+                self.update_time['label'] = label
+                self.update_time['box'] = box
+                self.update_time['box_name'] = box_name
+                self.update_time['data'] = env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)
+            return
+
         if uuid not in self.gc:
             self.gc.update({uuid: {name: {'label': label, 'box': box, 'box_name': box_name, 'data': '---'}}})
         else:
@@ -103,6 +117,7 @@ class GuiComp:
 
         :param skip_static:  Do not update static items if True
         """
+        self.update_time['data'] = env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)
         for uuid in self.data_dict.uuids():
             self.refresh_gui_data(uuid, skip_static)
 
@@ -125,6 +140,7 @@ class GuiComp:
             data_value = str(data_value)[:self.max_width]
             item_dict['label'].set_text(data_value)
             self.gc[uuid][item_name]['data'] = data_value
+        self.update_time['label'].set_markup('<big><b> {} </b></big>'.format(self.update_time['data']))
 
 
 class GuiProps:
@@ -229,22 +245,14 @@ class GuiProps:
         :param align: Alignment parameters
         :param xalign: X Alignment parameter
         """
-        if top:
-            gui_item.set_property('margin-top', top)
-        if bottom:
-            gui_item.set_property('margin-bottom', bottom)
-        if right:
-            gui_item.set_property('margin-right', right)
-        if left:
-            gui_item.set_property('margin-left', left)
-        if width:
-            gui_item.set_property('width-request', width)
-        if width_max:
-            gui_item.set_max_width_chars(width_max)
-        if width_chars:
-            gui_item.set_width_chars(width_chars)
-        if max_length:
-            gui_item.set_max_length(max_length)
+        if top: gui_item.set_property('margin-top', top)
+        if bottom: gui_item.set_property('margin-bottom', bottom)
+        if right: gui_item.set_property('margin-right', right)
+        if left: gui_item.set_property('margin-left', left)
+        if width: gui_item.set_property('width-request', width)
+        if width_max: gui_item.set_max_width_chars(width_max)
+        if width_chars: gui_item.set_width_chars(width_chars)
+        if max_length: gui_item.set_max_length(max_length)
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=DeprecationWarning)
             if xalign:
@@ -264,7 +272,7 @@ class GuiProps:
         css_list = []
         if css_str is None:
             # Initialize formatting colors.
-            css_list.append("grid { background-image: image(%s); }" % cls._colors['gray80'])
+            css_list.append("grid { background-image: image(%s); }" % cls._colors['gray70'])
             css_list.append("#light_grid { background-image: image(%s); }" % cls._colors['gray20'])
             css_list.append("#dark_grid { background-image: image(%s); }" % cls._colors['gray70'])
             css_list.append("#dark_box { background-image: image(%s); }" % cls._colors['slate_dk'])
