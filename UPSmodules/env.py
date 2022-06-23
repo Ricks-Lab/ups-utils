@@ -34,6 +34,7 @@ import grp
 import re
 import inspect
 import logging
+import pytz
 from pathlib import Path
 import shutil
 from datetime import datetime
@@ -135,12 +136,12 @@ class UtConst:
     _icons: Dict[str, str] = {'ups-mon': 'ups-utils-monitor.icon.png'}
     _config_file_names: Dict[str, str] = {'json': 'ups-config.json', 'ini': 'ups-utils.ini'}
     _config_files: Dict[str, Union[str, None]] = {'json': None, 'ini': None}
-    _all_args: Set[str] = {'debug', 'show_unresponsive', 'log', 'no_markup', 'use_ltz', 'verbose'}
+    _all_args: Set[str] = {'debug', 'show_unresponsive', 'log', 'no_markup', 'ltz', 'verbose', 'sleep'}
 
     # Public items
     gui_window_title: str = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file: str = 'ups-utils-monitor.icon.png'
-    TIME_FORMAT: str = '%d-%b-%Y %H:%M:%S'
+    TIME_FORMAT: str = '%d-%b-%Y %H:%M:%S %z'
 
     def __init__(self):
         self.calling_program = ''
@@ -193,6 +194,7 @@ class UtConst:
         self.use_ltz: bool = False
         self.ltz = datetime.utcnow().astimezone().tzinfo
         self.verbose = False
+        self.sleep: int = 30
 
     def set_env_args(self, args: argparse.Namespace, program_name: str = None) -> None:
         """
@@ -217,7 +219,8 @@ class UtConst:
                 elif target_arg == 'log': self.log = self.args.log
                 elif target_arg == 'no_markup': self.no_markup = self.args.no_markup
                 elif target_arg == 'verbose': self.verbose = self.args.verbose
-                elif target_arg == 'use_ltz': self.use_ltz = self.args.ltz
+                elif target_arg == 'sleep': self.sleep = self.args.sleep
+                elif target_arg == 'ltz': self.use_ltz = self.args.ltz
         LOGGER.propagate = False
         formatter = logging.Formatter("%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s")
         stream_handler = logging.StreamHandler()
@@ -270,16 +273,18 @@ class UtConst:
                                                                                               indent, length)
         return message
 
-    @staticmethod
-    def now(ltz: bool = False) -> datetime:
+    def now(self, ltz: bool = False, as_string: bool = False) -> Union[datetime, str]:
         """ Get current time
 
         :param ltz:  Set to True to use local time zone.
-        :return:  Returns current time as datetime object
+        :param as_string:  Set to True to time as a string
+        :return:  Returns current time as datetime object or formatted string
         """
-        if ltz:
-            return datetime.now()
-        return datetime.utcnow()
+        now_time = datetime.now(tz=self.ltz) if ltz else datetime.now(tz=pytz.UTC)
+        if as_string:
+            tz_str = self.ltz if ltz else 'UTC'
+            return '{} {}'.format(now_time.strftime(self.TIME_FORMAT), tz_str)
+        return now_time
 
     def process_message(self, message: str, log_flag: bool = True, verbose: bool = False) -> None:
         """ For given message, print to stderr and/or LOGGER depending on command line options and
