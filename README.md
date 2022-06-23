@@ -88,7 +88,11 @@ force their display.  The logger is enabled with the *--debug* option.
 
 ## New in Development  -  v1.2.8
 
-* Nothing yet.
+* Improved *ups-mon --gui* eventual stack overflow. Still hangs after long
+runs.  I need some help on this one.
+* Add time of last read to *ups-mon* header.
+* Implemented option to display/log in local time. Local time is the time
+where the application is running; not the location of the UPS.
 
 ## Known Issues
 
