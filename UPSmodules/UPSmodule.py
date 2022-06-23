@@ -33,6 +33,7 @@ import re
 import shlex
 import shutil
 import time
+from datetime import datetime
 import json
 import subprocess
 import logging
@@ -349,12 +350,15 @@ class UpsDaemon:
 
     daemon_param_defaults: Dict[str, Union[str, Dict[str, int]]] = {
         'ups_utils_script_path': os.path.expanduser('~/.local/bin/'),
-        'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 5},
-        'threshold_env_temp': {'crit': 35, 'warn': 30, 'limit': 5},
-        'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 5},
-        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 1},
-        'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4},
-        'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5}}
+        # Low limit
+        'read_interval': {'monitor': 10, 'daemon': 30, 'limit': 10, 'limit_type': 'low'},
+        'threshold_battery_time_rem': {'crit': 5, 'warn': 10, 'limit': 4, 'limit_type': 'low'},
+        'threshold_battery_capacity': {'crit': 10, 'warn': 50, 'limit': 5, 'limit_type': 'low'},
+        # High limit
+        'threshold_env_temp': {'crit': 35, 'warn': 30, 'limit': 35, 'limit_type': 'high'},
+        'threshold_battery_load': {'crit': 90, 'warn': 80, 'limit': 95, 'limit_type': 'high'},
+        'threshold_time_on_battery': {'crit': 5, 'warn': 3, 'limit': 90, 'limit_type': 'high'},
+    }
     daemon_param_dict: Dict[str, str] = {
         'mib_ups_env_temp': 'threshold_env_temp',
         'mib_time_on_battery': 'threshold_time_on_battery',
@@ -405,7 +409,8 @@ class UpsDaemon:
                 return UpsItem.TXT_style.bold if gui_text_style else 'none'
 
         limits = self.daemon_params[self.daemon_param_dict[command_name]]
-        if command_name in {'mib_ups_env_temp', 'mib_output_load', 'mib_time_on_battery'}:
+        #if command_name in {'mib_ups_env_temp', 'mib_output_load', 'mib_time_on_battery'}:
+        if limits['limit_type'] == 'high':
             if value >= limits['crit']:
                 return UpsItem.TXT_style.crit if gui_text_style else 'crit'
             elif value >= limits['warn']:
@@ -539,20 +544,21 @@ class UpsDaemon:
                         self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
             else:
                 reset = False
-                if self.daemon_param_defaults[parameter_name]['crit'] > \
-                        self.daemon_param_defaults[parameter_name]['warn']:
+                # if self.daemon_param_defaults[parameter_name]['crit'] > \
+                        # self.daemon_param_defaults[parameter_name]['warn']:
+                if self.daemon_param_defaults[parameter_name]['limit_type'] == 'high':
                     if self.daemon_params[parameter_name]['crit'] <= self.daemon_params[parameter_name]['warn']:
                         reset = True
-                        env.UT_CONST.process_message('Warning crit must be > warn value, '
+                        env.UT_CONST.process_message('Warning: crit must be > warn value, '
                                                      'using defaults for {}'.format(parameter_name), verbose=True)
-                    if self.daemon_params[parameter_name]['crit'] < self.daemon_params[parameter_name]['limit']:
+                    if self.daemon_params[parameter_name]['crit'] > self.daemon_params[parameter_name]['limit']:
                         reset = True
-                        env.UT_CONST.process_message('Warning crit must be >= limit value, '
+                        env.UT_CONST.process_message('Warning: crit must be <= limit value, '
                                                      'using defaults for {}'.format(parameter_name), verbose=True)
-                    if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
-                        reset = True
-                        env.UT_CONST.process_message('Warning warn must be >= limit value, '
-                                                     'using defaults for {}'.format(parameter_name), verbose=True)
+                    #if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
+                        #reset = True
+                        #env.UT_CONST.process_message('Warning warn must be >= limit value, '
+                                                     #'using defaults for {}'.format(parameter_name), verbose=True)
                 else:
                     if self.daemon_params[parameter_name]['crit'] >= self.daemon_params[parameter_name]['warn']:
                         reset = True
@@ -562,10 +568,10 @@ class UpsDaemon:
                         reset = True
                         env.UT_CONST.process_message('Warning crit must be >= limit value, '
                                                      'using defaults for {}'.format(parameter_name), verbose=True)
-                    if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
-                        reset = True
-                        env.UT_CONST.process_message('Warning warn must be >= limit value, '
-                                                     'using defaults for {}'.format(parameter_name), verbose=True)
+                    #if self.daemon_params[parameter_name]['warn'] < self.daemon_params[parameter_name]['limit']:
+                        #reset = True
+                        #env.UT_CONST.process_message('Warning warn must be >= limit value, '
+                                                     #'using defaults for {}'.format(parameter_name), verbose=True)
                 if reset:
                     self.daemon_params[parameter_name] = self.daemon_param_defaults[parameter_name].copy()
         return read_status
@@ -618,6 +624,7 @@ class UpsDaemon:
 class UpsList:
     """ Object to represent a list of UPSs """
     def __init__(self, daemon: bool = True):
+        self.update_time: datetime = env.UT_CONST.now()
         self.list: Dict[str, UpsItem] = {}
         self.daemon: Union[UpsDaemon, None] = UpsDaemon() if daemon else None
         if not self.read_ups_json():
