@@ -19,7 +19,10 @@
     no color markup codes. The *--logfile filename* option is used to specify
     a logfile, but is not implemented at this time.  The threshold and script
     definitions must be made in the config.py file using *config.py.template*
-    as a template.  The logger is enabled with the *--debug* option.
+    as a template.  The logger is enabled with the *--debug* option.  The
+    *--ltz* option will result in the use of the local time zone in the
+    monitor window and logs.  This will be the local time of where the app is
+    running, not the location of the UPS.  The default is UTC.
 
     Copyright (C) 2019  RicksLab
 
@@ -97,7 +100,7 @@ def daemon_sleep(sleep_time: int = 30) -> None:
     for _sleep_index in range(0, sleep_time):
         time.sleep(1)
         if env.UT_CONST.quit:
-            print('{}: Received Quit Signal'.format(datetime.now().strftime('%c')))
+            print('[{}]: Received Quit Signal'.format(env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)))
             sys.exit(0)
 
 
@@ -113,6 +116,7 @@ def main() -> None:
     parser.add_argument('--daemon', help='Run in daemon mode', action='store_true', default=False)
 
     # Verbosity, logging, and debug options
+    parser.add_argument('--ltz', help='Use local time zone instead of UTC', action='store_true', default=False)
     parser.add_argument('--no_markup', help='Output plane text',
                         action='store_true', default=False)
     parser.add_argument('--logfile', help='Specify logfile', type=str, default='')
@@ -152,7 +156,8 @@ def main() -> None:
     daemon_ups = ups_list.get_daemon_ups()
 
     if not daemon_ups.is_responsive():
-        env.UT_CONST.process_message('The daemon UPS [{}] is unresponsive.'.format(daemon_ups['display_name']), log_flag=True)
+        env.UT_CONST.process_message('The daemon UPS [{}] is unresponsive.'.format(daemon_ups['display_name']),
+                                                                                   log_flag=True)
         env.UT_CONST.fatal = True
 
     if env.UT_CONST.fatal:
@@ -201,7 +206,7 @@ def main() -> None:
         }
         ready_status = True
         while True:
-            time_str = datetime.now().strftime(env.UT_CONST.TIME_FORMAT)
+            time_str = env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)
 
             # Check status of UPS
             bat_status = daemon_ups.send_snmp_command('mib_battery_status', display=False)
