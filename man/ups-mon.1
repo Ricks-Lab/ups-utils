@@ -6,7 +6,7 @@ ups-mon \- displays continuously updating status of all active UPSs
 .SH SYNOPSIS
 .B ups-mon
 .RB [ \-\-help "] [" \-\-about "] [" \-\-status "] [" \-\-show_unresponsive " ] [" \-\-gui "]"
-.RB [ \-\-log "] [" \-\-sleep " N ] [" \-\-debug "]"
+.RB [ \-\-ltz "] [" \-\-sleep " N ] [" \-\-debug "] [" \-\-debug "]"
 .br
 
 .SH DESCRIPTION
@@ -41,8 +41,13 @@ Will use Gtk gui instead of a text table in the current terminal.
 .BR "\-\-log"
 Will output the continuous stream of data to a log file to facilitate offline analytics.
 .TP
-.BR "\-\-sleep" N
+.BR "\-\-sleep" " N"
 Specifies the update interval for the continuously updating status.
+.TP
+.BR " \-\-ltz"
+Will result in the use of the local time zone in the monitor window and logs.  This will
+be the local time of where the app is running, not the location of the UPS.  The default
+is UTC.
 .TP
 .BR \-d , " \-\-debug"
 Will run in debug mode which enables the logger at debug level.
@@ -60,25 +65,24 @@ Reading and verifying UPSs listed in /home/rick/pydev/ups-utils/UPSmodules/../up
 ┌─────────────────────────────┬────────────────────────┬────────────────────────┬────────────────────────┐
 │UPS Parameters               │          UPS1          │          UPS3          │        UPS1-PDX        │
 ├─────────────────────────────┼────────────────────────┼────────────────────────┼────────────────────────┤
-│UPS Name                     │          UPS1          │          UPS3          │        UPS1-PDX        │
 │UPS Real Name                │     RicksLab_UPS1      │     RicksLab_UPS3      │        APC UPS         │
-│UPS IP/FQDN                  │     192.168.1.241      │     192.168.1.243      │    192.168.100.140     │
+│UPS IP/FQDN                  │     192.168.1.241      │   UPS3.rickslab.com    │    192.168.100.140     │
 │UPS Model                    │     SRT3000XLA-TW      │     SRT3000XLA-TW      │    SRT3000RMXLA-NC     │
 │UPS Type                     │       apc_ap96xx       │       apc_ap96xx       │       apc_ap96xx       │
 │NMC Model                    │         AP9630         │         AP9630         │         AP9641         │
-│UPS Location                 │     RicksLab-Rack      │       SophiasLab       │        NatsLab         │
+│UPS Location                 │     RicksLab-Rack      │       SophiasLab       │        RicksLab        │
 │Daemon                       │          True          │         False          │         False          │
-│UPS Environment Temp (C)     │          ---           │          ---           │           30           │
-│Input Voltage (V)            │          117           │          118           │          122           │
+│UPS Environment Temp (C)     │          ---           │          ---           │           26           │
+│Input Voltage (V)            │          115           │          116           │          121           │
 │Input Frequency (Hz)         │           59           │           60           │           60           │
 │Output Voltage (V)           │          120           │          120           │          120           │
 │Output Frequency (Hz)        │           60           │           60           │           60           │
 │Output Current (A)           │           7            │           0            │           3            │
-│Output Power (W)             │          747           │           0            │          292           │
-│Output Load as % of Capacity │           28           │           0            │           11           │
+│Output Power (W)             │          828           │           0            │          288           │
+│Output Load as % of Capacity │           31           │           0            │           12           │
 │Percentage of Total Capacity │          100           │          100           │          100           │
-│Time on Battery              │  (0.0, ' 0:00:00.00')  │  (0.0, ' 0:00:00.00')  │  (0.0, ' 0:00:00.00')  │
-│Runtime Remaining            │(148.25, ' 1:28:57.00') │(2400.0, ' 1 day, 0:00:0│(114.81, ' 1:08:53.00') │
+│Time on Battery (min)        │          0.0           │          0.0           │          0.0           │
+│Runtime Remaining (min)      │          82.5          │         1440.0         │         71.28          │
 │UPS System Status            │     OnLine-SCE-On      │     OnLine-SCE-On      │     OnLine-SCE-On      │
 │Battery Status               │     Battery Normal     │     Battery Normal     │     Battery Normal     │
 └─────────────────────────────┴────────────────────────┴────────────────────────┴────────────────────────┘

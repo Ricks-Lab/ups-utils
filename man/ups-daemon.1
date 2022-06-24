@@ -9,7 +9,7 @@ ups-daemon \- enables the monitoring of and response to UPS events
 .br
 .RB [ \-\-daemon "] [" \-\-logfile " LOGFILE]"
 .br
-.RB [ \-\-verbose "] [" \-\-no_markup "] [" \-\-debug "]"
+.RB [ \-\-ltz "] [" \-\-verbose "] [" \-\-no_markup "] [" \-\-debug "]"
 
 .SH DESCRIPTION
 .B ups-daemon
@@ -50,14 +50,19 @@ Run in daemon mode which is meant to run as a system service.
 .BR "\-\-logfile LOGFILE"
 Will set the logfile used in daemon mode.  By default, stdout is used.
 .TP
-.BR \-d , " \-\-debug"
-Will run in debug mode which enables the logger at debug level.
+.BR " \-\-ltz"
+Will result in the use of the local time zone in the monitor window and logs.  This will
+be the local time of where the app is running, not the location of the UPS.  The default
+is UTC.
 .TP
 .BR " \-\-no_markup"
 Outputs plain text instead of color formatted text.
 .TP
 .BR "\-\-verbose"
 Output messages for normal events.
+.TP
+.BR \-d , " \-\-debug"
+Will run in debug mode which enables the logger at debug level.
 .TP
 .BR \-h , " \-\-help"
 Display help text and exit.

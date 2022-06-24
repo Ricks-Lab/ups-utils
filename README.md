@@ -69,7 +69,10 @@ The *--no_markup* option will cause the output to be in plain text, with
 no color markup codes. The *--logfile filename* option is used to specify
 a logfile, but is not implemented at this time.  The threshold and script
 definitions must be made in the config.py file using *config.py.template*
-as a template.  The logger is enabled with the *--debug* option.
+as a template.  The logger is enabled with the *--debug* option.  The
+*--ltz* option will result in the use of the local time zone in the
+monitor window and logs.  This will be the local time of where the app is
+running, not the location of the UPS.  The default is UTC.
 
 ### ups-mon
 
@@ -84,7 +87,10 @@ to a log file, the utility will indicate this in red at the top of the
 window with a message that includes the log file name.  The *--status*
 option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
-force their display.  The logger is enabled with the *--debug* option.
+force their display.  The logger is enabled with the *--debug* option. The
+*ltz* option will result in the use of the local time zone in the
+monitor window and logs.  This will be the local time of where the app is
+running, not the location of the UPS.  The default is UTC.
 
 ## New in Development  -  v1.2.8
 
