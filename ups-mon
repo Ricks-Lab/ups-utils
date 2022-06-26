@@ -250,11 +250,12 @@ class MonitorWindow(Gtk.Window):
 
     @staticmethod
     def timeout() -> bool:
-        if Gtk.events_pending():
-            print('*** {}: Stack size: {}, pending events: {}, nesting level: {}'.format(
-                env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True),
-                get_stack_size(), Gtk.events_pending(), Gtk.main_level()))
-        #while Gtk.events_pending(): Gtk.main_iteration_do(False)
+        if LOGGER.getEffectiveLevel() == logging.DEBUG or env.UT_CONST.verbose:
+            if Gtk.events_pending():
+                print('*** {}: Stack size: {}, pending events: {}, nesting level: {}'.format(
+                    env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True),
+                    get_stack_size(), Gtk.events_pending(), Gtk.main_level()))
+        Gtk.main_iteration_do(False)
         return True
 
     def set_quit(self, _arg2: Any, _arg3: Any) -> None:
@@ -374,12 +375,12 @@ def refresh(refresh_time: int, updater: Callable, ups_list: UPS.UpsList,
         time.sleep(0.1)
         while Gtk.events_pending(): Gtk.main_iteration_do(True)
         # SEMAPHORE ############
-        time.sleep(0.1)
+        time.sleep(0.5)
         UD_SEM.acquire()
         UD_SEM.release()
         ########################
 
-        tst = 0.0
+        tst = 0.5
         sleep_interval = 0.5
         while tst < refresh_time:
             if umonitor.quit: quit_func()
