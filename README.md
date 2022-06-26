@@ -92,13 +92,9 @@ force their display.  The logger is enabled with the *--debug* option. The
 monitor window and logs.  This will be the local time of where the app is
 running, not the location of the UPS.  The default is UTC.
 
-## New in Current Release  -  v1.2.8
+## New in Development  -  v1.2.9
 
-* Improved *ups-mon --gui* eventual stack overflow. Still hangs after long
-runs.  I need some help on this one.
-* Add time of last read to *ups-mon* header.
-* Implemented option to display/log in local time. Local time is the time
-where the application is running; not the location of the UPS.
+* Nothing yet.
 
 ## Known Issues
 
@@ -127,6 +123,14 @@ to support it, feel free to make a pull request.
 * [Eaton PowerWalker NMC](https://powerwalker.com/?page=nmc&lang=en)
 
 ## History
+
+### New in Current Release  -  v1.2.8
+
+* Improved *ups-mon --gui* eventual stack overflow. Still hangs after long
+  runs.  I need some help on this one.
+* Add time of last read to *ups-mon* header.
+* Implemented option to display/log in local time. Local time is the time
+  where the application is running; not the location of the UPS.
 
 ### New in Previous Release  -  v1.2.7
 
