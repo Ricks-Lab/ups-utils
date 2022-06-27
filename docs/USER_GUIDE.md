@@ -146,6 +146,16 @@ If you installed from debian package, the template configuration files will be o
 you create your configuration files from the templates, you MUST change group ownership to
 *upsutils* and change permissions to 660:
 
+You may need to first create the `upsutils` group and add yourself to it, by executing the following,
+where *LOGIN* is your login id:
+
+```shell
+sudo groupadd upsutils
+sudo usermod -a -G upsutils LOGIN
+````
+
+Then change group and permissions of the configuration files:
+
 ```shell
 cd /usr/share/rickslab-ups-utils/config/
 sudo chgrp upsutils ups-utils.ini ups-config.json

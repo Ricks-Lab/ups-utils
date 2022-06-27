@@ -54,22 +54,22 @@ def check_file(filename: str) -> bool:
         with open(filename, 'r') as _file_ptr:
             pass
     except PermissionError as error:
-        UT_CONST.process_message("Error: permission error for [{}]: {}".format(filename, error))
+        UtConst.process_message("Error: permission error for [{}]: {}".format(filename, error))
         return False
     except FileNotFoundError as error:
-        UT_CONST.process_message("Error: file not found error for [{}]: {}".format(filename, error))
+        UtConst.process_message("Error: file not found error for [{}]: {}".format(filename, error))
         return False
     file_st = os.stat(filename)
     file_grp = grp.getgrgid(file_st.st_gid).gr_name
     file_mode = oct(file_st.st_mode)
     LOGGER.debug('%s: %s', filename, file_mode)
     if file_grp != 'upsutils' and file_mode[-2:-1] != '0':
-        UT_CONST.process_message('Error: group readable when group not set to upsutils is not allowed for:\n'
-                                 '     [{}]: gid: {} permissions: {}'.format(filename, file_grp, file_mode))
+        UtConst.process_message('Error: group readable when group not set to upsutils is not allowed for:\n'
+                                '     [{}]: gid: {} permissions: {}'.format(filename, file_grp, file_mode))
         return False
     if file_mode[-1] != '0':
-        UT_CONST.process_message('Error: world readable not allowed for:\n'
-                                 '     [{}]: gid: {} permissions: {}'.format(filename, file_grp, file_mode))
+        UtConst.process_message('Error: world readable not allowed for:\n'
+                                '     [{}]: gid: {} permissions: {}'.format(filename, file_grp, file_mode))
         return False
     return True
 
