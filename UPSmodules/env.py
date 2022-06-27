@@ -286,7 +286,8 @@ class UtConst:
             return '{} {}'.format(now_time.strftime(self.TIME_FORMAT), tz_str)
         return now_time
 
-    def process_message(self, message: str, log_flag: bool = True, verbose: bool = False) -> None:
+    @classmethod
+    def process_message(cls, message: str, log_flag: bool = True, verbose: bool = False) -> None:
         """ For given message, print to stderr and/or LOGGER depending on command line options and
             the value of log_flag.
 
@@ -295,7 +296,7 @@ class UtConst:
         :param log_flag:  If True, write to LOGGER.
         """
         if not message: return
-        if self.verbose or verbose: print(message, file=sys.stderr)
+        if verbose: print(message, file=sys.stderr)
         if log_flag: LOGGER.debug(message)
 
     def check_env(self) -> bool:
