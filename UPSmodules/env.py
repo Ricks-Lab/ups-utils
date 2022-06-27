@@ -27,6 +27,7 @@ __docformat__ = 'reStructuredText'
 # pylint: disable=bad-continuation
 
 import argparse
+import stat
 from platform import release
 import sys
 import os
@@ -54,22 +55,26 @@ def check_file(filename: str) -> bool:
         with open(filename, 'r') as _file_ptr:
             pass
     except PermissionError as error:
-        UtConst.process_message("Error: Permission error for [{}]: {}".format(filename, error))
+        UtConst.process_message("Error: Permission error for [{}]: {}".format(
+            filename, error), verbose=True)
         return False
     except FileNotFoundError as error:
-        UtConst.process_message("Error: File not found error for [{}]: {}".format(filename, error))
+        UtConst.process_message("Error: File not found error for [{}]: {}".format(
+            filename, error), verbose=True)
         return False
     file_st = os.stat(filename)
     file_grp = grp.getgrgid(file_st.st_gid).gr_name
     file_mode = oct(file_st.st_mode)
-    LOGGER.debug('%s: %s', filename, file_mode)
-    if file_grp != 'upsutils' and file_mode[-2:-1] != '0':
-        UtConst.process_message('Error: Group readable when group not set to upsutils is not allowed for:\n'
-                                '     [{}]: gid: {} permissions: {}'.format(filename, file_grp, file_mode))
-        return False
-    if file_mode[-1] != '0':
+    LOGGER.debug('%s: %s %s', filename, file_grp, file_st)
+    if bool(file_st.st_mode & stat.S_IRWXO):
         UtConst.process_message('Error: World readable not allowed for:\n'
-                                '     [{}]: gid: {} permissions: {}'.format(filename, file_grp, file_mode))
+                                '     [{}]: gid: {} permissions: {}'.format(
+                                 filename, file_grp, file_mode), verbose=True)
+        return False
+    if file_grp != 'upsutils' and bool(file_st.st_mode & stat.S_IRWXG):
+        UtConst.process_message('Error: Group readable when group not set to upsutils is not allowed for:\n'
+                                '     [{}]: gid: {} permissions: {}'.format(
+                                 filename, file_grp, file_mode), verbose=True)
         return False
     return True
 
@@ -175,7 +180,7 @@ class UtConst:
             if None not in self._config_files.values():
                 break
         if None in self._config_files.values():
-            print('Missing required configuration files.  Exiting...')
+            print('Missing or mis-configured configuration files.  Exiting...')
             print('     See man pages for {} or {} for more information.'.format(*self._config_file_names.values()))
             print('You must first create configuration files from templates per README')
             print('You are running with {} type installation'.format(self.install_type))
