@@ -552,7 +552,6 @@ def main() -> None:
         signal.signal(signal.SIGUSR1, ctrl_u_handler)
         # Display Gtk style Monitor
         gui_components = UPSgui.GuiComp(ups_list, MonitorWindow.max_width)
-        GObject.threads_init()
         umonitor = MonitorWindow(ups_list, gui_components)
         umonitor.connect('delete-event', umonitor.set_quit)
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, Gtk.main_quit)
