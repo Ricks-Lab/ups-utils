@@ -94,7 +94,9 @@ running, not the location of the UPS.  The default is UTC.
 
 ## New in Development  -  v1.2.9
 
-* Nothing yet.
+* Fixed error handling for config file reading error.
+* Exit ups-daemon if no daemon ups is defined.
+* Added details on adding upsutils group and other configuration details.
 
 ## Known Issues
 
