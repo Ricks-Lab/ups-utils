@@ -154,6 +154,9 @@ def main() -> None:
         print('{}\n'.format(ups_list))
 
     daemon_ups = ups_list.get_daemon_ups()
+    if not daemon_ups:
+        print('No Daemon UPS defined')
+        sys.exit(-1)
 
     if not daemon_ups.is_responsive():
         env.UT_CONST.process_message('The daemon UPS [{}] is unresponsive.'.format(daemon_ups['display_name']),
