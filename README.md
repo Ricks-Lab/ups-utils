@@ -92,11 +92,11 @@ force their display.  The logger is enabled with the *--debug* option. The
 monitor window and logs.  This will be the local time of where the app is
 running, not the location of the UPS.  The default is UTC.
 
-## New in Development  -  v1.2.9
+## New in Current Release  -  v1.2.9
 
-* Fixed error handling for config file reading error.
+* Fixed error handling for config file reading.
 * Exit ups-daemon if no daemon ups is defined.
-* Added details on adding upsutils group and other configuration details.
+* Added details on adding *upsutils* group and other configuration details.
 
 ## Known Issues
 
@@ -126,7 +126,7 @@ to support it, feel free to make a pull request.
 
 ## History
 
-### New in Current Release  -  v1.2.8
+### New in Previous Release  -  v1.2.8
 
 * Improved *ups-mon --gui* eventual stack overflow. Still hangs after long
   runs.  I need some help on this one.
