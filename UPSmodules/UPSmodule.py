@@ -626,7 +626,8 @@ class UpsList:
         if not self.read_ups_json():
             env.UT_CONST.process_message('Fatal: Could not read [{}] file.'.format(env.UT_CONST._config_files['json']))
             sys.exit(-1)
-        self.get_daemon_ups().daemon = self.daemon
+        if self.get_daemon_ups():
+            self.get_daemon_ups().daemon = self.daemon
 
     def read_set_daemon(self) -> None:
         """ Used to refresh the daemon configuration parameters by rereading file.
