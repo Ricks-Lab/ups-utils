@@ -65,6 +65,7 @@ def check_file(filename: str) -> bool:
     file_st = os.stat(filename)
     file_grp = grp.getgrgid(file_st.st_gid).gr_name
     file_mode = oct(file_st.st_mode)
+    # LOGGER is not enabled yet, so this does not have an effect.
     LOGGER.debug('%s: %s %s', filename, file_grp, file_st)
     if bool(file_st.st_mode & stat.S_IRWXO):
         UtConst.process_message('Error: World readable not allowed for:\n'
@@ -181,10 +182,11 @@ class UtConst:
                 break
         if None in self._config_files.values():
             print('Missing or mis-configured configuration files.  Exiting...')
-            print('     See man pages for {} or {} for more information.'.format(*self._config_file_names.values()))
-            print('You must first create configuration files from templates per README')
-            print('You are running with {} type installation'.format(self.install_type))
-            print('Configuration file templates are located at [{}]'.format(self._local_config_list[self.install_type]))
+            print('    See man pages for {} or {} for more information.'.format(*self._config_file_names.values()))
+            print('    You must first create configuration files from templates per README')
+            print('    You are running with {} type installation'.format(self.install_type))
+            print('    Configuration file templates are located at:\n       [{}]'.format(
+                self._local_config_list[self.install_type]))
             sys.exit(-1)
 
         self.ups_json_file = self._config_files['json']
