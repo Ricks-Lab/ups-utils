@@ -40,6 +40,7 @@ __docformat__ = 'reStructuredText'
 
 import argparse
 import sys
+import os
 import logging
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
@@ -104,12 +105,12 @@ def main() -> None:
     num_ups = ups_list.num_upss()
 
     if env.UT_CONST.fatal:
-        env.UT_CONST.process_message('Fatal Error. Exiting...', log_flag=True)
+        env.UT_CONST.process_message('Fatal Error: Exiting...', log_flag=True)
         sys.exit(-1)
 
     if not num_ups['total']:
-        env.UT_CONST.process_message('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file), log_flag=True)
-        print('    For more information: `man {0}`, exiting...'.format(env.UT_CONST.ups_json_file))
+        env.UT_CONST.process_message('Error: No UPSs specified in {}'.format(env.UT_CONST.ups_json_file), log_flag=True)
+        print('    For more information: `man {}`, exiting...'.format(os.path.basename(env.UT_CONST.ups_json_file)))
         sys.exit(-1)
     print(ups_list)
 

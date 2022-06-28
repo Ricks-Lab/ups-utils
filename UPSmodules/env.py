@@ -51,16 +51,19 @@ def check_file(filename: str) -> bool:
     :param filename:  Name of file to be checked
     :return: True if ok
     """
+    reset = UtConst.mark_up_codes['reset']
+    color = '{}{}'.format(UtConst.mark_up_codes['red'],
+                          UtConst.mark_up_codes['bold'])
     try:
         with open(filename, 'r') as _file_ptr:
             pass
     except PermissionError as error:
-        UtConst.process_message("Error: Permission error for [{}]: {}".format(
-            filename, error), verbose=True)
+        UtConst.process_message('Error: {}Permission error for [{}]: {}{}'.format(
+            color, filename, error, reset), verbose=True)
         return False
     except FileNotFoundError as error:
-        UtConst.process_message("Error: File not found error for [{}]: {}".format(
-            filename, error), verbose=True)
+        UtConst.process_message('Error: {}File not found error for [{}]: {}{}'.format(
+            color, filename, error, reset), verbose=True)
         return False
     file_st = os.stat(filename)
     file_grp = grp.getgrgid(file_st.st_gid).gr_name
@@ -68,14 +71,14 @@ def check_file(filename: str) -> bool:
     # LOGGER is not enabled yet, so this does not have an effect.
     LOGGER.debug('%s: %s %s', filename, file_grp, file_st)
     if bool(file_st.st_mode & stat.S_IRWXO):
-        UtConst.process_message('Error: World readable not allowed for:\n'
-                                '     [{}]: gid: {} permissions: {}'.format(
-                                 filename, file_grp, file_mode), verbose=True)
+        UtConst.process_message('Error: {}World readable not allowed for:\n'
+                                '     [{}]: gid: {} permissions: {}{}'.format(
+                                 color, filename, file_grp, file_mode, reset), verbose=True)
         return False
     if file_grp != 'upsutils' and bool(file_st.st_mode & stat.S_IRWXG):
-        UtConst.process_message('Error: Group readable when group not set to upsutils is not allowed for:\n'
-                                '     [{}]: gid: {} permissions: {}'.format(
-                                 filename, file_grp, file_mode), verbose=True)
+        UtConst.process_message('Error: {}Group readable when group not set to \'upsutils\' is not allowed for:\n'
+                                '     [{}]: gid: {} permissions: {}{}'.format(
+                                 color, filename, file_grp, file_mode, reset), verbose=True)
         return False
     return True
 
