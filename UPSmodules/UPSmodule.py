@@ -624,7 +624,7 @@ class UpsList:
         self.list: Dict[str, UpsItem] = {}
         self.daemon: Union[UpsDaemon, None] = UpsDaemon() if daemon else None
         if not self.read_ups_json():
-            env.UT_CONST.process_message('Fatal: Could not read [{}] file.'.format(env.UT_CONST._config_files['json']))
+            env.UT_CONST.process_message('Fatal: Could not read [{}] file.'.format(env.UT_CONST.config_files['json']))
             sys.exit(-1)
         if self.get_daemon_ups():
             self.get_daemon_ups().daemon = self.daemon
@@ -764,7 +764,7 @@ class UpsList:
         :return: boolean True if no problems reading list
         """
         if not env.UT_CONST.ups_json_file:
-            print('Error: {} file not defined: {}'.format('ups-config.json', env.UT_CONST._config_files['json']))
+            print('Error: {} file not defined: {}'.format('ups-config.json', env.UT_CONST.config_files['json']))
             return False
         if not os.path.isfile(env.UT_CONST.ups_json_file):
             print('Error: {} file not found: {}'.format(os.path.basename(env.UT_CONST.ups_json_file),

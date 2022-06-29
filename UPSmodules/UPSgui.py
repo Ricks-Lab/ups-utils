@@ -29,7 +29,6 @@ __docformat__ = 'reStructuredText'
 from typing import Tuple, Dict, Union, Generator
 import sys
 import re
-from datetime import datetime
 import logging
 import pprint
 import warnings

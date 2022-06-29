@@ -57,7 +57,6 @@ import time
 import signal
 import logging
 from typing import Any, Dict
-from datetime import datetime
 from UPSmodules import UPSmodule as UPS
 from UPSmodules import env
 from UPSmodules import __version__, __status__, __credits__
@@ -145,30 +144,32 @@ def main() -> None:
     if args.verbose:
         print('Install type: {}'.format(env.UT_CONST.install_type))
 
+    reset = env.UT_CONST.mark_up_codes['reset']
+    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
+                          env.UT_CONST.mark_up_codes['bold'])
     if not env.UT_CONST.check_env():
-        env.UT_CONST.process_message('Error in environment. Exiting...', log_flag=True)
+        env.UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
+            color, reset), verbose=True)
         sys.exit(-1)
 
     ups_list = UPS.UpsList()
     if args.verbose:
         print('{}\n'.format(ups_list))
 
-    reset = env.UT_CONST.mark_up_codes['reset']
-    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
-                          env.UT_CONST.mark_up_codes['bold'])
     daemon_ups = ups_list.get_daemon_ups()
     if not daemon_ups:
-        print('Error: {}No Daemon UPS defined{}'.format(color, reset))
+        env.UT_CONST.process_message('Error: {}No Daemon UPS defined{}'.format(color, reset), verbose=True)
         env.UT_CONST.fatal = True
     elif not daemon_ups.is_responsive():
         env.UT_CONST.process_message('Error: {}Daemon UPS [{}] is unresponsive.{}'.format(
-            color, daemon_ups['display_name'], reset), log_flag=True)
+            color, daemon_ups['display_name'], reset), verbose=True)
         env.UT_CONST.fatal = True
 
     if env.UT_CONST.fatal:
-        env.UT_CONST.process_message('Fatal Error: Exiting...', log_flag=True)
-        print('Make sure configuration files specify a daemon UPS.  Execute: \'ups-ls --about\' for '
-              'more information of ups-utils configuration file location and status.')
+        env.UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color, reset), verbose=True)
+        env.UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
+                                     '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
+                                     '              configuration file location and status.', verbose=True)
         sys.exit(-1)
 
     # Display current status of target UPS

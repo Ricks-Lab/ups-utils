@@ -35,11 +35,11 @@ import grp
 import re
 import inspect
 import logging
-import pytz
 from pathlib import Path
 import shutil
 from datetime import datetime
 from typing import Dict, Union, TextIO, Set
+import pytz
 from UPSmodules import __version__, __status__, __credits__, __required_pversion__, __required_kversion__
 
 LOGGER = logging.getLogger('ups-utils')
@@ -144,10 +144,10 @@ class UtConst:
                                           'pypi-linux': '{}/.local/share/rickslab-ups-utils/config'.format(str(Path.home()))}
     _icons: Dict[str, str] = {'ups-mon': 'ups-utils-monitor.icon.png'}
     _config_file_names: Dict[str, str] = {'json': 'ups-config.json', 'ini': 'ups-utils.ini'}
-    _config_files: Dict[str, Union[str, None]] = {'json': None, 'ini': None}
     _all_args: Set[str] = {'debug', 'show_unresponsive', 'log', 'no_markup', 'ltz', 'verbose', 'sleep'}
 
     # Public items
+    config_files: Dict[str, Union[str, None]] = {'json': None, 'ini': None}
     gui_window_title: str = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file: str = 'ups-utils-monitor.icon.png'
     TIME_FORMAT: str = '%d-%b-%Y %H:%M:%S %z'
@@ -176,15 +176,18 @@ class UtConst:
         for try_config_path in config_list.values():
             if os.path.isdir(try_config_path):
                 for config_type, config_file in self._config_file_names.items():
-                    if not self._config_files[config_type]:
+                    if not self.config_files[config_type]:
                         if os.path.isfile(os.path.join(try_config_path, config_file)):
-                            self._config_files[config_type] = os.path.join(try_config_path, config_file)
-                            if not check_file(self._config_files[config_type]):
-                                self._config_files[config_type] = None
-            if None not in self._config_files.values():
+                            self.config_files[config_type] = os.path.join(try_config_path, config_file)
+                            if not check_file(self.config_files[config_type]):
+                                self.config_files[config_type] = None
+            if None not in self.config_files.values():
                 break
-        if None in self._config_files.values():
-            print('Missing or mis-configured configuration files.  Exiting...')
+        if None in self.config_files.values():
+            reset = UtConst.mark_up_codes['reset']
+            color = '{}{}'.format(UtConst.mark_up_codes['red'],
+                                  UtConst.mark_up_codes['bold'])
+            print('Fatal: {}Missing or mis-configured configuration files.{}  Exiting...'.format(color, reset))
             print('    See man pages for {} or {} for more information.'.format(*self._config_file_names.values()))
             print('    You must first create configuration files from templates per README')
             print('    You are running with {} type installation'.format(self.install_type))
@@ -192,8 +195,8 @@ class UtConst:
                 self._local_config_list[self.install_type]))
             sys.exit(-1)
 
-        self.ups_json_file = self._config_files['json']
-        self.ups_config_ini = self._config_files['ini']
+        self.ups_json_file = self.config_files['json']
+        self.ups_config_ini = self.config_files['ini']
 
         # Utility Execution Flags
         self.debug: bool = False

@@ -229,7 +229,7 @@ class MonitorWindow(Gtk.Window):
                 set_gtk_prop(label, top=1, bottom=1, right=3, left=3, width_chars=self.max_width)
                 set_gtk_prop(label, width_chars=self.max_width)
                 box_name = '{}-{}'.format(param_name, ups.prm.uuid)
-                lbox = Gtk.Box(spacing=30, name=box_name)
+                lbox = Gtk.Box(spacing=6, name=box_name)
                 UPSgui.GuiProps.set_style(css_str="#{} {}".format(box_name, def_box_css))
                 set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
                 lbox.pack_start(label, True, True, 0)
@@ -239,17 +239,16 @@ class MonitorWindow(Gtk.Window):
             gc.refresh_gui_data(ups.prm.uuid)
             col += 1
 
-        if LOGGER.getEffectiveLevel() == logging.DEBUG:
-            log_message = ''
-            for k, v in gc.items():
-                if log_message: log_message = '{}\n\n{}:'.format(log_message, k)
-                else: log_message = '{}:\n\n'.format(k)
-                for k2, v2 in v.items():
-                    log_message = '{}\n    {}:{}'.format(log_message, k2, v2)
-            LOGGER.debug('Device dict:\n %s', log_message)
+        LOGGER.debug('Device dict:\n %s', gc)
 
     @staticmethod
     def timeout() -> bool:
+        """
+        Target of GObject.timeout_add.  Not sure if this mitigates the problem
+        of responsiveness.
+
+        :return: True
+        """
         if LOGGER.getEffectiveLevel() == logging.DEBUG or env.UT_CONST.verbose:
             if Gtk.events_pending():
                 print('*** {}: Stack size: {}, pending events: {}, nesting level: {}'.format(
@@ -358,7 +357,10 @@ def refresh(refresh_time: int, updater: Callable, ups_list: UPS.UpsList,
     :return: None
     """
     def quit_func() -> None:
+        """ Graceful exit.
+        """
         print('Quitting...')
+        while Gtk.events_pending(): Gtk.main_iteration_do(True)
         Gtk.main_quit()
         sys.exit(0)
 
@@ -510,8 +512,12 @@ def main() -> None:
     env.UT_CONST.set_env_args(args, __program_name__)
     LOGGER.debug('########## %s %s', __program_name__, __version__)
 
+    reset = env.UT_CONST.mark_up_codes['reset']
+    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
+                          env.UT_CONST.mark_up_codes['bold'])
     if not env.UT_CONST.check_env():
-        env.UT_CONST.process_message('Error in environment. Exiting...', log_flag=True)
+        env.UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
+            color, reset), verbose=True)
         sys.exit(-1)
 
     print('Reading and verifying UPSs listed in {}. '.format(env.UT_CONST.ups_json_file))
@@ -519,12 +525,15 @@ def main() -> None:
     num_ups = ups_list.num_upss()
 
     if not num_ups['total']:
-        env.UT_CONST.process_message('No UPSs specified in {}'.format(env.UT_CONST.ups_json_file), log_flag=True)
-        print('    For more information: `man {0}`, exiting...'.format(env.UT_CONST.ups_json_file))
+        env.UT_CONST.process_message('Error: {}No UPSs specified in {}{}'.format(
+            color, env.UT_CONST.ups_json_file, reset), verbose=True)
+        env.UT_CONST.process_message('    For more information: `man {}`, exiting...'.format(
+            os.path.basename(env.UT_CONST.ups_json_file)), verbose=True)
         sys.exit(-1)
     print(ups_list)
     if num_ups['total'] != num_ups['responsive']:
-        print('    Check the {} file.\n'.format(env.UT_CONST.ups_json_file))
+        env.UT_CONST.process_message('Error: {}Some UPSs unresponsive{}'.format(color, reset), verbose=True)
+        env.UT_CONST.process_message('    Check the {} file.\n'.format(env.UT_CONST.ups_json_file), verbose=True)
 
     if int(env.UT_CONST.sleep) < ups_list.daemon.daemon_param_defaults['read_interval']['limit']:
         env.UT_CONST.process_message('Invalid value for sleep specified.  Must be an integer >= {}'.format(
@@ -534,7 +543,10 @@ def main() -> None:
     env.UT_CONST.sleep = ups_list.daemon.daemon_param_defaults['read_interval']['limit']
 
     if env.UT_CONST.fatal:
-        env.UT_CONST.process_message('Fatal Error. Exiting...', log_flag=True)
+        env.UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color, reset), verbose=True)
+        env.UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
+                                     '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
+                                     '              configuration file location and status.', verbose=True)
         sys.exit(-1)
 
     ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.monitor, errups=args.show_unresponsive, display=False)
@@ -566,8 +578,6 @@ def main() -> None:
     else:
         # Display text style Monitor
         reset = env.UT_CONST.mark_up_codes['reset']
-        color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
-                              env.UT_CONST.mark_up_codes['bold'])
         try:
             while not env.UT_CONST.quit:
                 ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic,
@@ -578,13 +588,16 @@ def main() -> None:
                 if LOGGER.getEffectiveLevel() != logging.DEBUG:
                     os.system('clear')
                 if LOGGER.getEffectiveLevel() == logging.DEBUG:
+                    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'], env.UT_CONST.mark_up_codes['bold'])
                     print('{}Debug Logger Active{}'.format(color, env.UT_CONST.mark_up_codes['reset']))
                 if env.UT_CONST.log:
+                    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'], env.UT_CONST.mark_up_codes['bold'])
                     print('{}Logging to:  {}{}'.format(color, env.UT_CONST.log_file,
                                                        env.UT_CONST.mark_up_codes['reset']))
                     print_log(env.UT_CONST.log_file_ptr, ups_list)
                 color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
                                       env.UT_CONST.mark_up_codes['bold'])
+                color = '{}{}'.format(env.UT_CONST.mark_up_codes['cyan'], env.UT_CONST.mark_up_codes['bold'])
                 print(' {}{} {}'.format(
                     color, env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True), reset))
                 print_monitor_table(ups_list)

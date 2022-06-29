@@ -97,20 +97,29 @@ def main() -> None:
     env.UT_CONST.set_env_args(args, __program_name__)
     LOGGER.debug('########## %s %s', __program_name__, __version__)
 
+    reset = env.UT_CONST.mark_up_codes['reset']
+    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
+                          env.UT_CONST.mark_up_codes['bold'])
     if not env.UT_CONST.check_env():
-        env.UT_CONST.process_message('Error in environment. Exiting...', log_flag=True)
+        env.UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
+            color, reset), verbose=True)
         sys.exit(-1)
 
     ups_list = UPS.UpsList(daemon=args.list_params)
     num_ups = ups_list.num_upss()
 
     if env.UT_CONST.fatal:
-        env.UT_CONST.process_message('Fatal Error: Exiting...', log_flag=True)
+        env.UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color, reset), verbose=True)
+        env.UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
+                                     '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
+                                     '              configuration file location and status.', verbose=True)
         sys.exit(-1)
 
     if not num_ups['total']:
-        env.UT_CONST.process_message('Error: No UPSs specified in {}'.format(env.UT_CONST.ups_json_file), log_flag=True)
-        print('    For more information: `man {}`, exiting...'.format(os.path.basename(env.UT_CONST.ups_json_file)))
+        env.UT_CONST.process_message('Error: {}No UPSs specified in {}{}'.format(
+            color, env.UT_CONST.ups_json_file, reset), verbose=True)
+        env.UT_CONST.process_message('    For more information: `man {}`, exiting...'.format(
+            os.path.basename(env.UT_CONST.ups_json_file)), verbose=True)
         sys.exit(-1)
     print(ups_list)
 
