@@ -157,10 +157,14 @@ def main() -> None:
         print('{}\n'.format(ups_list))
 
     daemon_ups = ups_list.get_daemon_ups()
+    num_ups = ups_list.num_upss()
     if not daemon_ups:
         env.UT_CONST.process_message('Error: {}No Daemon UPS defined{}'.format(color, reset), verbose=True)
         env.UT_CONST.fatal = True
-    elif not daemon_ups.is_responsive():
+    elif num_ups['daemon'] > 1:
+        env.UT_CONST.process_message('Error: {}Multiple Daemon UPS defined{}'.format(color, reset), verbose=True)
+        env.UT_CONST.fatal = True
+    if not daemon_ups.is_responsive():
         env.UT_CONST.process_message('Error: {}Daemon UPS [{}] is unresponsive.{}'.format(
             color, daemon_ups['display_name'], reset), verbose=True)
         env.UT_CONST.fatal = True

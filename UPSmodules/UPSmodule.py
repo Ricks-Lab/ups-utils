@@ -645,8 +645,10 @@ class UpsList:
     def __str__(self) -> str:
         num_ups = self.num_upss()
         out_str = '{} UPSs listed in {}.\n'.format(num_ups['total'], env.UT_CONST.ups_json_file)
-        out_str += '    {} are compatible, {} are accessible, {} are responsive, and {} are valid.\n'.format(
-            num_ups['compatible'], num_ups['accessible'], num_ups['responsive'], num_ups['valid'])
+        out_str += '    {} are compatible, {} are accessible, {} are responsive, '\
+                   '{} are valid, and {} are daemon.\n'.format(num_ups['compatible'], num_ups['accessible'],
+                                                               num_ups['responsive'], num_ups['valid'],
+                                                               num_ups['daemon'])
         return out_str
 
     def __getitem__(self, uuid: str) -> UpsItem:
@@ -714,7 +716,7 @@ class UpsList:
         return None
 
     def num_upss(self, ups_type: UpsEnum = UpsItem.UPS_type.all) -> Dict[str, int]:
-        """ Return the count of UPSs by total, accessible, compatible, responsive, and valid.
+        """ Return the count of UPSs by total, accessible, compatible, responsive, valid, and daemon.
 
         :param ups_type: Only count UPSs of specific ups_type or all ups_type by default.
         :return: Dictionary of UPS counts
@@ -724,11 +726,13 @@ class UpsList:
         except AttributeError as error:
             raise AttributeError('Error: {} not a valid vendor name: [{}]'.format(ups_type, UpsItem.UPS_type)) from error
         results_dict = {'ups_type': ups_type_name, 'total': 0,
-                        'accessible': 0, 'compatible': 0, 'responsive': 0, 'valid': 0}
+                        'accessible': 0, 'compatible': 0, 'responsive': 0, 'valid': 0, 'daemon': 0}
         for ups in self.upss():
             if ups_type != UpsItem.UPS_type.all:
                 if ups_type != ups.prm.ups_type:
                     continue
+            if ups.prm.daemon:
+                results_dict['daemon'] += 1
             if ups.prm.valid:
                 results_dict['valid'] += 1
             if ups.prm.accessible:

@@ -530,6 +530,8 @@ def main() -> None:
         env.UT_CONST.process_message('    For more information: `man {}`, exiting...'.format(
             os.path.basename(env.UT_CONST.ups_json_file)), verbose=True)
         sys.exit(-1)
+    if num_ups['daemon'] > 1:
+        env.UT_CONST.process_message('Warning: {}Multiple Daemon UPS defined{}'.format(color, reset), verbose=True)
     print(ups_list)
     if num_ups['total'] != num_ups['responsive']:
         env.UT_CONST.process_message('Error: {}Some UPSs unresponsive{}'.format(color, reset), verbose=True)
