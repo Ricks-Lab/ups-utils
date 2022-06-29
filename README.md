@@ -92,9 +92,11 @@ force their display.  The logger is enabled with the *--debug* option. The
 monitor window and logs.  This will be the local time of where the app is
 running, not the location of the UPS.  The default is UTC.
 
-## New in Development  -  v1.2.10
+## New in Current Release  -  v1.2.10
 
 * Optimize `ups-ls --about` output.
+* Improved messaging to aid new users in configuring new setup.
+* Detect specification of multiple daemon UPS.  Must only be one target daemon UPS.
 
 ## Known Issues
 
@@ -124,7 +126,7 @@ to support it, feel free to make a pull request.
 
 ## History
 
-### New in Current Release  -  v1.2.9
+### New in Previous Release  -  v1.2.9
 
 * Fixed error handling for config file reading.
 * Exit ups-daemon if no daemon ups is defined.
