@@ -55,7 +55,7 @@ from typing import TextIO, Any, Callable
 try:
     import gi
     gi.require_version('Gtk', '3.0')
-    from gi.repository import GLib, Gtk, GObject
+    from gi.repository import GLib, Gtk
 except ModuleNotFoundError as error:
     print('gi import error: {}'.format(error))
     print('gi is required for %s', __program_name__)
@@ -67,7 +67,6 @@ from UPSmodules import env
 from UPSmodules import UPSgui
 from UPSmodules import __version__, __status__, __credits__
 
-# GObject.threads_init()
 set_gtk_prop = UPSgui.GuiProps.set_gtk_prop
 LOGGER = logging.getLogger('ups-utils')
 # SEMAPHORE ############
@@ -244,7 +243,7 @@ class MonitorWindow(Gtk.Window):
     @staticmethod
     def timeout() -> bool:
         """
-        Target of GObject.timeout_add.  Not sure if this mitigates the problem
+        Target of GLib.timeout_add.  Not sure if this mitigates the problem
         of responsiveness.
 
         :return: True
@@ -569,7 +568,7 @@ def main() -> None:
         umonitor = MonitorWindow(ups_list, gui_components)
         umonitor.connect('delete-event', umonitor.set_quit)
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, Gtk.main_quit)
-        GObject.timeout_add(500, MonitorWindow.timeout)
+        GLib.timeout_add(500, MonitorWindow.timeout)
         umonitor.show_all()
 
         # Start thread to update Monitor
