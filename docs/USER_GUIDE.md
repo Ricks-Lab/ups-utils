@@ -27,11 +27,11 @@ to assure robustness. May not include every **PATCH** version.
 
 For a developer/contributor to the project, it is expected that you duplicate the development environment
 using a virtual environment. So far, my development activities for this project have used python3.6. 
-The following are details on setting up a virtual environment with python3.6:
+The following are details on setting up a virtual environment with python3:
 
 ```shell
-sudo apt install -y python3.6-venv
-sudo apt install -y python3.6-dev
+sudo apt install -y python3-venv
+sudo apt install -y python3-dev
 ```
 
 Clone the repository from GitHub with the following command:
@@ -44,17 +44,16 @@ cd ups-utils
 Initialize your *rickslab-ups-utils-env* if it is your first time to use it. From the project root directory, execute:
 
 ```shell
-python3.6 -m venv rickslab-ups-utils-env
+python3 -m venv rickslab-ups-utils-env
 source rickslab-ups-utils-env/bin/activate
 pip install --no-cache-dir -r requirements-venv.txt
 ```
 
-On newer systems, I have found that I get a `ModuleNotFoundError: No module named 'numpy'`, even though `numpy` was
-successfully installed in the newly created virtual environment.  To resolve this, I deactivated the venv and installed
-it for the system instance of python.  When back in the venv, the issue is resolved.  There seems to be a bigger 
-issue in using some packages, including Gtk and numpy, from within a virtual environment.
+You then run the desired commands by specifying the full path:
 
-You then run the desired commands by specifying the full path: `./ups-ls`
+```shell
+./ups-ls --about
+```
 
 ### PyPI Installation
 
