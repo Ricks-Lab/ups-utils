@@ -6,7 +6,10 @@
     until Ctrl-C is pressed.  With the *--gui* option, a table of relevant
     parameters will be updated in a Gtk window.  You can specify the delay
     between updates with the *--sleep N* option where N is an integer > 10 that
-    specifies the number of seconds to sleep between updates.  The *--log*
+    specifies the number of seconds to sleep between updates.  The threshold for
+    color coding definitions read from the *ups-utils.ini* file.  This can be
+    created from a template *ups-utils.ini.template*, that is part of the
+    installation package. *ups-utils.ini.template* as a template. The *--log*
     option is used to write all monitor data to a psv log file.  When writing
     to a log file, the utility will indicate this in red at the top of the
     window with a message that includes the log file name.  The *--status*

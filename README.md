@@ -39,7 +39,7 @@ to the guide are welcome.  Please submit a pull request with your suggested addi
 ### ups-ls
 
 This utility displays most relevant parameters for installed and compatible
-UPSs listed in the config.json file.  By default, all available parameters
+UPSs listed in the *ups-config.json* file.  By default, all available parameters
 are displayed. The *--input* and *--output* options can be used to get relevant
 UPS input and output parameters.  With the *--list_commands* option, the
 utility will list all available SNMP commands for the configured UPS.  With
@@ -68,11 +68,11 @@ event update messages will be output, otherwise, only events are output.
 The *--no_markup* option will cause the output to be in plain text, with
 no color markup codes. The *--logfile filename* option is used to specify
 a logfile, but is not implemented at this time.  The threshold and script
-definitions must be made in the config.py file using *config.py.template*
-as a template.  The logger is enabled with the *--debug* option.  The
-*--ltz* option will result in the use of the local time zone in the
-monitor window and logs.  This will be the local time of where the app is
-running, not the location of the UPS.  The default is UTC.
+definitions must be made in the *ups-utils.ini* file using
+*ups-utils.ini.template* as a template.  The logger is enabled with the
+*--debug* option.  The *--ltz* option will result in the use of the local
+time zone in the monitor window and logs.  This will be the local time of
+where the app is running, not the location of the UPS.  The default is UTC.
 
 ### ups-mon
 
@@ -81,20 +81,24 @@ behavior is to continuously update a text based table in the current window
 until Ctrl-C is pressed.  With the *--gui* option, a table of relevant
 parameters will be updated in a Gtk window.  You can specify the delay
 between updates with the *--sleep N* option where N is an integer > 10 that
-specifies the number of seconds to sleep between updates.  The *--log*
+specifies the number of seconds to sleep between updates.  The threshold for
+color coding definitions read from the *ups-utils.ini* file.  This can be
+created from a template *ups-utils.ini.template*, that is part of the
+installation package. *ups-utils.ini.template* as a template. The *--log*
 option is used to write all monitor data to a psv log file.  When writing
 to a log file, the utility will indicate this in red at the top of the
 window with a message that includes the log file name.  The *--status*
 option will output a table of the current status.  By default, unresponsive
 UPSs will not be displayed, but the *--show_unresponsive* can be used to
-force their display.  The logger is enabled with the *--debug* option. The
-*ltz* option will result in the use of the local time zone in the
+force their display.  The logger is enabled with the *--debug* option.  The
+*--ltz* option will result in the use of the local time zone in the
 monitor window and logs.  This will be the local time of where the app is
 running, not the location of the UPS.  The default is UTC.
 
 ## New in Development  -  v1.2.11
 
-* Nothing yet.
+* Fix GObject.timeout_add deprecation.
+* Update repository installation guide and add requirements file.
 
 ## Known Issues
 
@@ -103,7 +107,7 @@ The utility currently supports:
 * APC UPS with AP9630 and AP9641 NMC
 * EATON UPS with PowerWalker NMC.  I had an issue with voltage interpretation, and
 found that PowerWalker does not support the use of their NMC with Eaton UPS.  But it 
-mostly works anyway.
+mostly works anyway.  I no longer have any Eaton UPSs for testing.
 
 It monitors the specified UPSs using snmp v2c.  I have not implemented the
 ability to listen to snmp traps yet, as I still have some research to do.

@@ -2,7 +2,7 @@
 """ ups-ls  -  Displays details about installed compatible UPSs
 
     This utility displays most relevant parameters for installed and compatible
-    UPSs listed in the config.json file.  By default, all available parameters
+    UPSs listed in the *ups-config.json* file.  By default, all available parameters
     are displayed. The *--input* and *--output* options can be used to get relevant
     UPS input and output parameters.  With the *--list_commands* option, the
     utility will list all available SNMP commands for the configured UPS.  With

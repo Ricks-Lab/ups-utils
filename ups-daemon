@@ -18,11 +18,11 @@
     The *--no_markup* option will cause the output to be in plain text, with
     no color markup codes. The *--logfile filename* option is used to specify
     a logfile, but is not implemented at this time.  The threshold and script
-    definitions must be made in the config.py file using *config.py.template*
-    as a template.  The logger is enabled with the *--debug* option.  The
-    *--ltz* option will result in the use of the local time zone in the
-    monitor window and logs.  This will be the local time of where the app is
-    running, not the location of the UPS.  The default is UTC.
+    definitions must be made in the *ups-utils.ini* file using
+    *ups-utils.ini.template* as a template.  The logger is enabled with the
+    *--debug* option.  The *--ltz* option will result in the use of the local
+    time zone in the monitor window and logs.  This will be the local time of
+    where the app is running, not the location of the UPS.  The default is UTC.
 
     Copyright (C) 2019  RicksLab
 
