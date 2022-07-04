@@ -644,15 +644,18 @@ class UpsList:
 
     def __str__(self) -> str:
         num_ups = self.num_upss()
+
+        def num_is_are(num: int) -> Tuple[int, str]:
+            return num, 'are' if num != 1 else 'is'
+
         out_str = '{} {} listed in {}.\n'.format(num_ups['total'], 'UPS' if num_ups['total'] == 1 else 'UPSs',
                                                  env.UT_CONST.ups_json_file)
         out_str += '    {} {} compatible, {} {} accessible, {} {} responsive, '\
-                   '{} {} valid, and {} {} daemon.\n'.format(
-                       num_ups['compatible'], 'are' if num_ups['compatible'] != 1 else 'is',
-                       num_ups['accessible'], 'are' if num_ups['accessible'] != 1 else 'is',
-                       num_ups['responsive'], 'are' if num_ups['responsive'] != 1 else 'is',
-                       num_ups['valid'], 'are' if num_ups['valid'] != 1 else 'is',
-                       num_ups['daemon'], 'are' if num_ups['daemon'] != 1 else 'is')
+                   '{} {} valid, and {} {} daemon.\n'.format(*num_is_are(num_ups['compatible']),
+                                                             *num_is_are(num_ups['accessible']),
+                                                             *num_is_are(num_ups['responsive']),
+                                                             *num_is_are(num_ups['valid']),
+                                                             *num_is_are(num_ups['daemon']))
         return out_str
 
     def __getitem__(self, uuid: str) -> UpsItem:
