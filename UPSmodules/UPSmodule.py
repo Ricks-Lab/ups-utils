@@ -645,10 +645,17 @@ class UpsList:
     def __str__(self) -> str:
         num_ups = self.num_upss()
 
-        def num_is_are(num: int) -> Tuple[int, str]:
-            return num, 'are' if num != 1 else 'is'
+        def num_is_are(num: int, singular: str = 'is', plural: str = 'are') -> Tuple[int, str]:
+            """ Return a tuple of amount and appropriate singular/plural word.
 
-        out_str = '{} {} listed in {}.\n'.format(num_ups['total'], 'UPS' if num_ups['total'] == 1 else 'UPSs',
+            :param num: Amount of whatever
+            :param singular: word for singular use
+            :param plural: word for plural use
+            :return: tuple of quantity and appropriate word
+            """
+            return num, plural if num != 1 else singular
+
+        out_str = '{} {} listed in {}.\n'.format(*num_is_are(num_ups['total'], 'UPS', 'UPSs'),
                                                  env.UT_CONST.ups_json_file)
         out_str += '    {} {} compatible, {} {} accessible, {} {} responsive, '\
                    '{} {} valid, and {} {} daemon.\n'.format(*num_is_are(num_ups['compatible']),
