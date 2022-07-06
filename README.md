@@ -95,10 +95,11 @@ force their display.  The logger is enabled with the *--debug* option.  The
 monitor window and logs.  This will be the local time of where the app is
 running, not the location of the UPS.  The default is UTC.
 
-## New in Development  -  v1.2.11
+## New in Current Release  -  v1.2.11
 
 * Fix GObject.timeout_add deprecation.
 * Update repository installation guide and add requirements file.
+* Many minor changes.
 
 ## Known Issues
 
@@ -128,7 +129,7 @@ to support it, feel free to make a pull request.
 
 ## History
 
-### New in Current Release  -  v1.2.10
+### New in Previous Release  -  v1.2.10
 
 * Optimize `ups-ls --about` output.
 * Improved messaging to aid new users in configuring new setup.
