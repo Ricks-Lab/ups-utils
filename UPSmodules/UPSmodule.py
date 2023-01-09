@@ -23,6 +23,8 @@ __license__ = "GNU General Public License"
 __program_name__ = "ups-utils"
 __maintainer__ = "RicksLab"
 __docformat__ = 'reStructuredText'
+
+import copy
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
 # pylint: disable=bad-continuation
@@ -85,6 +87,7 @@ class UpsItem:
     _json_keys: Set[str] = {'ups_IP', 'display_name', 'ups_type', 'daemon',
                             'snmp_community', 'uuid', 'ups_model', 'ups_nmc_model'}
     UPS_type: UpsEnum = UpsEnum('type', 'all apc_ap96xx eaton_pw')
+    UPS_status: UpsEnum = UpsEnum('status', 'all valid compatible accessible responsive')
 
     param_labels: Dict[str, str] = {
         'display_name': 'UPS Name',
@@ -619,15 +622,16 @@ class UpsDaemon:
 
 class UpsList:
     """ Object to represent a list of UPSs """
-    def __init__(self, daemon: bool = True):
+    def __init__(self, daemon: bool = True, empty: bool = False):
         self.update_time: datetime = env.UT_CONST.now()
         self.list: Dict[str, UpsItem] = {}
         self.daemon: Union[UpsDaemon, None] = UpsDaemon() if daemon else None
-        if not self.read_ups_json():
-            env.UT_CONST.process_message('Fatal: Could not read [{}] file.'.format(env.UT_CONST.config_files['json']))
-            sys.exit(-1)
-        if self.get_daemon_ups():
-            self.get_daemon_ups().daemon = self.daemon
+        if not empty:
+            if not self.read_ups_json():
+                env.UT_CONST.process_message('Fatal: Could not read [{}] file.'.format(env.UT_CONST.config_files['json']))
+                sys.exit(-1)
+            if self.get_daemon_ups():
+                self.get_daemon_ups().daemon = self.daemon
 
     def read_set_daemon(self) -> None:
         """ Used to refresh the daemon configuration parameters by rereading file.
@@ -706,6 +710,30 @@ class UpsList:
         """
         self[ups_item.prm.uuid] = ups_item
         LOGGER.debug('Added UPS Item %s to UPS List', ups_item.prm.uuid)
+
+    def list_upss(self, invert: bool = False, ups_status: UpsEnum = UpsItem.UPS_status.all) -> 'class UpsList':
+        """
+        Return UpsList of UPSs.  Contains all by default, but can be a subset with compatibility args.
+
+        :param invert: return items not matching conditions.
+        :param ups_status: Include only UPSs of the given status or all by default
+        :return: UpsList of UPSs of specified status
+        """
+        try:
+            _ = ups_status.name
+        except AttributeError as error:
+            raise AttributeError('Error: {} not a valid status name'.format(ups_status)) from error
+
+        result_list = copy.copy(self)
+        uuid_list = []
+        for uuid, ups in self.items():
+            if ups_status != UpsItem.UPS_status.all:
+                if (invert and ups.prm[ups_status.name]) or (not invert and not ups.prm[ups_status.name]):
+                    uuid_list.append(uuid)
+
+        for uuid in uuid_list:
+            result_list.list.pop(uuid, None)
+        return result_list
 
     def print_daemon_parameters(self) -> None:
         """ Print the daemon parameters read from config file. """

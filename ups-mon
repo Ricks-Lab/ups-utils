@@ -545,6 +545,10 @@ def main() -> None:
         print('Using value of lower limit: [{}]'.format(
             ups_list.daemon.daemon_param_defaults['read_interval']['limit']))
     env.UT_CONST.sleep = ups_list.daemon.daemon_param_defaults['read_interval']['limit']
+    if args.show_unresponsive:
+        ups_list = ups_list.list_upss(ups_status=UPS.UpsItem.UPS_status.all)
+    else:
+        ups_list = ups_list.list_upss(ups_status=UPS.UpsItem.UPS_status.responsive)
 
     if env.UT_CONST.fatal:
         env.UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color, reset), verbose=True)
