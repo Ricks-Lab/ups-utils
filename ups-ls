@@ -43,8 +43,9 @@ import sys
 import os
 import logging
 from UPSmodules import UPSmodule as UPS
-from UPSmodules import env
+from UPSmodules.env import UT_CONST
 from UPSmodules import __version__, __status__, __credits__
+from UPSmodules.UPSKeys import MibGroup, MarkUpCodes
 
 LOGGER = logging.getLogger('ups-utils')
 
@@ -89,40 +90,40 @@ def main() -> None:
         print('Version: ', __version__)
         print('Maintainer: ', __maintainer__)
         print('Status: ', __status__)
-        print('Install Type: {}'.format(env.UT_CONST.install_type))
-        print('Config File: {}'.format(env.UT_CONST.ups_config_ini))
-        print('Json File: {}'.format(env.UT_CONST.ups_json_file))
+        print('Install Type: {}'.format(UT_CONST.install_type))
+        print('Config File: {}'.format(UT_CONST.ups_config_ini))
+        print('Json File: {}'.format(UT_CONST.ups_json_file))
         sys.exit(0)
 
-    env.UT_CONST.set_env_args(args, __program_name__)
+    UT_CONST.set_env_args(args, __program_name__)
     LOGGER.debug('########## %s %s', __program_name__, __version__)
 
-    reset = env.UT_CONST.mark_up_codes['reset']
-    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
-                          env.UT_CONST.mark_up_codes['bold'])
-    if not env.UT_CONST.check_env():
-        env.UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
-            color, reset), verbose=True)
+    reset_code: str = UT_CONST.mark_up_codes[MarkUpCodes.reset]
+    color_code: str = '{}{}'.format(UT_CONST.mark_up_codes[MarkUpCodes.red],
+                                    UT_CONST.mark_up_codes[MarkUpCodes.bold])
+    if not UT_CONST.check_env():
+        UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
+            color_code, reset_code), verbose=True)
         sys.exit(-1)
 
     ups_list = UPS.UpsList(daemon=args.list_params)
     num_ups = ups_list.num_upss()
 
-    if env.UT_CONST.fatal:
-        env.UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color, reset), verbose=True)
-        env.UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
-                                     '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
-                                     '              configuration file location and status.', verbose=True)
+    if UT_CONST.fatal:
+        UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color_code, reset_code), verbose=True)
+        UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
+                                 '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
+                                 '              configuration file location and status.', verbose=True)
         sys.exit(-1)
 
     if not num_ups['total']:
-        env.UT_CONST.process_message('Error: {}No UPSs specified in {}{}'.format(
-            color, env.UT_CONST.ups_json_file, reset), verbose=True)
-        env.UT_CONST.process_message('    For more information: `man {}`, exiting...'.format(
-            os.path.basename(env.UT_CONST.ups_json_file)), verbose=True)
+        UT_CONST.process_message('Error: {}No UPSs specified in {}{}'.format(
+            color_code, UT_CONST.ups_json_file, reset_code), verbose=True)
+        UT_CONST.process_message('    For more information: `man {}`, exiting...'.format(
+            os.path.basename(UT_CONST.ups_json_file)), verbose=True)
         sys.exit(-1)
     if num_ups['daemon'] > 1:
-        env.UT_CONST.process_message('Warning: {}Multiple Daemon UPS defined{}'.format(color, reset), verbose=True)
+        UT_CONST.process_message('Warning: {}Multiple Daemon UPS defined{}'.format(color_code, reset_code), verbose=True)
     print(ups_list)
 
     LOGGER.debug('nmc types: %s', ups_list.get_ups_type_list())
@@ -136,28 +137,28 @@ def main() -> None:
 
     for ups in ups_list.upss():
         if args.list_commands:
-            cmd_group = UPS.UpsComm.MIB_group.static
+            cmd_group = MibGroup.static
             ups.read_ups_list_items(cmd_group, display=False)
             ups.print_snmp_commands()
             sys.exit(0)
         if not ups.is_compatible():
             print('ERROR: {} is not compatible type: {}'.format(ups.ups_name(), ups.ups_type()))
-            print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
+            print('       Check the config file: [{}]\n'.format(UT_CONST.ups_json_file))
             continue
         if not ups.is_accessible():
             print('ERROR: {} is not an accessible IP: {}'.format(ups.ups_name(), ups.ups_ip()))
-            print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
+            print('       Check the config file: [{}]\n'.format(UT_CONST.ups_json_file))
             continue
         if not ups.is_responsive():
             print('ERROR: {} is not responsive to snmp IP: {}'.format(ups.ups_name(), ups.ups_ip()))
-            print('       Check the config file: [{}]\n'.format(env.UT_CONST.ups_json_file))
+            print('       Check the config file: [{}]\n'.format(UT_CONST.ups_json_file))
             continue
-        cmd_group = UPS.UpsComm.MIB_group.all
+        cmd_group = MibGroup.all
         if args.input or args.output:
             if args.input:
-                cmd_group = UPS.UpsComm.MIB_group.input
+                cmd_group = MibGroup.input
             else:
-                cmd_group = UPS.UpsComm.MIB_group.output
+                cmd_group = MibGroup.output
             if not ups.read_ups_list_items(cmd_group, display=False):
                 print('Giving up on {}'.format(ups.ups_name()))
                 break

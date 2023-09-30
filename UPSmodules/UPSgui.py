@@ -36,19 +36,21 @@ try:
     import gi
     gi.require_version('Gtk', '3.0')
     from gi.repository import Gtk, Gdk
+    GTK = True
 except ModuleNotFoundError as error:
     print('gi import error: {}'.format(error))
     print('gi is required for {}'.format(__program_name__))
     print('   In a venv, first install vext:  pip install --no-cache-dir vext')
     print('   Then install vext.gi:  pip install --no-cache-dir vext.gi')
-    sys.exit(0)
-from UPSmodules import env
+    GTK = False
+from UPSmodules.env import UT_CONST
 from UPSmodules import UPSmodule
+from UPSmodules.UPSKeys import MibGroup
 
 ColorDict = Dict[str, str]
 GuiCompDict = Dict[str, Dict[str, Dict[str, any]]]
 LOGGER = logging.getLogger('ups-utils')
-PATTERNS = env.UT_CONST.PATTERNS
+PATTERNS = UT_CONST.PATTERNS
 
 
 def get_color(value: str) -> str:
@@ -73,7 +75,7 @@ class GuiComp:
             'label': None,
             'box': None,
             'box_name': None,
-            'data': env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)}}
+            'data': UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True)}}
 
     def __str__(self) -> str:
         return re.sub(r'\'', '\"', pprint.pformat(self.gc, indent=2, width=120))
@@ -103,7 +105,7 @@ class GuiComp:
                 self.update_time['label'] = label
                 self.update_time['box'] = box
                 self.update_time['box_name'] = box_name
-                self.update_time['data'] = env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)
+                self.update_time['data'] = UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True)
             return
 
         if uuid not in self.gc:
@@ -116,7 +118,7 @@ class GuiComp:
 
         :param skip_static:  Do not update static items if True
         """
-        self.update_time['data'] = env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)
+        self.update_time['data'] = UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True)
         for uuid in self.data_dict.uuids():
             self.refresh_gui_data(uuid, skip_static)
 
@@ -128,7 +130,7 @@ class GuiComp:
         """
         for item_name, item_dict in self.gc[uuid].items():
             if skip_static:
-                if item_name in UPSmodule.UpsComm.all_mib_cmd_names[UPSmodule.UpsComm.MIB_group.static]:
+                if item_name in UPSmodule.UpsComm.all_mib_cmd_names[MibGroup.static]:
                     continue
             try:
                 data_value = self.data_dict[uuid][item_name]

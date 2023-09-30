@@ -38,9 +38,10 @@ import logging
 from pathlib import Path
 import shutil
 from datetime import datetime
-from typing import Dict, Union, TextIO, Set
+from typing import Dict, Union, TextIO, Set, Optional
 import pytz
 from UPSmodules import __version__, __status__, __credits__, __required_pversion__, __required_kversion__
+from UPSmodules.UPSKeys import MarkUpCodes
 
 LOGGER = logging.getLogger('ups-utils')
 
@@ -51,9 +52,9 @@ def check_file(filename: str) -> bool:
     :param filename:  Name of file to be checked
     :return: True if ok
     """
-    reset = UtConst.mark_up_codes['reset']
-    color = '{}{}'.format(UtConst.mark_up_codes['red'],
-                          UtConst.mark_up_codes['bold'])
+    reset = UtConst.mark_up_codes[MarkUpCodes.reset]
+    color = '{}{}'.format(UtConst.mark_up_codes[MarkUpCodes.red],
+                          UtConst.mark_up_codes[MarkUpCodes.bold])
     try:
         with open(filename, 'r') as _file_ptr:
             pass
@@ -108,30 +109,32 @@ class UtConst:
                 'INI': re.compile(r'^\(\s*\d+\s*,\s*\d+\s*\)\s*$'),
                 'NORMAL': re.compile(r'(.*Battery Normal.*)', re.IGNORECASE)}
 
-    mark_up_codes: Dict[str, str] = {'none':      '',
-                                     'bold':      '\033[1m',
-                                     # Foreground colors
-                                     'white':     '\033[37m',
-                                     'data':      '\033[36m',
-                                     'cyan':      '\033[36m',
-                                     'bcyan':     '\033[1;36m',
-                                     'purple':    '\033[35m',
-                                     'blue':      '\033[34m',
-                                     'yellow':    '\033[33m',
-                                     'green':     '\033[32m',
-                                     'red':       '\033[31m',
-                                     # Named formats
-                                     'amd':       '\033[1;37;41m',
-                                     'limit':     '\033[6;37;41m',
-                                     'crit':      '\033[1;37;41m',
-                                     'error':     '\033[1;37;41m',
-                                     'ok':        '\033[1;37;42m',
-                                     'nvidia':    '\033[1;30;42m',
-                                     'warn':      '\033[1;30;43m',
-                                     'other':     '\033[1;37;44m',
-                                     'daemon':    '\033[1;37;44m',
-                                     'label':     '\033[1;37;46m',
-                                     'reset':     '\033[0;0;0m'}
+    mark_up_codes: Dict[MarkUpCodes, str] = {
+        MarkUpCodes.none:      '',
+        MarkUpCodes.bold:      '\033[1m',
+        # Foreground colors
+        MarkUpCodes.white:     '\033[37m',
+        MarkUpCodes.data:      '\033[36m',
+        MarkUpCodes.cyan:      '\033[36m',
+        MarkUpCodes.bcyan:     '\033[1;36m',
+        MarkUpCodes.purple:    '\033[35m',
+        MarkUpCodes.blue:      '\033[34m',
+        MarkUpCodes.yellow:    '\033[33m',
+        MarkUpCodes.green:     '\033[32m',
+        MarkUpCodes.red:       '\033[31m',
+        # Named formats
+        MarkUpCodes.amd:       '\033[1;37;41m',
+        MarkUpCodes.limit:     '\033[6;37;41m',
+        MarkUpCodes.crit:      '\033[1;37;41m',
+        MarkUpCodes.error:     '\033[1;37;41m',
+        MarkUpCodes.ok:        '\033[1;37;42m',
+        MarkUpCodes.nvidia:    '\033[1;30;42m',
+        MarkUpCodes.warn:      '\033[1;30;43m',
+        MarkUpCodes.other:     '\033[1;37;44m',
+        MarkUpCodes.daemon:    '\033[1;37;44m',
+        MarkUpCodes.label:     '\033[1;37;46m',
+        MarkUpCodes.reset:     '\033[0;0;0m'}
+
     # Private items
     # Utility Repository Path Definitions
     _repository_module_path: str = os.path.dirname(str(Path(__file__).resolve()))
@@ -147,19 +150,19 @@ class UtConst:
     _all_args: Set[str] = {'debug', 'show_unresponsive', 'log', 'no_markup', 'ltz', 'verbose', 'sleep'}
 
     # Public items
-    config_files: Dict[str, Union[str, None]] = {'json': None, 'ini': None}
+    config_files: Dict[str, Optional[str]] = {'json': None, 'ini': None}
     gui_window_title: str = 'Ricks-Lab UPS Utilities'
     gui_monitor_icon_file: str = 'ups-utils-monitor.icon.png'
     TIME_FORMAT: str = '%d-%b-%Y %H:%M:%S %z'
 
     def __init__(self):
-        self.calling_program = ''
-        self.args: Union[argparse.Namespace, None] = None
-        self.program_name: Union[str, None] = None
+        self.calling_program: str = ''
+        self.args: Optional[argparse.Namespace] = None
+        self.program_name: Optional[str] = None
         self.fatal: bool = False
-        self.ups_json_file: Union[str, None] = None
-        self.ups_config_ini: Union[str, None] = None
-        self.install_type: Union[str, None] = None
+        self.ups_json_file: Optional[str] = None
+        self.ups_config_ini: Optional[str] = None
+        self.install_type: Optional[str] = None
         self.package_path: str = inspect.getfile(inspect.currentframe())
         # Flags used by signals
         self.quit: bool = False
@@ -184,9 +187,9 @@ class UtConst:
             if None not in self.config_files.values():
                 break
         if None in self.config_files.values():
-            reset = UtConst.mark_up_codes['reset']
-            color = '{}{}'.format(UtConst.mark_up_codes['red'],
-                                  UtConst.mark_up_codes['bold'])
+            reset = UtConst.mark_up_codes[MarkUpCodes.reset]
+            color = '{}{}'.format(UtConst.mark_up_codes[MarkUpCodes.red],
+                                  UtConst.mark_up_codes[MarkUpCodes.bold])
             print('Fatal: {}Missing or mis-configured configuration files.{}  Exiting...'.format(color, reset))
             print('    See man pages for {} or {} for more information.'.format(*self._config_file_names.values()))
             print('    You must first create configuration files from templates per README')
