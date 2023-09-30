@@ -75,11 +75,11 @@ class UpsItem:
     _json_keys: Set[str] = {'ups_IP', 'display_name', 'ups_type', 'daemon',
                             'snmp_community', 'uuid', 'ups_model', 'ups_nmc_model'}
 
-    param_labels: Dict[str, str] = {
+    param_labels: Dict[Union[str, MiB], str] = {
         'display_name': 'UPS Name',
         'ups_IP': 'UPS IP/FQDN',
         'ups_type': 'UPS Type',
-        'mib_ups_model': 'UPS Model',
+        MiB.ups_model: 'UPS Model',
         'ups_nmc_model': 'NMC Model',
         'sep1':                '#',
         'valid': 'Valid',
@@ -88,52 +88,52 @@ class UpsItem:
         'responsive': 'Responsive',
         'daemon': 'Daemon',
         'sep2':                '#',
-        'mib_ups_name': 'UPS Real Name',
-        'mib_ups_info': 'General UPS Information',
-        'mib_bios_serial_number': 'UPS BIOS Serial Number',
-        'mib_firmware_revision': 'UPS Firmware Revision',
-        'mib_ups_manufacture_date': 'UPS Manufacture Date',
-        'mib_ups_type': 'UPS Model Type',
-        'mib_ups_contact': 'UPS Contact',
-        'mib_ups_location': 'UPS Location',
-        'mib_comms': 'Communicating with UPS Device',
+        MiB.ups_name: 'UPS Real Name',
+        MiB.ups_info: 'General UPS Information',
+        MiB.bios_serial_number: 'UPS BIOS Serial Number',
+        MiB.firmware_revision: 'UPS Firmware Revision',
+        MiB.ups_manufacture_date: 'UPS Manufacture Date',
+        MiB.ups_type: 'UPS Model Type',
+        MiB.ups_contact: 'UPS Contact',
+        MiB.ups_location: 'UPS Location',
+        MiB.comms: 'Communicating with UPS Device',
         'sep3':                '#',
-        'mib_system_status': 'UPS System Status',
-        'mib_battery_status': 'Battery Status',
-        'mib_battery_replace': 'Battery Replacement',
-        'mib_last_self_test_result': 'Last Self Test Results',
-        'mib_last_self_test_date': 'Date of Last Self Test',
-        'mib_ups_uptime': 'UPS Up Time',
-        'mib_reason_for_last_transfer': 'Last Transfer Event',
-        'mib_battery_temperature': 'Battery Temp (C)',
-        'mib_ups_env_temp': 'UPS Environment Temp (C)',
+        MiB.system_status: 'UPS System Status',
+        MiB.battery_status: 'Battery Status',
+        MiB.battery_replace: 'Battery Replacement',
+        MiB.last_self_test_result: 'Last Self Test Results',
+        MiB.last_self_test_date: 'Date of Last Self Test',
+        MiB.ups_uptime: 'UPS Up Time',
+        MiB.reason_for_last_transfer: 'Last Transfer Event',
+        MiB.battery_temperature: 'Battery Temp (C)',
+        MiB.ups_env_temp: 'UPS Environment Temp (C)',
         'sep4':                '#',
-        'mib_battery_capacity': 'Percentage of Total Capacity',
-        'mib_time_on_battery': 'Time on Battery (min)',
-        'mib_battery_runtime_remain': 'Runtime Remaining (min)',
+        MiB.battery_capacity: 'Percentage of Total Capacity',
+        MiB.time_on_battery: 'Time on Battery (min)',
+        MiB.battery_runtime_remain: 'Runtime Remaining (min)',
         'sep5':                '#',
-        'mib_input_voltage': 'Input Voltage (V)',
-        'mib_input_frequency': 'Input Frequency (Hz)',
+        MiB.input_voltage: 'Input Voltage (V)',
+        MiB.input_frequency: 'Input Frequency (Hz)',
         'sep6':                '#',
-        'mib_output_voltage': 'Output Voltage (V)',
-        'mib_output_frequency': 'Output Frequency (Hz)',
-        'mib_output_load': 'Output Load as % of Capacity',
-        'mib_output_power': 'Output Power (W)',
-        'mib_output_current': 'Output Current (A)'}
+        MiB.output_voltage: 'Output Voltage (V)',
+        MiB.output_frequency: 'Output Frequency (Hz)',
+        MiB.output_load: 'Output Load as % of Capacity',
+        MiB.output_power: 'Output Power (W)',
+        MiB.output_current: 'Output Current (A)'}
 
-    ordered_table_items: Tuple[str, ...] = (
-        'display_name', 'mib_ups_name', 'ups_IP', 'mib_ups_model', 'ups_type', 'ups_nmc_model', 'mib_ups_location',
-        'daemon', 'mib_ups_env_temp', 'mib_input_voltage', 'mib_input_frequency', 'mib_output_voltage',
-        'mib_output_frequency', 'mib_output_current', 'mib_output_power', 'mib_output_load',
-        'mib_battery_capacity', 'mib_time_on_battery', 'mib_battery_runtime_remain', 'mib_system_status',
-        'mib_battery_status')
-    _short_list: Set[str] = {'ups_IP', 'display_name', 'mib_ups_model', 'responsive', 'daemon'}
-    table_list: Set[str] = {'display_name', 'ups_IP', 'ups_type', 'mib_ups_model', 'ups_nmc_model', 'daemon'}
+    ordered_table_items: Tuple[Union[str, MiB], ...] = (
+        'display_name', MiB.ups_name, 'ups_IP', MiB.ups_model, 'ups_type', 'ups_nmc_model', MiB.ups_location,
+        'daemon', MiB.ups_env_temp, MiB.input_voltage, MiB.input_frequency, MiB.output_voltage,
+        MiB.output_frequency, MiB.output_current, MiB.output_power, MiB.output_load,
+        MiB.battery_capacity, MiB.time_on_battery, MiB.battery_runtime_remain, MiB.system_status,
+        MiB.battery_status)
+    _short_list: Set[Union[str, MiB]] = {'ups_IP', 'display_name', MiB.ups_model, 'responsive', 'daemon'}
+    table_list: Set[Union[str, MiB]] = {'display_name', 'ups_IP', 'ups_type', MiB.ups_model, 'ups_nmc_model', 'daemon'}
     mark_up_codes = UT_CONST.mark_up_codes
 
     def __init__(self, json_details: dict):
         # UPS list from ups-config.json for monitor and ls utils.
-        self.skip_list: List[str] = []
+        self.skip_list: List[Union[str, MiB]] = []
         self.prm: ObjDict = ObjDict({
             'uuid': None,
             'ups_IP': None,
@@ -227,7 +227,7 @@ class UpsItem:
             if cmd_name in UpsComm.all_mib_cmd_names[cmd_group]:
                 yield cmd_name
 
-    def get_ups_parameter_value(self, param_name: str) -> Union[str, None]:
+    def get_ups_parameter_value(self, param_name: str) -> Optional[str]:
         """ Get ups parameter value for parameter name from target UPS or active UPS if not specified
 
         :param param_name: Target parameter name
@@ -238,7 +238,7 @@ class UpsItem:
     def ups_uuid(self) -> str:
         """ Get the uuid value for the target UPS or active UPS if target is None.
 
-        :return:  The uuid as a int.
+        :return:  The uuid as an int.
         """
         return self.prm['uuid']
 
@@ -275,9 +275,9 @@ class UpsItem:
         """ Return flag indicating ability to respond to ping """
         return self.prm.responsive
 
-    def send_snmp_command(self, cmd_name: str, display: bool = True) -> str:
+    def send_snmp_command(self, cmd_mib: MiB, display: bool = True) -> str:
         """ Send the given command to UPS using UpsComm object """
-        return self.ups_comm.send_snmp_command(cmd_name, self, display)
+        return self.ups_comm.send_snmp_command(cmd_mib, self, display)
 
     def read_ups_list_items(self, cmd_group: MibGroup, display: bool = False) -> bool:
         """ Read data for a group of commands from UpsComm object """
@@ -311,11 +311,11 @@ class UpsItem:
             color_reset: str = self.mark_up_codes[MarkUpCodes.none] if UT_CONST.no_markup else\
                 self.mark_up_codes[MarkUpCodes.reset]
             pre = '' if param_name == 'display_name' else '   '
-            if re.search(r'^sep\d', param_name):
+            if isinstance(param_name, str) and re.search(r'^sep\d', param_name):
                 print('{}{}'.format(pre, param_label.ljust(50, param_label)))
                 continue
             if not UT_CONST.no_markup: color_code = self.mark_up_codes[MarkUpCodes.data]
-            if param_name == 'mib_ups_info':
+            if param_name == MiB.ups_info:
                 text = UT_CONST.wrap(self.prm[param_name], indent=len(param_label)+len(pre)+1)
             else:
                 text = self.prm[param_name]
@@ -598,7 +598,7 @@ class UpsDaemon:
             LOGGER.debug(message)
             if cmd.returncode:
                 UT_CONST.process_message('{} failed with return code: [{}]'.format(script_name, cmd.returncode),
-                                             verbose=True)
+                                         verbose=True)
             return cmd.returncode, message
         except subprocess.CalledProcessError as err:
             message = 'Error [{}]: could not execute script: {}'.format(err, self.daemon_params[script_name])
@@ -859,7 +859,7 @@ class UpsList:
         return tuple(type_list)
 
     @staticmethod
-    def get_mib_commands(cmd_group: MibGroup) -> Set[str]:
+    def get_mib_commands(cmd_group: MibGroup) -> Set[MiB]:
         """ Returns all command mib names of the given group """
         return UpsComm.all_mib_cmd_names[cmd_group]
 
@@ -884,7 +884,7 @@ class UpsComm:
                               'HotStandby', 'EPO', 'LoadAlarmViolation', 'BypassPhaseFault',
                               'UPSinternalComFail', 'EffBoosterMode', 'Off', 'Standby', 'Minor/EnvAlarm')}
 
-    all_mib_cmds: Dict[UpsType, Dict[str, Dict[str, Union[str, Dict[str, str], None]]]] = {
+    all_mib_cmds: Dict[UpsType, Dict[MiB, Dict[str, Optional[str, Dict[str, str]]]]] = {
         # MiBs for APC UPS with AP96xx NMC
         UpsType.none: {},
         UpsType.apc_ap96xx: {
@@ -1093,18 +1093,18 @@ class UpsComm:
     # UPS MiB Commands lists
     _mib_all_apc_ap96xx: Set[str] = set(all_mib_cmds[UpsType.apc_ap96xx].keys())
     _mib_all_eaton_pw: Set[str] = set(all_mib_cmds[UpsType.eaton_pw].keys())
-    _mib_statmon: Set[str] = {MiB.ups_name, MiB.ups_type, MiB.ups_location, MiB.ups_info, MiB.ups_model}
-    _mib_static: Set[str] = {MiB.ups_name, MiB.ups_info, MiB.bios_serial_number, MiB.firmware_revision,
+    _mib_statmon: Set[MiB] = {MiB.ups_name, MiB.ups_type, MiB.ups_location, MiB.ups_info, MiB.ups_model}
+    _mib_static: Set[MiB] = {MiB.ups_name, MiB.ups_info, MiB.bios_serial_number, MiB.firmware_revision,
                              MiB.ups_type, MiB.ups_location, MiB.ups_uptime}
-    _mib_dynamic: Set[str] = {MiB.ups_env_temp, MiB.battery_capacity, MiB.time_on_battery,
+    _mib_dynamic: Set[MiB] = {MiB.ups_env_temp, MiB.battery_capacity, MiB.time_on_battery,
                               MiB.battery_runtime_remain, MiB.input_voltage, MiB.input_frequency,
                               MiB.output_voltage, MiB.output_frequency, MiB.output_load,
                               MiB.output_current, MiB.output_power, MiB.system_status,
                               MiB.battery_status}
-    _mib_output: Set[str] = {MiB.output_voltage, MiB.output_frequency, MiB.output_load,
+    _mib_output: Set[MiB] = {MiB.output_voltage, MiB.output_frequency, MiB.output_load,
                              MiB.output_current, MiB.output_power}
-    _mib_input: Set[str] = {MiB.input_voltage, MiB.input_frequency}
-    all_mib_cmd_names: Dict[MibGroup, Set[str]] = {
+    _mib_input: Set[MiB] = {MiB.input_voltage, MiB.input_frequency}
+    all_mib_cmd_names: Dict[MibGroup, Set[MiB]] = {
         MibGroup.all:       _mib_all_apc_ap96xx,   # I choose all to be apc since eaton is a subset of apc.
         MibGroup.all_apc:   _mib_all_apc_ap96xx,
         MibGroup.all_eaton: _mib_all_eaton_pw,
@@ -1216,11 +1216,11 @@ class UpsComm:
                 return False
         return True
 
-    def send_snmp_command(self, command_name: str, ups: UpsItem,
+    def send_snmp_command(self, command_mib: MiB, ups: UpsItem,
                           display: bool = False) -> Union[str, int, float, None]:
         """ Read the specified mib commands results for specified UPS or active UPS if not specified.
 
-        :param command_name:  A command to be read from the target UPS
+        :param command_mib:  A command to be read from the target UPS
         :param ups:  The target ups item
         :param display: If true the results will be printed
         :return:  The results from the read, could be str, int or tuple
@@ -1228,9 +1228,9 @@ class UpsComm:
         if not ups.is_responsive():
             return 'Invalid UPS'
         snmp_mib_commands = ups.prm.mib_commands
-        if command_name not in snmp_mib_commands:
+        if command_mib not in snmp_mib_commands:
             return 'No data'
-        cmd_mib = snmp_mib_commands[command_name]['iso']
+        cmd_mib = snmp_mib_commands[command_mib]['iso']
         cmd_str = '{} -v2c -c {} {} {}'.format(self.snmp_command, ups.prm['snmp_community'],
                                                ups.prm['ups_IP'], cmd_mib)
         try:
@@ -1238,37 +1238,37 @@ class UpsComm:
                                                   stderr=subprocess.DEVNULL).decode().split('\n')
         except subprocess.CalledProcessError:
             LOGGER.debug('Error executing snmp %s command [%s] to %s at %s.',
-                         command_name, cmd_mib, ups.prm.display_name, ups.ups_ip())
+                         command_mib, cmd_mib, ups.prm.display_name, ups.ups_ip())
             return None
 
-        value: Union[str, int, float, None] = None
+        value: Optional[str, int, float] = None
 
-        LOGGER.debug('### command_name: %s', command_name)
+        LOGGER.debug('### command_name: %s', command_mib)
         for line in snmp_output:
             if not line: continue
             LOGGER.debug('    Raw data: %s', line)
             if re.match(UT_CONST.PATTERNS['SNMP_VALUE'], line):
                 value = line.split(':', 1)[1]
                 value = re.sub(r'\"', '', value).strip()
-        if snmp_mib_commands[command_name]['decode']:
-            if value in snmp_mib_commands[command_name]['decode'].keys():
-                value = snmp_mib_commands[command_name]['decode'][value]
+        if snmp_mib_commands[command_mib]['decode']:
+            if value in snmp_mib_commands[command_mib]['decode'].keys():
+                value = snmp_mib_commands[command_mib]['decode'][value]
         if ups.prm['ups_type'] == UpsType.eaton_pw:
-            if command_name == 'mib_output_voltage' or command_name == 'mib_output_frequency':
+            if command_mib in (MiB.output_voltage, MiB.output_frequency):
                 value = int(value) / 10.0
-            elif command_name == 'mib_output_current':
+            elif command_mib == MiB.output_current:
                 value = int(value) / 10.0
-            elif command_name == 'mib_input_voltage' or command_name == 'mib_input_frequency':
+            elif command_mib in (MiB.input_voltage, MiB.input_frequency):
                 value = int(value) / 10.0
-            elif command_name == 'mib_system_temperature':
+            elif command_mib == MiB.system_temperature:
                 value = int(value) / 10.0
-        if command_name == 'mib_system_status' and ups.prm['ups_type'] == UpsType.apc_ap96xx:
+        if command_mib == MiB.system_status and ups.prm['ups_type'] == UpsType.apc_ap96xx:
             value = self.bit_str_decoder(value, self.decoders['apc_system_status'])
-        if command_name == 'mib_time_on_battery' or command_name == 'mib_battery_runtime_remain':
+        if command_mib in (MiB.time_on_battery, MiB.battery_runtime_remain):
             # Create a minute, string tuple
             if ups.prm['ups_type'] == UpsType.eaton_pw:
                 # Process time for eaton_pw
-                if command_name == 'mib_time_on_battery':
+                if command_mib == MiB.time_on_battery:
                     # Measured in seconds.
                     value = int(value)
                 else:
@@ -1280,10 +1280,10 @@ class UpsComm:
                 value_items = re.sub(r'\(', '', value).split(')')
                 value = round(float(value_items[0]) / 100 / 60, 2) if len(value_items) >= 2 else None
         if display:
-            if command_name == 'mib_output_current' and ups.prm['ups_type'] == UpsType.eaton_pw:
-                print('{}: {} - raw, uncorrected value.'.format(snmp_mib_commands[command_name]['name'], value))
+            if command_mib == MiB.output_current and ups.prm['ups_type'] == UpsType.eaton_pw:
+                print('{}: {} - raw, uncorrected value.'.format(snmp_mib_commands[command_mib]['name'], value))
             else:
-                print('{}: {}'.format(snmp_mib_commands[command_name]['name'], value))
+                print('{}: {}'.format(snmp_mib_commands[command_mib]['name'], value))
         LOGGER.debug('    Value: %s', value)
         return value
 
@@ -1306,7 +1306,7 @@ class UpsComm:
                     value_str = '{}-{}'.format(value_str, decode_key[index])
         return value_str
 
-    def get_mib_commands(self, cmd_group: MibGroup) -> Set[str]:
+    def get_mib_commands(self, cmd_group: MibGroup) -> Set[MiB]:
         """ Returns all command mib names of the given group """
         return self.all_mib_cmd_names[cmd_group]
 

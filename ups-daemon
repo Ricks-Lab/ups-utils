@@ -60,7 +60,7 @@ from typing import Any, Dict
 from UPSmodules import UPSmodule as UPS
 from UPSmodules.env import UT_CONST
 from UPSmodules import __version__, __status__, __credits__
-from UPSmodules.UPSKeys import MibGroup, MarkUpCodes
+from UPSmodules.UPSKeys import MibGroup, MarkUpCodes, MiB
 
 
 LOGGER = logging.getLogger('ups-utils')
@@ -222,7 +222,7 @@ def main() -> None:
             time_str = UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True)
 
             # Check status of UPS
-            bat_status = daemon_ups.send_snmp_command('mib_battery_status', display=False)
+            bat_status = daemon_ups.send_snmp_command(MiB.battery_status, display=False)
             if not bat_status:
                 print('[{}] {} UPS [{}] is unresponsive'.format(
                     time_str, ups_states['error'], daemon_ups['display_name']))
@@ -243,11 +243,11 @@ def main() -> None:
                 fault_sleep = daemon_ups.daemon.daemon_param_defaults['read_interval']['limit']
 
             # Read data from UPS
-            out_power = int(daemon_ups.send_snmp_command('mib_output_power', display=False))
-            bat_load = int(daemon_ups.send_snmp_command('mib_output_load', display=False))
-            bat_capacity = int(daemon_ups.send_snmp_command('mib_battery_capacity', display=False))
-            time_on_bat = float(daemon_ups.send_snmp_command('mib_time_on_battery', display=False))
-            remain_run_time = float(daemon_ups.send_snmp_command('mib_battery_runtime_remain', display=False))
+            out_power = int(daemon_ups.send_snmp_command(MiB.output_power, display=False))
+            bat_load = int(daemon_ups.send_snmp_command(MiB.output_load, display=False))
+            bat_capacity = int(daemon_ups.send_snmp_command(MiB.battery_capacity, display=False))
+            time_on_bat = float(daemon_ups.send_snmp_command(MiB.time_on_battery, display=False))
+            remain_run_time = float(daemon_ups.send_snmp_command(MiB.battery_runtime_remain, display=False))
 
             if UT_CONST.quit:
                 print('[{}] {} Received Quit Signal'.format(

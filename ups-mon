@@ -70,7 +70,7 @@ from UPSmodules import UPSmodule as UPS
 from UPSmodules.env import UT_CONST
 from UPSmodules import UPSgui
 from UPSmodules import __version__, __status__, __credits__
-from UPSmodules.UPSKeys import MibGroup, UpsStatus, TxtStyle, MarkUpCodes
+from UPSmodules.UPSKeys import MibGroup, UpsStatus, TxtStyle, MarkUpCodes, MiB
 
 set_gtk_prop = UPSgui.GuiProps.set_gtk_prop
 LOGGER = logging.getLogger('ups-utils')
@@ -322,14 +322,14 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp, umonitor: MonitorWind
             # Set data value style based on daemon parameters
             if mib_name in ups_list.daemon.daemon_param_dict:
                 state_style = ups_list.daemon.daemon_format(mib_name, ups[mib_name], gui_text_style=True)
-            elif mib_name == 'mib_battery_status':
+            elif mib_name == MiB.battery_status:
                 if re.match(UT_CONST.PATTERNS['NORMAL'], gui_comp['data']):
                     state_style = TxtStyle.green
                 else:
                     state_style = TxtStyle.crit
             elif mib_name == 'daemon':
                 state_style = TxtStyle.daemon if gui_comp['data'] == 'True' else TxtStyle.bold
-            elif mib_name == 'mib_system_status':
+            elif mib_name == MiB.system_status:
                 if re.match(UT_CONST.PATTERNS['ONLINE'], gui_comp['data']):
                     state_style = TxtStyle.green
                 else:
@@ -454,9 +454,9 @@ def print_monitor_table(ups_list: UPS.UpsList) -> bool:
         for ups in ups_list.upss():
             try:
                 color: MarkUpCodes = MarkUpCodes.none
-                if param_name == 'mib_system_status':
+                if param_name == MiB.system_status:
                     color = MarkUpCodes.ok if re.match(UT_CONST.PATTERNS['ONLINE'], ups[param_name]) else MarkUpCodes.error
-                elif param_name == 'mib_battery_status':
+                elif param_name == MiB.battery_status:
                     color = MarkUpCodes.ok if re.match(UT_CONST.PATTERNS['NORMAL'], ups[param_name]) else MarkUpCodes.error
                 elif param_name in UPS.UpsDaemon.daemon_param_dict:
                     text_format = ups_list.daemon.daemon_format(param_name, ups[param_name])
