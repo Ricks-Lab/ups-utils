@@ -48,6 +48,7 @@ __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
 # pylint: disable=bad-continuation
+# pylint: disable=consider-using-f-string
 
 import argparse
 import sys
@@ -67,8 +68,7 @@ LOGGER = logging.getLogger('ups-utils')
 
 
 def ctrl_c_handler(target_signal: Any, _frame: Any) -> None:
-    """
-    Signal catcher for ctrl-c to exit monitor loop.
+    """ Signal catcher for ctrl-c to exit monitor loop.
 
     :param target_signal: Target signal name
     :param _frame: Ignored
@@ -79,8 +79,7 @@ def ctrl_c_handler(target_signal: Any, _frame: Any) -> None:
 
 
 def ctrl_u_handler(target_signal: Any, _frame: Any) -> None:
-    """
-    Signal catcher for ctrl-c to exit monitor loop.
+    """ Signal catcher for ctrl-c to exit monitor loop.
 
     :param target_signal: Target signal name
     :param _frame: Ignored
@@ -91,8 +90,7 @@ def ctrl_u_handler(target_signal: Any, _frame: Any) -> None:
 
 
 def daemon_sleep(sleep_time: int = 30) -> None:
-    """
-    Interruptable sleep routine for daemon loop.
+    """ Interruptable sleep routine for daemon loop.
 
     :param sleep_time:  Sleep time in seconds
     :return: None
@@ -105,10 +103,7 @@ def daemon_sleep(sleep_time: int = 30) -> None:
 
 
 def main() -> None:
-    """
-    Main function.
-
-    :return: None
+    """ Main function.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README', action='store_true', default=False)

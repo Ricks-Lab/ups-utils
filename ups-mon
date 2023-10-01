@@ -42,8 +42,9 @@ __program_name__ = 'ups-mon'
 __maintainer__ = 'RicksLab'
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
-# pylint: disable=line-too-long
 # pylint: disable=bad-continuation
+# pylint: disable=line-too-long
+# pylint: disable=consider-using-f-string
 
 import argparse
 import threading
@@ -585,7 +586,7 @@ def main() -> None:
         UT_CONST.log = True
         UT_CONST.log_file = './log_monitor_{}.txt'.format(
             UT_CONST.now(ltz=UT_CONST.use_ltz).strftime('%m%d_%H%M%S'))
-        UT_CONST.log_file_ptr = open(UT_CONST.log_file, 'w', 1)
+        UT_CONST.log_file_ptr = open(UT_CONST.log_file, mode='w', encoding='utf-8', buffering=1)
         print_log_header(UT_CONST.log_file_ptr)
 
     if not MonitorWindow.gui_enabled:

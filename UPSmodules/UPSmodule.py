@@ -25,8 +25,8 @@ __maintainer__ = "RicksLab"
 __docformat__ = 'reStructuredText'
 
 # pylint: disable=multiple-statements
-# pylint: disable=line-too-long
 # pylint: disable=bad-continuation
+# pylint: disable=consider-using-f-string
 
 import copy
 import os
@@ -285,7 +285,7 @@ class UpsItem:
 
     def print_snmp_commands(self) -> None:
         """ Print all mib command details for this UPS """
-        print('{}\n{} - {} - {}\n{}'.format('#'.ljust(50, '#'), self.prm.display_name, self.prm.mib_ups_name,
+        print('{}\n{} - {} - {}\n{}'.format('#'.ljust(50, '#'), self.prm.display_name, self.prm[MiB.ups_name],
                                             self.prm.ups_nmc_model, '#'.ljust(50, '#')))
         self.ups_comm.print_snmp_commands()
 
@@ -401,12 +401,12 @@ class UpsDaemon:
         if limits['limit_type'] == 'high':
             if value >= limits['crit']:
                 return TxtStyle.crit if gui_text_style else 'crit'
-            elif value >= limits['warn']:
+            if value >= limits['warn']:
                 return TxtStyle.warn if gui_text_style else 'warn'
         else:
             if value <= limits['crit']:
                 return TxtStyle.crit if gui_text_style else 'crit'
-            elif value <= limits['warn']:
+            if value <= limits['warn']:
                 return TxtStyle.warn if gui_text_style else 'warn'
         return TxtStyle.bold if gui_text_style else 'none'
 
@@ -523,7 +523,7 @@ class UpsDaemon:
         # Check Daemon Parameter Values
         for parameter_name in self._daemon_param_names:
             if parameter_name == 'read_interval':
-                for sub_parameter_name in {'monitor', 'daemon'}:
+                for sub_parameter_name in ('monitor', 'daemon'):
                     if self.daemon_params[parameter_name][sub_parameter_name] < \
                             self.daemon_params[parameter_name]['limit']:
                         UT_CONST.process_message('Warning invalid {}-{} value [{}], using defaults'.format(
@@ -588,13 +588,11 @@ class UpsDaemon:
             UT_CONST.process_message('No {} defined'.format(script_name))
             return -1, message
         try:
-            cmd = subprocess.Popen(shlex.split(self.daemon_params[script_name]),
-                                   shell=False, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-            while True:
-                if cmd.poll() is not None:
-                    break
-                time.sleep(0.1)
-            message = cmd.communicate()[0].decode("utf-8")
+            with subprocess.Popen(shlex.split(self.daemon_params[script_name]),
+                                  shell=False, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as cmd:
+                while cmd.poll() is None:
+                    time.sleep(0.1)
+                message = cmd.communicate()[0].decode('utf-8')
             LOGGER.debug(message)
             if cmd.returncode:
                 UT_CONST.process_message('{} failed with return code: [{}]'.format(script_name, cmd.returncode),
@@ -667,6 +665,8 @@ class UpsList:
         for value in self.list.values():
             yield value
 
+    upss = __iter__
+
     def items(self) -> Generator[Union[str, UpsItem], None, None]:
         """
         Get uuid, gpu pairs from a UpsList object.
@@ -684,12 +684,12 @@ class UpsList:
         for key in self.list:
             yield key
 
-    def upss(self) -> Generator[UpsItem, None, None]:
-        """ Get UpsItems from a GpuList object.
-
-        :return: UpsItem
-        """
-        return self.__iter__()
+    #def upss(self) -> Generator[UpsItem, None, None]:
+        #""" Get UpsItems from a GpuList object.
+#
+        #:return: UpsItem
+        #"""
+        #return self.__iter__()
 
     def add(self, ups_item: UpsItem) -> None:
         """ Add given UpsItem to the UpsList.
@@ -804,7 +804,7 @@ class UpsList:
                                                         UT_CONST.ups_json_file))
             return False
         try:
-            with open(UT_CONST.ups_json_file, 'r') as ups_list_file:
+            with open(UT_CONST.ups_json_file, mode='r', encoding='utf-8') as ups_list_file:
                 ups_items = json.load(ups_list_file)
         except FileNotFoundError as error:
             UT_CONST.process_message("Error: File not found error for [{}]: {}".format(
@@ -884,7 +884,7 @@ class UpsComm:
                               'HotStandby', 'EPO', 'LoadAlarmViolation', 'BypassPhaseFault',
                               'UPSinternalComFail', 'EffBoosterMode', 'Off', 'Standby', 'Minor/EnvAlarm')}
 
-    all_mib_cmds: Dict[UpsType, Dict[MiB, Dict[str, Optional[str, Dict[str, str]]]]] = {
+    all_mib_cmds: Dict[UpsType, Dict[MiB, Dict[str, Union[str, Dict[str, str], None]]]] = {
         # MiBs for APC UPS with AP96xx NMC
         UpsType.none: {},
         UpsType.apc_ap96xx: {

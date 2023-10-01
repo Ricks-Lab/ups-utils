@@ -25,6 +25,7 @@ __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
 # pylint: disable=bad-continuation
+# pylint: disable=consider-using-f-string
 
 import argparse
 import stat
@@ -206,7 +207,7 @@ class UtConst:
         self.show_unresponsive: bool = False
         self.log: bool = False
         self.no_markup: bool = False
-        self.log_file_ptr: Union[TextIO, None] = None
+        self.log_file_ptr: Optional[TextIO] = None
         self.use_ltz: bool = False
         self.ltz = datetime.utcnow().astimezone().tzinfo
         self.verbose = False
