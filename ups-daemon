@@ -47,7 +47,7 @@ __maintainer__ = "RicksLab"
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
-# pylint: disable=bad-continuation
+# pylint: disable=consider-using-f-string
 
 import argparse
 import sys
@@ -58,56 +58,51 @@ import signal
 import logging
 from typing import Any, Dict
 from UPSmodules import UPSmodule as UPS
-from UPSmodules import env
+from UPSmodules.env import UT_CONST
 from UPSmodules import __version__, __status__, __credits__
+from UPSmodules.UPSKeys import MibGroup, MarkUpCodes, MiB
 
 
 LOGGER = logging.getLogger('ups-utils')
 
 
 def ctrl_c_handler(target_signal: Any, _frame: Any) -> None:
-    """
-    Signal catcher for ctrl-c to exit monitor loop.
+    """ Signal catcher for ctrl-c to exit monitor loop.
 
     :param target_signal: Target signal name
     :param _frame: Ignored
     """
     LOGGER.debug('ctrl_c_handler (ID: %s) has been caught. Setting quit flag...', target_signal)
     print('Setting quit flag...')
-    env.UT_CONST.quit = True
+    UT_CONST.quit = True
 
 
 def ctrl_u_handler(target_signal: Any, _frame: Any) -> None:
-    """
-    Signal catcher for ctrl-c to exit monitor loop.
+    """ Signal catcher for ctrl-c to exit monitor loop.
 
     :param target_signal: Target signal name
     :param _frame: Ignored
     """
     LOGGER.debug('ctrl_u_handler (ID: %s) has been caught. Setting refresh daemon flag...', target_signal)
     print('Setting refresh daemon flag...')
-    env.UT_CONST.refresh_daemon = True
+    UT_CONST.refresh_daemon = True
 
 
 def daemon_sleep(sleep_time: int = 30) -> None:
-    """
-    Interruptable sleep routine for daemon loop.
+    """ Interruptable sleep routine for daemon loop.
 
     :param sleep_time:  Sleep time in seconds
     :return: None
     """
     for _sleep_index in range(0, sleep_time):
         time.sleep(1)
-        if env.UT_CONST.quit:
-            print('[{}]: Received Quit Signal'.format(env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)))
+        if UT_CONST.quit:
+            print('[{}]: Received Quit Signal'.format(UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True)))
             sys.exit(0)
 
 
 def main() -> None:
-    """
-    Main function.
-
-    :return: None
+    """ Main function.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('--about', help='README', action='store_true', default=False)
@@ -133,23 +128,23 @@ def main() -> None:
         print('Credits: ', *['\n      {}'.format(item) for item in __credits__])
         print("License: ", __license__)
         print("Version: ", __version__)
-        print('Install Type: ', env.UT_CONST.install_type)
+        print('Install Type: ', UT_CONST.install_type)
         print("Maintainer: ", __maintainer__)
         print("Status: ", __status__)
         sys.exit(0)
 
-    env.UT_CONST.set_env_args(args, __program_name__)
-    env.UT_CONST.cmd_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
-    LOGGER.debug('########## %s %s [%s]', __program_name__, __version__, env.UT_CONST.cmd_path)
+    UT_CONST.set_env_args(args, __program_name__)
+    UT_CONST.cmd_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
+    LOGGER.debug('########## %s %s [%s]', __program_name__, __version__, UT_CONST.cmd_path)
     if args.verbose:
-        print('Install type: {}'.format(env.UT_CONST.install_type))
+        print('Install type: {}'.format(UT_CONST.install_type))
 
-    reset = env.UT_CONST.mark_up_codes['reset']
-    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
-                          env.UT_CONST.mark_up_codes['bold'])
-    if not env.UT_CONST.check_env():
-        env.UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
-            color, reset), verbose=True)
+    reset_code: str = UT_CONST.mark_up_codes[MarkUpCodes.reset]
+    color_code: str = '{}{}'.format(UT_CONST.mark_up_codes[MarkUpCodes.red],
+                                    UT_CONST.mark_up_codes[MarkUpCodes.bold])
+    if not UT_CONST.check_env():
+        UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
+            color_code, reset_code), verbose=True)
         sys.exit(-1)
 
     ups_list = UPS.UpsList()
@@ -159,25 +154,25 @@ def main() -> None:
     daemon_ups = ups_list.get_daemon_ups()
     num_ups = ups_list.num_upss()
     if not daemon_ups:
-        env.UT_CONST.process_message('Error: {}No Daemon UPS defined{}'.format(color, reset), verbose=True)
-        env.UT_CONST.fatal = True
+        UT_CONST.process_message('Error: {}No Daemon UPS defined{}'.format(color_code, reset_code), verbose=True)
+        UT_CONST.fatal = True
     elif num_ups['daemon'] > 1:
-        env.UT_CONST.process_message('Error: {}Multiple Daemon UPS defined{}'.format(color, reset), verbose=True)
-        env.UT_CONST.fatal = True
+        UT_CONST.process_message('Error: {}Multiple Daemon UPS defined{}'.format(color_code, reset_code), verbose=True)
+        UT_CONST.fatal = True
     if not daemon_ups.is_responsive():
-        env.UT_CONST.process_message('Error: {}Daemon UPS [{}] is unresponsive.{}'.format(
-            color, daemon_ups['display_name'], reset), verbose=True)
-        env.UT_CONST.fatal = True
+        UT_CONST.process_message('Error: {}Daemon UPS [{}] is unresponsive.{}'.format(
+            color_code, daemon_ups['display_name'], reset_code), verbose=True)
+        UT_CONST.fatal = True
 
-    if env.UT_CONST.fatal:
-        env.UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color, reset), verbose=True)
-        env.UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
-                                     '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
-                                     '              configuration file location and status.', verbose=True)
+    if UT_CONST.fatal:
+        UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color_code, reset_code), verbose=True)
+        UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
+                                 '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
+                                 '              configuration file location and status.', verbose=True)
         sys.exit(-1)
 
     # Display current status of target UPS
-    daemon_ups.read_ups_list_items(UPS.UpsComm.MIB_group.all, display=False)
+    daemon_ups.read_ups_list_items(MibGroup.all, display=False)
     daemon_ups.print()
     ups_list.daemon.print_daemon_parameters()
 
@@ -199,15 +194,15 @@ def main() -> None:
         fault_sleep = daemon_ups.daemon.daemon_param_defaults['read_interval']['limit']
 
         active_sleep = normal_sleep
-        if env.UT_CONST.no_markup:
+        if UT_CONST.no_markup:
             norm_style = warn_style = crit_style = ok_style = err_style = reset_style = ''
         else:
-            norm_style = env.UT_CONST.mark_up_codes['cyan']
-            warn_style = env.UT_CONST.mark_up_codes['warn']
-            crit_style = env.UT_CONST.mark_up_codes['crit']
-            ok_style = env.UT_CONST.mark_up_codes['ok']
-            err_style = env.UT_CONST.mark_up_codes['error']
-            reset_style = env.UT_CONST.mark_up_codes['reset']
+            norm_style = UT_CONST.mark_up_codes[MarkUpCodes.cyan]
+            warn_style = UT_CONST.mark_up_codes[MarkUpCodes.warn]
+            crit_style = UT_CONST.mark_up_codes[MarkUpCodes.crit]
+            ok_style = UT_CONST.mark_up_codes[MarkUpCodes.ok]
+            err_style = UT_CONST.mark_up_codes[MarkUpCodes.error]
+            reset_style = UT_CONST.mark_up_codes[MarkUpCodes.reset]
         ups_states: Dict[str, str] = {
             'good':     '{} READY:   {}'.format(ok_style, reset_style),
             'ready':    '{} READY:   {}'.format(ok_style, reset_style),
@@ -218,10 +213,10 @@ def main() -> None:
         }
         ready_status = True
         while True:
-            time_str = env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)
+            time_str = UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True)
 
             # Check status of UPS
-            bat_status = daemon_ups.send_snmp_command('mib_battery_status', display=False)
+            bat_status = daemon_ups.send_snmp_command(MiB.battery_status, display=False)
             if not bat_status:
                 print('[{}] {} UPS [{}] is unresponsive'.format(
                     time_str, ups_states['error'], daemon_ups['display_name']))
@@ -229,7 +224,7 @@ def main() -> None:
                 continue
 
             # Check for request to refresh Daemon parameters
-            if env.UT_CONST.refresh_daemon:
+            if UT_CONST.refresh_daemon:
                 ups_list.read_set_daemon()
                 # Control thresholds
                 crit_bat_level = daemon_ups.daemon.daemon_params['threshold_battery_capacity']['crit']
@@ -242,13 +237,13 @@ def main() -> None:
                 fault_sleep = daemon_ups.daemon.daemon_param_defaults['read_interval']['limit']
 
             # Read data from UPS
-            out_power = int(daemon_ups.send_snmp_command('mib_output_power', display=False))
-            bat_load = int(daemon_ups.send_snmp_command('mib_output_load', display=False))
-            bat_capacity = int(daemon_ups.send_snmp_command('mib_battery_capacity', display=False))
-            time_on_bat = float(daemon_ups.send_snmp_command('mib_time_on_battery', display=False))
-            remain_run_time = float(daemon_ups.send_snmp_command('mib_battery_runtime_remain', display=False))
+            out_power = int(daemon_ups.send_snmp_command(MiB.output_power, display=False))
+            bat_load = int(daemon_ups.send_snmp_command(MiB.output_load, display=False))
+            bat_capacity = int(daemon_ups.send_snmp_command(MiB.battery_capacity, display=False))
+            time_on_bat = float(daemon_ups.send_snmp_command(MiB.time_on_battery, display=False))
+            remain_run_time = float(daemon_ups.send_snmp_command(MiB.battery_runtime_remain, display=False))
 
-            if env.UT_CONST.quit:
+            if UT_CONST.quit:
                 print('[{}] {} Received Quit Signal'.format(
                     time_str, ups_states['warning']))
                 sys.exit(0)

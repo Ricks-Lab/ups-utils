@@ -43,7 +43,7 @@ __maintainer__ = 'RicksLab'
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
-# pylint: disable=bad-continuation
+# pylint: disable=consider-using-f-string
 
 import argparse
 import threading
@@ -54,21 +54,23 @@ import time
 import gc as garb_collect
 import logging
 import signal
-from typing import TextIO, Any, Callable
+from typing import TextIO, Any, Callable, Optional
 try:
     import gi
     gi.require_version('Gtk', '3.0')
     from gi.repository import GLib, Gtk
+    GTK=True
 except ModuleNotFoundError as error:
     print('gi import error: {}'.format(error))
     print('gi is required for %s', __program_name__)
     print('   In a venv, first install vext:  pip install --no-cache-dir vext')
     print('   Then install vext.gi:  pip install --no-cache-dir vext.gi')
-    sys.exit(0)
+    GTK=False
 from UPSmodules import UPSmodule as UPS
-from UPSmodules import env
+from UPSmodules.env import UT_CONST
 from UPSmodules import UPSgui
 from UPSmodules import __version__, __status__, __credits__
+from UPSmodules.UPSKeys import MibGroup, UpsStatus, TxtStyle, MarkUpCodes, MiB
 
 set_gtk_prop = UPSgui.GuiProps.set_gtk_prop
 LOGGER = logging.getLogger('ups-utils')
@@ -103,7 +105,7 @@ def ctrl_c_handler(target_signal: Any, _frame: Any) -> None:
     """
     LOGGER.debug('ctrl_c_handler (ID: %s) has been caught. Setting quit flag...', target_signal)
     print('Setting quit flag...')
-    env.UT_CONST.quit = True
+    UT_CONST.quit = True
 
 
 def ctrl_u_handler(target_signal: Any, _frame: Any) -> None:
@@ -115,158 +117,179 @@ def ctrl_u_handler(target_signal: Any, _frame: Any) -> None:
     """
     LOGGER.debug('ctrl_u_handler (ID: %s) has been caught. Setting refresh daemon flag...', target_signal)
     print('Setting refresh daemon flag...')
-    env.UT_CONST.refresh_daemon = True
+    UT_CONST.refresh_daemon = True
 
 
-class MonitorWindow(Gtk.Window):
-    """
-    Class defining Monitor Window
-    """
-    max_width = 23
+if not GTK:
+    UT_CONST.process_message('Gtk import error, Gui disabled', log_flag=True)
 
-    def __init__(self, ups_list: UPS.UpsList, gc: UPSgui.GuiComp):
-        """ Initialize the main UPS monitor window.
-
-        :param ups_list:  The ups list object
-        :param gc: A dictionary of Gtk components and values
+    class MonitorWindow:
         """
-        self.quit: bool = False
+        PAC window with no Gtk support.
+        """
+        quit: bool = False
+        gui_enabled: bool = False
+        max_width = 23
 
-        # RuntimeError: Gtk couldn't be initialized. Use Gtk.init_check() if you want to handle this case.
-        Gtk.Window.__init__(self, title='{} - Monitor'.format(env.UT_CONST.gui_window_title))
-        init_chk_value = Gtk.init_check(sys.argv)
-        LOGGER.debug('init_check: %s', init_chk_value)
-        if not init_chk_value[0]:
-            print('Gtk Error, Exiting')
-            sys.exit(-1)
-        self.set_border_width(0)
-        self.set_resizable(False)
-        UPSgui.GuiProps.set_style()
+        def __init__(self, ups_list: Optional[UPS.UpsList] = None, gc: Optional[UPSgui.GuiComp] = None):
+            LOGGER.debug('started with Gtk disabled')
 
-        if env.UT_CONST.icon_file:
-            LOGGER.debug('Icon file: [%s]', env.UT_CONST.icon_file)
-            if os.path.isfile(env.UT_CONST.icon_file):
-                self.set_icon_from_file(env.UT_CONST.icon_file)
+        def set_quit(self, _arg2, _arg3) -> None:
+            """
+            Set quit flag when Gtk quit is selected.
+            """
+            self.quit = True
+else:
+    class MonitorWindow(Gtk.Window):
+        """
+        Class defining Monitor Window
+        """
+        max_width = 23
+        gui_enabled: bool = True
 
-        grid = Gtk.Grid(column_spacing=0, row_spacing=0)
-        self.add(grid)
+        def __init__(self, ups_list: UPS.UpsList, gc: UPSgui.GuiComp):
+            """ Initialize the main UPS monitor window.
 
-        col = 0
-        row = 0
-        num_ups_dict = ups_list.num_upss()
-        num_ups = num_ups_dict['total'] if env.UT_CONST.show_unresponsive else num_ups_dict['responsive']
+            :param ups_list:  The ups list object
+            :param gc: A dictionary of Gtk components and values
+            """
+            self.quit: bool = False
 
-        # Set logging details at top of table if logging enabled
-        if LOGGER.getEffectiveLevel() == logging.DEBUG:
-            log_label = Gtk.Label(name='warn_label')
-            log_label.set_markup('<big><b> DEBUG Logger Active </b></big>')
-            lbox = Gtk.Box(spacing=6, name='warn_box')
-            set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-            set_gtk_prop(log_label, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
-            lbox.pack_start(log_label, True, True, 0)
-            grid.attach(lbox, 0, row, num_ups + 1, 1)
-            row += 1
-        if env.UT_CONST.log:
-            log_label = Gtk.Label(name='warn_label')
-            log_label.set_markup('<big><b> Logging to:    </b>' + env.UT_CONST.log_file + '</big>')
-            lbox = Gtk.Box(spacing=6, name='warn_box')
-            set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-            set_gtk_prop(log_label, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
-            lbox.pack_start(log_label, True, True, 0)
-            grid.attach(lbox, 0, row, num_ups + 1, 1)
-            row += 1
-        time_label = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-        time_label.set_markup('<big><b> {} </b></big>'.format(
-            env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True)))
-        lbox = Gtk.Box(spacing=6, name='head_box')
-        set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-        set_gtk_prop(time_label, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
-        lbox.pack_start(time_label, True, True, 0)
-        grid.attach(lbox, 0, row, num_ups + 1, 1)
-        gc.add(uuid=None, name='update_time', label=time_label, box=lbox, box_name='update_time')
-        row += 1
-        row_start = row
+            # RuntimeError: Gtk couldn't be initialized. Use Gtk.init_check() if you want to handle this case.
+            Gtk.Window.__init__(self, title='{} - Monitor'.format(UT_CONST.gui_window_title))
+            init_chk_value = Gtk.init_check(sys.argv)
+            LOGGER.debug('init_check: %s', init_chk_value)
+            if not init_chk_value[0]:
+                print('Gtk Error, Exiting')
+                sys.exit(-1)
+            self.set_border_width(0)
+            self.set_resizable(False)
+            UPSgui.GuiProps.set_style()
 
-        # Set first column of table to static values
-        row = row_start
-        row_labels = {'display_name': Gtk.Label(name='white_label')}
-        row_labels['display_name'].set_markup('<b>UPS Parameters</b>')
-        # Set row labels for header items
-        for param_name in UPS.UpsItem.ordered_table_items:
-            if param_name not in UPS.UpsItem.table_list: continue
-            param_label = UPS.UpsItem.param_labels[param_name]
-            if param_name == 'display_name':
-                row_labels[param_name] = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-            else:
-                row_labels[param_name] = Gtk.Label(name='white_label')
-            row_labels[param_name].set_markup('<b>{}</b>'.format(param_label))
-        # Set boxes for each row label
-        for row_label_item in row_labels.values():
+            if UT_CONST.icon_file:
+                LOGGER.debug('Icon file: [%s]', UT_CONST.icon_file)
+                if os.path.isfile(UT_CONST.icon_file):
+                    self.set_icon_from_file(UT_CONST.icon_file)
+
+            grid = Gtk.Grid(column_spacing=0, row_spacing=0)
+            self.add(grid)
+
+            col = 0
+            row = 0
+            num_ups_dict = ups_list.num_upss()
+            num_ups = num_ups_dict['total'] if UT_CONST.show_unresponsive else num_ups_dict['responsive']
+
+            # Set logging details at top of table if logging enabled
+            if LOGGER.getEffectiveLevel() == logging.DEBUG:
+                log_label = Gtk.Label(name='warn_label')
+                log_label.set_markup('<big><b> DEBUG Logger Active </b></big>')
+                lbox = Gtk.Box(spacing=6, name='warn_box')
+                set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+                set_gtk_prop(log_label, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
+                lbox.pack_start(log_label, True, True, 0)
+                grid.attach(lbox, 0, row, num_ups + 1, 1)
+                row += 1
+            if UT_CONST.log:
+                log_label = Gtk.Label(name='warn_label')
+                log_label.set_markup('<big><b> Logging to:    </b>' + UT_CONST.log_file + '</big>')
+                lbox = Gtk.Box(spacing=6, name='warn_box')
+                set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+                set_gtk_prop(log_label, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
+                lbox.pack_start(log_label, True, True, 0)
+                grid.attach(lbox, 0, row, num_ups + 1, 1)
+                row += 1
+            time_label = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+            time_label.set_markup('<big><b> {} </b></big>'.format(
+                UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True)))
             lbox = Gtk.Box(spacing=6, name='head_box')
             set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-            set_gtk_prop(row_label_item, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
-            lbox.pack_start(row_label_item, True, True, 0)
-            grid.attach(lbox, col, row, 1, 1)
+            set_gtk_prop(time_label, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
+            lbox.pack_start(time_label, True, True, 0)
+            grid.attach(lbox, 0, row, num_ups + 1, 1)
+            gc.add(uuid=None, name='update_time', label=time_label, box=lbox, box_name='update_time')
             row += 1
+            row_start = row
 
-        def_box_css = "{ background-image: image(%s); }" % UPSgui.GuiProps.color_name_to_hex('slate_md')
-        col += 1
-        for ups in ups_list.upss():
+            # Set first column of table to static values
             row = row_start
-            # Header items do not need to be in gui component since they are static
-            label = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-            label.set_markup('<b>{}</b>'.format(ups['display_name']))
-            label.set_use_markup(True)
-            lbox = Gtk.Box(spacing=3, name='head_box')
-            set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
-            set_gtk_prop(label, top=1, bottom=1, right=3, left=3, width_chars=self.max_width)
-            lbox.pack_start(label, True, True, 0)
-            grid.attach(lbox, col, row, 1, 1)
-            row += 1
+            row_labels = {'display_name': Gtk.Label(name='white_label')}
+            row_labels['display_name'].set_markup('<b>UPS Parameters</b>')
+            # Set row labels for header items
             for param_name in UPS.UpsItem.ordered_table_items:
                 if param_name not in UPS.UpsItem.table_list: continue
-                if param_name == 'display_name': continue
-                label = Gtk.Label(label=ups[param_name], name='white_label')
-                label.set_width_chars(self.max_width)
-                set_gtk_prop(label, top=1, bottom=1, right=3, left=3, width_chars=self.max_width)
-                set_gtk_prop(label, width_chars=self.max_width)
-                box_name = '{}-{}'.format(param_name, ups.prm.uuid)
-                lbox = Gtk.Box(spacing=6, name=box_name)
-                UPSgui.GuiProps.set_style(css_str="#{} {}".format(box_name, def_box_css))
+                param_label = UPS.UpsItem.param_labels[param_name]
+                if param_name == 'display_name':
+                    row_labels[param_name] = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+                else:
+                    row_labels[param_name] = Gtk.Label(name='white_label')
+                row_labels[param_name].set_markup('<b>{}</b>'.format(param_label))
+            # Set boxes for each row label
+            for row_label_item in row_labels.values():
+                lbox = Gtk.Box(spacing=6, name='head_box')
                 set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+                set_gtk_prop(row_label_item, top=1, bottom=1, right=4, left=4, align=(0.0, 0.5))
+                lbox.pack_start(row_label_item, True, True, 0)
+                grid.attach(lbox, col, row, 1, 1)
+                row += 1
+
+            def_box_css = "{ background-image: image(%s); }" % UPSgui.GuiProps.color_name_to_hex('slate_md')
+            col += 1
+            for ups in ups_list.upss():
+                row = row_start
+                # Header items do not need to be in gui component since they are static
+                label = Gtk.Label(name='white_label', halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+                label.set_markup('<b>{}</b>'.format(ups['display_name']))
+                label.set_use_markup(True)
+                lbox = Gtk.Box(spacing=3, name='head_box')
+                set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+                set_gtk_prop(label, top=1, bottom=1, right=3, left=3, width_chars=self.max_width)
                 lbox.pack_start(label, True, True, 0)
                 grid.attach(lbox, col, row, 1, 1)
-                gc.add(ups.prm.uuid, param_name, label, lbox, box_name)
                 row += 1
-            gc.refresh_gui_data(ups.prm.uuid)
-            col += 1
+                for param_name in UPS.UpsItem.ordered_table_items:
+                    if param_name not in UPS.UpsItem.table_list: continue
+                    if param_name == 'display_name': continue
+                    label = Gtk.Label(label=ups[param_name], name='white_label')
+                    label.set_width_chars(self.max_width)
+                    set_gtk_prop(label, top=1, bottom=1, right=3, left=3, width_chars=self.max_width)
+                    set_gtk_prop(label, width_chars=self.max_width)
+                    box_name = '{}-{}'.format(param_name, ups.prm.uuid)
+                    lbox = Gtk.Box(spacing=6, name=box_name)
+                    UPSgui.GuiProps.set_style(css_str="#{} {}".format(box_name, def_box_css))
+                    set_gtk_prop(lbox, top=1, bottom=1, right=1, left=1)
+                    lbox.pack_start(label, True, True, 0)
+                    grid.attach(lbox, col, row, 1, 1)
+                    gc.add(ups.prm.uuid, param_name, label, lbox, box_name)
+                    row += 1
+                gc.refresh_gui_data(ups.prm.uuid)
+                col += 1
 
-        LOGGER.debug('Device dict:\n %s', gc)
+            LOGGER.debug('Device dict:\n %s', gc)
 
-    @staticmethod
-    def timeout() -> bool:
-        """
-        Target of GLib.timeout_add.  Not sure if this mitigates the problem
-        of responsiveness.
+        @staticmethod
+        def timeout() -> bool:
+            """
+            Target of GLib.timeout_add.  Not sure if this mitigates the problem
+            of responsiveness.
 
-        :return: True
-        """
-        if LOGGER.getEffectiveLevel() == logging.DEBUG or env.UT_CONST.verbose:
-            if Gtk.events_pending():
-                print('*** {}: Stack size: {}, pending events: {}, nesting level: {}'.format(
-                    env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True),
-                    get_stack_size(), Gtk.events_pending(), Gtk.main_level()))
-        Gtk.main_iteration_do(False)
-        return True
+            :return: True
+            """
+            if LOGGER.getEffectiveLevel() == logging.DEBUG or UT_CONST.verbose:
+                if Gtk.events_pending():
+                    print('*** {}: Stack size: {}, pending events: {}, nesting level: {}'.format(
+                        UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True),
+                        get_stack_size(), Gtk.events_pending(), Gtk.main_level()))
+            Gtk.main_iteration_do(False)
+            return True
 
-    def set_quit(self, _arg2: Any, _arg3: Any) -> None:
-        """ Function called when quit monitor is executed.  Sets flag to end update loop.
+        def set_quit(self, _arg2: Any, _arg3: Any) -> None:
+            """ Function called when quit monitor is executed.  Sets flag to end update loop.
 
-        :param _arg2: Ignored
-        :param _arg3: Ignored
-        :return: None
-        """
-        self.quit = True
+            :param _arg2: Ignored
+            :param _arg3: Ignored
+            :return: None
+            """
+            self.quit = True
 
 
 def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp, umonitor: MonitorWindow) -> None:
@@ -282,10 +305,10 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp, umonitor: MonitorWind
         LOGGER.debug('Update while updating, skipping new update')
         return
     ########################
-    ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic, errups=env.UT_CONST.show_unresponsive)
+    ups_list.read_all_ups_list_items(MibGroup.dynamic, errups=UT_CONST.show_unresponsive)
     gc.all_refresh_gui_data(skip_static=True)
-    if env.UT_CONST.log:
-        print_log(env.UT_CONST.log_file_ptr, ups_list)
+    if UT_CONST.log:
+        print_log(UT_CONST.log_file_ptr, ups_list)
 
     # update gui
     for dev_uuid, dev_data in gc.items():
@@ -294,49 +317,49 @@ def update_data(ups_list: UPS.UpsList, gc: UPSgui.GuiComp, umonitor: MonitorWind
         for mib_name, gui_comp in dev_data.items():
             if umonitor.quit: break
             # default style
-            state_style = UPS.UpsItem.TXT_style.bold
+            state_style = TxtStyle.bold
 
             # Set data value style based on daemon parameters
             if mib_name in ups_list.daemon.daemon_param_dict:
                 state_style = ups_list.daemon.daemon_format(mib_name, ups[mib_name], gui_text_style=True)
-            elif mib_name == 'mib_battery_status':
-                if re.match(env.UT_CONST.PATTERNS['NORMAL'], gui_comp['data']):
-                    state_style = UPS.UpsItem.TXT_style.green
+            elif mib_name == MiB.battery_status:
+                if re.match(UT_CONST.PATTERNS['NORMAL'], gui_comp['data']):
+                    state_style = TxtStyle.green
                 else:
-                    state_style = UPS.UpsItem.TXT_style.crit
+                    state_style = TxtStyle.crit
             elif mib_name == 'daemon':
-                state_style = UPS.UpsItem.TXT_style.daemon if gui_comp['data'] == 'True' else UPS.UpsItem.TXT_style.bold
-            elif mib_name == 'mib_system_status':
-                if re.match(env.UT_CONST.PATTERNS['ONLINE'], gui_comp['data']):
-                    state_style = UPS.UpsItem.TXT_style.green
+                state_style = TxtStyle.daemon if gui_comp['data'] == 'True' else TxtStyle.bold
+            elif mib_name == MiB.system_status:
+                if re.match(UT_CONST.PATTERNS['ONLINE'], gui_comp['data']):
+                    state_style = TxtStyle.green
                 else:
-                    state_style = UPS.UpsItem.TXT_style.crit
+                    state_style = TxtStyle.crit
 
             if gui_comp['data'] in {None, 'None', '', '---'}:
-                state_style = UPS.UpsItem.TXT_style.normal
+                state_style = TxtStyle.normal
 
             # Apply style
-            if state_style == UPS.UpsItem.TXT_style.crit:
+            if state_style == TxtStyle.crit:
                 gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('red')))
-            elif state_style == UPS.UpsItem.TXT_style.normal:
+            elif state_style == TxtStyle.normal:
                 gui_comp['label'].set_markup('{}'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('slate_md')))
-            elif state_style == UPS.UpsItem.TXT_style.warn:
+            elif state_style == TxtStyle.warn:
                 gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('yellow')))
-            elif state_style == UPS.UpsItem.TXT_style.green:
+            elif state_style == TxtStyle.green:
                 gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('green_dk')))
-            elif state_style == UPS.UpsItem.TXT_style.daemon:
+            elif state_style == TxtStyle.daemon:
                 gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('green_dk')))
-            elif state_style == UPS.UpsItem.TXT_style.bold:
+            elif state_style == TxtStyle.bold:
                 gui_comp['label'].set_markup('<b>{}</b>'.format(gui_comp['data']))
                 UPSgui.GuiProps.set_style(css_str="#%s { background-image: image(%s); }" % (
                     gui_comp['box_name'], UPSgui.GuiProps.color_name_to_hex('slate_md')))
@@ -369,9 +392,9 @@ def refresh(refresh_time: int, updater: Callable, ups_list: UPS.UpsList,
     i = 0
     while True:
         i += 1
-        if LOGGER.getEffectiveLevel() == logging.DEBUG or env.UT_CONST.verbose:
+        if LOGGER.getEffectiveLevel() == logging.DEBUG or UT_CONST.verbose:
             print('### {}: Stack size: {}, pending events: {}, nesting level: {}'.format(
-                env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True),
+                UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True),
                 get_stack_size(), Gtk.events_pending(), Gtk.main_level()))
         if umonitor.quit: quit_func()
 
@@ -403,17 +426,17 @@ def print_monitor_table(ups_list: UPS.UpsList) -> bool:
     """
     hrw = 29  # Row header item width
     irw = MonitorWindow.max_width + 1  # Row data item width
+    color_code: str = UT_CONST.mark_up_codes[MarkUpCodes.bcyan]
+    reset_code: str = UT_CONST.mark_up_codes[MarkUpCodes.reset]
 
     print('┌', '─'.ljust(hrw, '─'), sep='', end='')
     for _ in ups_list:
         print('┬', '─'.ljust(irw, '─'), sep='', end='')
     print('┐')
 
-    color = env.UT_CONST.mark_up_codes['bcyan']
-    reset = env.UT_CONST.mark_up_codes['reset']
-    print('│{}{}{}'.format(color, 'UPS Parameters'.ljust(hrw, ' '), reset), sep='', end='')
+    print('│{}{}{}'.format(color_code, 'UPS Parameters'.ljust(hrw, ' '), reset_code), sep='', end='')
     for ups in ups_list.upss():
-        print('│{}{}{}'.format(color, ups['display_name'].center(irw), reset),
+        print('│{}{}{}'.format(color_code, ups['display_name'].center(irw), reset_code),
               sep='', end='')
     print('│')
 
@@ -426,23 +449,20 @@ def print_monitor_table(ups_list: UPS.UpsList) -> bool:
         if param_name == 'display_name': continue
         if param_name not in UPS.UpsItem.table_list: continue
         param_label = UPS.UpsItem.param_labels[param_name]
-        color = env.UT_CONST.mark_up_codes['bcyan']
-        print('│{}{}{}'.format(color, param_label.ljust(hrw, ' ')[:hrw], reset), sep='', end='')
+        color_code: str = UT_CONST.mark_up_codes[MarkUpCodes.bcyan]
+        print('│{}{}{}'.format(color_code, param_label.ljust(hrw, ' ')[:hrw], reset_code), sep='', end='')
         for ups in ups_list.upss():
             try:
-                color = ''
-                if param_name == 'mib_system_status':
-                    color = 'ok' if re.match(env.UT_CONST.PATTERNS['ONLINE'], ups[param_name]) else 'error'
-                    color = env.UT_CONST.mark_up_codes[color]
-                elif param_name == 'mib_battery_status':
-                    color = 'ok' if re.match(env.UT_CONST.PATTERNS['NORMAL'], ups[param_name]) else 'error'
-                    color = env.UT_CONST.mark_up_codes[color]
+                color: MarkUpCodes = MarkUpCodes.none
+                if param_name == MiB.system_status:
+                    color = MarkUpCodes.ok if re.match(UT_CONST.PATTERNS['ONLINE'], ups[param_name]) else MarkUpCodes.error
+                elif param_name == MiB.battery_status:
+                    color = MarkUpCodes.ok if re.match(UT_CONST.PATTERNS['NORMAL'], ups[param_name]) else MarkUpCodes.error
                 elif param_name in UPS.UpsDaemon.daemon_param_dict:
                     text_format = ups_list.daemon.daemon_format(param_name, ups[param_name])
                     LOGGER.debug('%s: %s, format: %s', param_name, ups[param_name], text_format)
-                    color = env.UT_CONST.mark_up_codes[text_format]
                 value = '---' if ups[param_name] is None else str(ups[param_name])
-                item_str = '{}{}{}'.format(color, value[:irw].center(irw), reset)
+                item_str = '{}{}{}'.format(UT_CONST.mark_up_codes[color], value[:irw].center(irw), reset_code)
             except KeyError:
                 item_str = ' '.ljust(irw, ' ')[:irw]
             print('│', item_str, sep='', end='')
@@ -461,7 +481,7 @@ def print_log(fileptr: TextIO, ups_list: UPS.UpsList) -> None:
     :param fileptr:  The logfile fileptr
     :param ups_list: A UPS list structure
     """
-    time_str = (str(env.UT_CONST.now(ltz=True).strftime('%c')).strip())
+    time_str = (str(UT_CONST.now(ltz=True).strftime('%c')).strip())
     for ups in ups_list.upss():
         print('{}'.format(time_str), file=fileptr, end='')
         for param_name in UPS.UpsItem.param_labels:
@@ -506,68 +526,71 @@ def main() -> None:
         print('Credits: ', *['\n      {}'.format(item) for item in __credits__])
         print('License: ', __license__)
         print('Version: ', __version__)
-        print('Install Type: ', env.UT_CONST.install_type)
+        print('Install Type: ', UT_CONST.install_type)
         print('Maintainer: ', __maintainer__)
         print('Status: ', __status__)
         sys.exit(0)
 
-    env.UT_CONST.set_env_args(args, __program_name__)
+    UT_CONST.set_env_args(args, __program_name__)
     LOGGER.debug('########## %s %s', __program_name__, __version__)
 
-    reset = env.UT_CONST.mark_up_codes['reset']
-    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
-                          env.UT_CONST.mark_up_codes['bold'])
-    if not env.UT_CONST.check_env():
-        env.UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
-            color, reset), verbose=True)
+    reset_code: str = UT_CONST.mark_up_codes[MarkUpCodes.reset]
+    color_code: str = '{}{}'.format(UT_CONST.mark_up_codes[MarkUpCodes.red], UT_CONST.mark_up_codes[MarkUpCodes.bold])
+
+    if not UT_CONST.check_env():
+        UT_CONST.process_message('Error: {}Invalid environment. Exiting...{}'.format(
+            color_code, reset_code), verbose=True)
         sys.exit(-1)
 
-    print('Reading and verifying UPSs listed in {}. '.format(env.UT_CONST.ups_json_file))
+    print('Reading and verifying UPSs listed in {}. '.format(UT_CONST.ups_json_file))
     ups_list = UPS.UpsList()
     num_ups = ups_list.num_upss()
 
     if not num_ups['total']:
-        env.UT_CONST.process_message('Error: {}No UPSs specified in {}{}'.format(
-            color, env.UT_CONST.ups_json_file, reset), verbose=True)
-        env.UT_CONST.process_message('    For more information: `man {}`, exiting...'.format(
-            os.path.basename(env.UT_CONST.ups_json_file)), verbose=True)
+        UT_CONST.process_message('Error: {}No UPSs specified in {}{}'.format(
+            color_code, UT_CONST.ups_json_file, reset_code), verbose=True)
+        UT_CONST.process_message('    For more information: `man {}`, exiting...'.format(
+            os.path.basename(UT_CONST.ups_json_file)), verbose=True)
         sys.exit(-1)
     if num_ups['daemon'] > 1:
-        env.UT_CONST.process_message('Warning: {}Multiple Daemon UPS defined{}'.format(color, reset), verbose=True)
+        UT_CONST.process_message('Warning: {}Multiple Daemon UPS defined{}'.format(color_code, reset_code), verbose=True)
     print(ups_list)
     if num_ups['total'] != num_ups['responsive']:
-        env.UT_CONST.process_message('Error: {}Some UPSs unresponsive{}'.format(color, reset), verbose=True)
-        env.UT_CONST.process_message('    Check the {} file.\n'.format(env.UT_CONST.ups_json_file), verbose=True)
+        UT_CONST.process_message('Error: {}Some UPSs unresponsive{}'.format(color_code, reset_code), verbose=True)
+        UT_CONST.process_message('    Check the {} file.\n'.format(UT_CONST.ups_json_file), verbose=True)
 
-    if int(env.UT_CONST.sleep) < ups_list.daemon.daemon_param_defaults['read_interval']['limit']:
-        env.UT_CONST.process_message('Invalid value for sleep specified.  Must be an integer >= {}'.format(
+    if int(UT_CONST.sleep) < ups_list.daemon.daemon_param_defaults['read_interval']['limit']:
+        UT_CONST.process_message('Invalid value for sleep specified.  Must be an integer >= {}'.format(
             ups_list.daemon.daemon_param_defaults['read_interval']['limit']), log_flag=True)
         print('Using value of lower limit: [{}]'.format(
             ups_list.daemon.daemon_param_defaults['read_interval']['limit']))
-    env.UT_CONST.sleep = ups_list.daemon.daemon_param_defaults['read_interval']['limit']
+    UT_CONST.sleep = ups_list.daemon.daemon_param_defaults['read_interval']['limit']
     if args.show_unresponsive:
-        ups_list = ups_list.list_upss(ups_status=UPS.UpsItem.UPS_status.all)
+        ups_list = ups_list.list_upss(ups_status=UpsStatus.all)
     else:
-        ups_list = ups_list.list_upss(ups_status=UPS.UpsItem.UPS_status.responsive)
+        ups_list = ups_list.list_upss(ups_status=UpsStatus.responsive)
 
-    if env.UT_CONST.fatal:
-        env.UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color, reset), verbose=True)
-        env.UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
-                                     '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
-                                     '              configuration file location and status.', verbose=True)
+    if UT_CONST.fatal:
+        UT_CONST.process_message('Fatal: {}Exiting...{}'.format(color_code, reset_code), verbose=True)
+        UT_CONST.process_message('    Make sure configuration files specify a daemon UPS.\n'
+                                 '    Execute: \'ups-ls --about\' for more information of ups-utils\n'
+                                 '              configuration file location and status.', verbose=True)
         sys.exit(-1)
 
-    ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.monitor, errups=args.show_unresponsive, display=False)
+    ups_list.read_all_ups_list_items(MibGroup.monitor, errups=args.show_unresponsive, display=False)
 
-    env.UT_CONST.show_unresponsive = args.show_unresponsive
+    UT_CONST.show_unresponsive = args.show_unresponsive
 
     if args.log:
-        env.UT_CONST.log = True
-        env.UT_CONST.log_file = './log_monitor_{}.txt'.format(
-            env.UT_CONST.now(ltz=env.UT_CONST.use_ltz).strftime('%m%d_%H%M%S'))
-        env.UT_CONST.log_file_ptr = open(env.UT_CONST.log_file, 'w', 1)
-        print_log_header(env.UT_CONST.log_file_ptr)
+        UT_CONST.log = True
+        UT_CONST.log_file = './log_monitor_{}.txt'.format(
+            UT_CONST.now(ltz=UT_CONST.use_ltz).strftime('%m%d_%H%M%S'))
+        UT_CONST.log_file_ptr = open(UT_CONST.log_file, mode='w', encoding='utf-8', buffering=1)
+        print_log_header(UT_CONST.log_file_ptr)
 
+    if not MonitorWindow.gui_enabled:
+        args.gui = False
+        UT_CONST.process_message('Gtk not found, Gui disabled', log_flag=True)
     if args.gui:
         signal.signal(signal.SIGUSR1, ctrl_u_handler)
         # Display Gtk style Monitor
@@ -579,16 +602,15 @@ def main() -> None:
         umonitor.show_all()
 
         # Start thread to update Monitor
-        mon_thread = threading.Thread(target=refresh, daemon=True, args=[env.UT_CONST.sleep,
+        mon_thread = threading.Thread(target=refresh, daemon=True, args=[UT_CONST.sleep,
                                       update_data, ups_list, gui_components, umonitor])
         mon_thread.start()
         Gtk.main()
     else:
         # Display text style Monitor
-        reset = env.UT_CONST.mark_up_codes['reset']
         try:
-            while not env.UT_CONST.quit:
-                ups_list.read_all_ups_list_items(UPS.UpsComm.MIB_group.dynamic,
+            while not UT_CONST.quit:
+                ups_list.read_all_ups_list_items(MibGroup.dynamic,
                                                  errups=args.show_unresponsive, display=False)
                 if args.status:
                     print_monitor_table(ups_list)
@@ -596,23 +618,23 @@ def main() -> None:
                 if LOGGER.getEffectiveLevel() != logging.DEBUG:
                     os.system('clear')
                 if LOGGER.getEffectiveLevel() == logging.DEBUG:
-                    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'], env.UT_CONST.mark_up_codes['bold'])
-                    print('{}Debug Logger Active{}'.format(color, env.UT_CONST.mark_up_codes['reset']))
-                if env.UT_CONST.log:
-                    color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'], env.UT_CONST.mark_up_codes['bold'])
-                    print('{}Logging to:  {}{}'.format(color, env.UT_CONST.log_file,
-                                                       env.UT_CONST.mark_up_codes['reset']))
-                    print_log(env.UT_CONST.log_file_ptr, ups_list)
-                color = '{}{}'.format(env.UT_CONST.mark_up_codes['red'],
-                                      env.UT_CONST.mark_up_codes['bold'])
-                color = '{}{}'.format(env.UT_CONST.mark_up_codes['cyan'], env.UT_CONST.mark_up_codes['bold'])
+                    color = '{}{}'.format(UT_CONST.mark_up_codes[MarkUpCodes.red], UT_CONST.mark_up_codes[MarkUpCodes.bold])
+                    print('{}Debug Logger Active{}'.format(color, UT_CONST.mark_up_codes[MarkUpCodes.reset]))
+                if UT_CONST.log:
+                    color = '{}{}'.format(UT_CONST.mark_up_codes[MarkUpCodes.red], UT_CONST.mark_up_codes[MarkUpCodes.bold])
+                    print('{}Logging to:  {}{}'.format(color, UT_CONST.log_file,
+                                                       UT_CONST.mark_up_codes[MarkUpCodes.reset]))
+                    print_log(UT_CONST.log_file_ptr, ups_list)
+                color = '{}{}'.format(UT_CONST.mark_up_codes[MarkUpCodes.red],
+                                      UT_CONST.mark_up_codes[MarkUpCodes.bold])
+                color = '{}{}'.format(UT_CONST.mark_up_codes[MarkUpCodes.cyan], UT_CONST.mark_up_codes[MarkUpCodes.bold])
                 print(' {}{} {}'.format(
-                    color, env.UT_CONST.now(ltz=env.UT_CONST.use_ltz, as_string=True), reset))
+                    color, UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True), reset_code))
                 print_monitor_table(ups_list)
-                time.sleep(env.UT_CONST.sleep)
+                time.sleep(UT_CONST.sleep)
         except KeyboardInterrupt:
-            if env.UT_CONST.log:
-                env.UT_CONST.log_file_ptr.close()
+            if UT_CONST.log:
+                UT_CONST.log_file_ptr.close()
             sys.exit(0)
 
 

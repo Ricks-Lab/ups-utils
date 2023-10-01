@@ -95,11 +95,11 @@ force their display.  The logger is enabled with the *--debug* option.  The
 monitor window and logs.  This will be the local time of where the app is
 running, not the location of the UPS.  The default is UTC.
 
-## New in Current Release  -  v1.2.11
+## New in Current Release  -  v1.3.0
 
-* Fix GObject.timeout_add deprecation.
-* Update repository installation guide and add requirements file.
-* Many minor changes.
+* Implemented Enum objects as keys.
+* Defaults to text ups-mon window when Gtk is not available.
+* Code clean up.
 
 ## Known Issues
 
@@ -128,6 +128,12 @@ to support it, feel free to make a pull request.
 * [Eaton PowerWalker NMC](https://powerwalker.com/?page=nmc&lang=en)
 
 ## History
+
+### New in Previous Release  -  v1.2.11
+
+* Fix GObject.timeout_add deprecation.
+* Update repository installation guide and add requirements file.
+* Many minor changes.
 
 ### New in Previous Release  -  v1.2.10
 
