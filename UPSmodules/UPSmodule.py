@@ -25,7 +25,6 @@ __maintainer__ = "RicksLab"
 __docformat__ = 'reStructuredText'
 
 # pylint: disable=multiple-statements
-# pylint: disable=bad-continuation
 # pylint: disable=consider-using-f-string
 
 import copy

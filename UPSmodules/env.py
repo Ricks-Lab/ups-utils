@@ -24,7 +24,6 @@ __maintainer__ = 'RicksLab'
 __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
-# pylint: disable=bad-continuation
 # pylint: disable=consider-using-f-string
 
 import argparse
@@ -57,7 +56,7 @@ def check_file(filename: str) -> bool:
     color = '{}{}'.format(UtConst.mark_up_codes[MarkUpCodes.red],
                           UtConst.mark_up_codes[MarkUpCodes.bold])
     try:
-        with open(filename, 'r') as _file_ptr:
+        with open(filename, mode='r', encoding='utf-8') as _file_ptr:
             pass
     except PermissionError as error:
         UtConst.process_message('Error: {}Permission error for [{}]: {}{}'.format(
