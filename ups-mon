@@ -44,6 +44,7 @@ __docformat__ = 'reStructuredText'
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
 # pylint: disable=consider-using-f-string
+# pylint: max-line-length=120
 
 import argparse
 import threading

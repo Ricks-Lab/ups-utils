@@ -123,7 +123,8 @@ def main() -> None:
             os.path.basename(UT_CONST.ups_json_file)), verbose=True)
         sys.exit(-1)
     if num_ups['daemon'] > 1:
-        UT_CONST.process_message('Warning: {}Multiple Daemon UPS defined{}'.format(color_code, reset_code), verbose=True)
+        UT_CONST.process_message('Warning: {}Multiple Daemon UPS defined{}'.format(
+            color_code, reset_code), verbose=True)
     print(ups_list)
 
     LOGGER.debug('nmc types: %s', ups_list.get_ups_type_list())

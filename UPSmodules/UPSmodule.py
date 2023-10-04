@@ -26,6 +26,7 @@ __docformat__ = 'reStructuredText'
 
 # pylint: disable=multiple-statements
 # pylint: disable=consider-using-f-string
+# pylint: max-line-length=120
 
 import copy
 import os
@@ -131,6 +132,10 @@ class UpsItem:
     mark_up_codes = UT_CONST.mark_up_codes
 
     def __init__(self, json_details: dict):
+        """ Initialize a UPS object
+
+        :param json_details: A dictionary containing configuration details from json file.
+        """
         # UPS list from ups-config.json for monitor and ls utils.
         self.skip_list: List[Union[str, MiB]] = []
         self.prm: ObjDict = ObjDict({
@@ -367,8 +372,8 @@ class UpsDaemon:
         'threshold_battery_capacity': daemon_param_defaults['threshold_battery_capacity'].copy()}
 
     def __init__(self):
-        self.config: Union[dict, None] = None
-        self.daemon_ups: Union[UpsItem, None] = None
+        self.config: Optional[dict] = None
+        self.daemon_ups: Optional[UpsItem] = None
         self.daemon_params: Dict[str, Dict[str, Union[str, int]]]
 
         if self.read_daemon_config():
@@ -378,13 +383,13 @@ class UpsDaemon:
         return re.sub(r'\'', '\"', pprint.pformat(self.daemon_params, indent=2, width=120))
 
     def daemon_format(self, command_name: str, value: Union[int, float, str],
-                      gui_text_style: bool = False) -> Union[str, None, TxtStyle]:
+                      gui_text_style: bool = False) -> Union[str, TxtStyle, None]:
         """
 
-        :param command_name:
-        :param value:
-        :param gui_text_style:
-        :return:
+        :param command_name: The daemon command name
+        :param value: Value for the given command
+        :param gui_text_style: If True, return gui style formatting
+        :return: Format indicator
         """
         if command_name not in self.daemon_param_dict:
             return TxtStyle.bold if gui_text_style else 'none'
@@ -463,9 +468,9 @@ class UpsDaemon:
         def param_check_set(c_name: str, c_item: str, c_value: str) -> bool:
             """ Checks daemon values from config and sets if pass.
 
-            :param c_name:
-            :param c_item:
-            :param c_value:
+            :param c_name:  Top level config names.
+            :param c_item: Name of second level item.
+            :param c_value:  Value for item
             :return: True if everything QX
             """
             if c_name == 'DaemonPaths':
@@ -608,7 +613,7 @@ class UpsList:
     def __init__(self, daemon: bool = True, empty: bool = False):
         self.update_time: datetime = UT_CONST.now()
         self.list: Dict[str, UpsItem] = {}
-        self.daemon: Union[UpsDaemon, None] = UpsDaemon() if daemon else None
+        self.daemon: Optional[UpsDaemon] = UpsDaemon() if daemon else None
         if not empty:
             if not self.read_ups_json():
                 UT_CONST.process_message('Fatal: Could not read [{}] file.'.format(UT_CONST.config_files['json']))
@@ -619,7 +624,7 @@ class UpsList:
     def read_set_daemon(self) -> None:
         """ Used to refresh the daemon configuration parameters by rereading file.
         """
-        self.daemon: Union[UpsDaemon, None] = UpsDaemon()
+        self.daemon: Optional[UpsDaemon] = UpsDaemon()
         self.get_daemon_ups().daemon = self.daemon
         print('daemon refreshed')
         if UT_CONST.verbose:
@@ -683,13 +688,6 @@ class UpsList:
         for key in self.list:
             yield key
 
-    #def upss(self) -> Generator[UpsItem, None, None]:
-        #""" Get UpsItems from a GpuList object.
-#
-        #:return: UpsItem
-        #"""
-        #return self.__iter__()
-
     def add(self, ups_item: UpsItem) -> None:
         """ Add given UpsItem to the UpsList.
         """
@@ -732,7 +730,7 @@ class UpsList:
         if newline:
             print('')
 
-    def get_daemon_ups(self) -> Union[UpsItem, None]:
+    def get_daemon_ups(self) -> Optional[UpsItem]:
         """ Get the ups object for the daemon UPS.
 
         :return: The daemon ups object or None if none
@@ -824,7 +822,7 @@ class UpsList:
         return True
 
     # Methods to get, check, and list UPSs
-    def get_name_for_ups_uuid(self, ups_uuid: int) -> Union[str, None]:
+    def get_name_for_ups_uuid(self, ups_uuid: int) -> Optional[str]:
         """ Get the ups name for a given uuid
 
         :param ups_uuid: Universally unique identifier for a UPS
@@ -835,7 +833,7 @@ class UpsList:
                 return ups['display_name']
         return None
 
-    def get_uuid_for_ups_name(self, ups_name: str) -> Union[str, None]:
+    def get_uuid_for_ups_name(self, ups_name: str) -> Optional[str]:
         """ Get uuid for ups with given name.
 
         :param ups_name: The target ups name.
@@ -1101,8 +1099,8 @@ class UpsComm:
                               MiB.output_current, MiB.output_power, MiB.system_status,
                               MiB.battery_status}
     _mib_output: Set[MiB] = {MiB.output_voltage, MiB.output_frequency, MiB.output_load,
-                             MiB.output_current, MiB.output_power}
-    _mib_input: Set[MiB] = {MiB.input_voltage, MiB.input_frequency}
+                             MiB.output_current, MiB.output_power, MiB.ups_model}
+    _mib_input: Set[MiB] = {MiB.input_voltage, MiB.input_frequency, MiB.ups_model}
     all_mib_cmd_names: Dict[MibGroup, Set[MiB]] = {
         MibGroup.all:       _mib_all_apc_ap96xx,   # I choose all to be apc since eaton is a subset of apc.
         MibGroup.all_apc:   _mib_all_apc_ap96xx,
@@ -1197,7 +1195,7 @@ class UpsComm:
                 ups.prm[cmd] = '---'
                 UT_CONST.process_message('UPS {} invalid response: Skipping: {}'.format(
                     ups['display_name'], cmd), verbose=False)
-            if cmd == 'mib_ups_info':
+            if cmd == MiB.ups_info:
                 if ups.prm['ups_type'] == UpsType.apc_ap96xx:
                     try:
                         ups.prm['ups_nmc_model'] = re.sub(r'.*MN:', '', ups.prm[cmd]).split()[0]
@@ -1209,9 +1207,10 @@ class UpsComm:
         # Since PowerWalker NMC is not intended for 110V UPSs, the following correction to output current is needed.
         if ups.prm.ups_type == UpsType.eaton_pw:
             try:
-                ups.prm['mib_output_current'] = round((230 / ups.prm['mib_output_voltage']) *
-                                                      ups.prm['mib_output_current'], 1)
-            except:
+                # Correct PowerWalker NMC current from 230V
+                ups.prm[MiB.output_current] = round((230 / ups.prm[MiB.output_voltage]) *
+                                                    ups.prm[MiB.output_current], 1)
+            except (KeyError, ZeroDivisionError):
                 return False
         return True
 
@@ -1240,7 +1239,7 @@ class UpsComm:
                          command_mib, cmd_mib, ups.prm.display_name, ups.ups_ip())
             return None
 
-        value: Optional[str, int, float] = None
+        value: Union[str, int, float, None] = None
 
         LOGGER.debug('### command_name: %s', command_mib)
         for line in snmp_output:
