@@ -53,7 +53,7 @@ import argparse
 import sys
 import os
 import inspect
-import time
+from time import sleep
 import signal
 import logging
 from typing import Any, Dict
@@ -95,7 +95,7 @@ def daemon_sleep(sleep_time: int = 30) -> None:
     :return: None
     """
     for _sleep_index in range(0, sleep_time):
-        time.sleep(1)
+        sleep(1)
         if UT_CONST.quit:
             print('[{}]: Received Quit Signal'.format(UT_CONST.now(ltz=UT_CONST.use_ltz, as_string=True)))
             sys.exit(0)

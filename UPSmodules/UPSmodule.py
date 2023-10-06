@@ -25,8 +25,8 @@ __maintainer__ = "RicksLab"
 __docformat__ = 'reStructuredText'
 
 # pylint: disable=multiple-statements
+# pylint: disable=line-too-long
 # pylint: disable=consider-using-f-string
-# pylint: max-line-length=120
 
 import copy
 import os
@@ -34,7 +34,7 @@ import sys
 import re
 import shlex
 import shutil
-import time
+from time import sleep
 from datetime import datetime
 import json
 import subprocess
@@ -595,7 +595,7 @@ class UpsDaemon:
             with subprocess.Popen(shlex.split(self.daemon_params[script_name]),
                                   shell=False, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as cmd:
                 while cmd.poll() is None:
-                    time.sleep(0.1)
+                    sleep(0.1)
                 message = cmd.communicate()[0].decode('utf-8')
             LOGGER.debug(message)
             if cmd.returncode:
@@ -1333,7 +1333,7 @@ class UpsComm:
             color_code: str = UT_CONST.mark_up_codes[MarkUpCodes.data]
             reset_code: str = UT_CONST.mark_up_codes[MarkUpCodes.reset]
         for mib_name, mib_dict in self.mib_commands.items():
-            print('{}{}{}:'.format(mib_color_code, mib_name, reset_code))
+            print('{}{}{}:'.format(mib_color_code, mib_name.name, reset_code))
             print('    Value: {}{}{}'.format(color_code, mib_dict['iso'], reset_code))
             print('    Description: {}{}{}'.format(color_code, mib_dict['name'], reset_code))
             if mib_dict['decode']:
