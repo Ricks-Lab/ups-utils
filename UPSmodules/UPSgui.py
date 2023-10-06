@@ -21,7 +21,8 @@ __copyright__ = 'Copyright (C) 2020 RicksLab'
 __license__ = 'GNU General Public License'
 __program_name__ = 'ups-utils'
 __maintainer__ = 'RicksLab'
-__docformat__ = 'reStructuredText'
+__docformat__ = 'restructuredtext en'
+
 # pylint: disable=multiple-statements
 # pylint: disable=line-too-long
 # pylint: disable=consider-using-f-string
